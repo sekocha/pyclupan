@@ -2,22 +2,17 @@
 import numpy as np
 import time
 
-#class Site:
-#
-#    def __init__(self, substit_idx=None, position=None):
-#
-#        self.substit_idx = substit_idx
-#        self.position = position
-#
+class Site:
 
-#    self.sites = []
-#    pos_idx = 0
-#    for n, idx in zip(n_sites, substit_indices):
-#        for _ in range(n):
-#            s = Site(substit_idx=idx, position=positions.T[pos_idx])
-#            self.sites.append(s)
-#            pos_idx += 1
+    def __init__(self, idx, ele, ele_dd):
 
+        self.idx = idx
+        self.ele = ele
+        self.ele_dd = ele_dd
+        if len(ele) == len(ele_dd):
+            self.one_of_k = True
+        else:
+            self.one_of_k = False
 
 class DDSupercell:
 
@@ -28,16 +23,23 @@ class DDSupercell:
                  positions=None, 
                  n_sites=None, 
                  n_elements=2,
+                 occupation=[[0],[0]],
+                 min_n_elements=2,
                  one_of_k_rep=False,
-                 occupation=[[0],[0]]):
+                 inactive_elements=[]):
 
         self.axis = axis
         self.hnf = hnf
         self.primitive_cell = primitive_cell
-        self.one_of_k_rep = one_of_k_rep
 
         self.n_elements = n_elements
         self.n_total_sites = sum(n_sites)
+
+        self.min_n_elements = min_n_elements
+        self.one_of_k_rep = one_of_k_rep
+        self.inactive_elements = inactive_elements
+        if self.min_n_elements == 1:
+            self.one_of_k_rep = True
 
         ############################################################### 
         #  initialization of self.nodes and related attributes
@@ -53,19 +55,45 @@ class DDSupercell:
                 for site_idx in range(begin, begin+n_sites[occ2]):
                     self.nodes.append(self.compose_node(site_idx, ele_idx))
 
-        ###############################################################
+        self.site_attr, self.active_nodes = self.set_site_attr()
+        self.active_site_attr = [site for site in self.site_attr 
+                                      if len(site.ele_dd) > 0]
+        self.inactive_nodes = sorted(set(self.nodes) - set(self.active_nodes))  
 
         self.sites = list(range(self.n_total_sites))
         self.elements = list(range(self.n_elements))
 
-        self.set_active_nodes(self.nodes)
-        self.inactive_nodes = sorted(set(self.nodes) - set(self.active_nodes))  
-
-        self.active_sites = [self.get_site(i) for i in self.active_nodes]
-        self.active_sites = sorted(set(self.active_sites))
-        self.active_elements = [self.get_element(i) 
-                                for i in self.active_nodes]
+        self.active_sites = [s.idx for s in self.site_attr if len(s.ele_dd) > 0]
+        self.active_elements = [e for s in self.site_attr for e in s.ele_dd]
         self.active_elements = sorted(set(self.active_elements))
+
+        ###############################################################
+
+    def set_site_attr(self):
+
+        site_attr = []
+        for s in range(self.n_total_sites):
+            nodes = [i for i in self.nodes if self.get_site(i) == s]
+            ele = [self.get_element(n) for n in nodes]
+
+            if len(ele) >= self.min_n_elements:
+                ele_dd = sorted(set(ele) - set(self.inactive_elements))
+                if self.one_of_k_rep == False:
+                    if len(ele_dd) == len(ele):
+                        ele_dd = ele[:-1]
+            else:
+                ele_dd = []
+            site = Site(s, ele, ele_dd)
+            site_attr.append(site)
+            print(' site', s, ': elements =', ele, ': elements(dd) =', ele_dd)
+
+        active_nodes = []
+        for site in site_attr:
+            for e in site.ele_dd:
+                node = self.compose_node(site.idx, e)
+                active_nodes.append(node)
+
+        return site_attr, sorted(active_nodes)
 
     def compose_node(self, site_idx, element_idx):
         return int(element_idx * 1000 + site_idx)
@@ -93,25 +121,17 @@ class DDSupercell:
             return self.active_sites
         return self.sites
 
-    def set_active_nodes(self, nodes_all):
-        self.active_nodes = []
-        for s in range(self.n_total_sites):
-            nodes = [i for i in nodes_all if self.get_site(i) == s]
-            if len(nodes) > 1:
-                if self.one_of_k_rep == False:
-                    self.active_nodes.extend(nodes[:-1])
-                else:
-                    self.active_nodes.extend(nodes)
-        self.active_nodes = sorted(self.active_nodes)
- 
     def get_nodes(self, 
                   edge_rep=True, 
                   active=False,
+                  inactive=False,
                   element=None, 
                   site=None):
 
         if active: 
             nodes_match = self.active_nodes
+        elif inactive:
+            nodes_match = self.inactive_nodes
         else:
             nodes_match = self.nodes
 
@@ -138,12 +158,6 @@ class DDSupercell:
         if edge_rep == True:
             return [(i, i) for i in nodes_match]
         return nodes_match
-
-    def print_settings(self):
-        for s in range(self.n_total_sites):
-            nodes = [i for i in self.nodes if self.get_site(i) == s]
-            print(' site', s, ': elements =', 
-                   [self.get_element(n) for n in nodes])
 
     def convert_graphs_to_labelings(self, graphs):
         
