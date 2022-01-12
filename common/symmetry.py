@@ -77,7 +77,7 @@ def _get_lattice_translation(symmetry, hnf):
                 translations.append(t)
     return rotations, translations
 
-def _symmetry_to_permutation(rotations, translations, positions):
+def _symmetry_to_permutation(rotations, translations, positions, tol=1e-10):
 
     # permutation (slice notation)
     positions = positions.astype(float)
@@ -85,9 +85,10 @@ def _symmetry_to_permutation(rotations, translations, positions):
     permutation = set()
     for n, (rot, trans) in enumerate(zip(rotations,translations)):
         posrot = np.dot(rot, positions) + np.tile(trans,(n_atom,1)).T
-        posrot = np.array([[round_frac(p) for p in pos1] for pos1 in posrot.T])
+        posrot = (posrot - np.floor(posrot)).T
+        posrot[np.where(posrot > 1-tol)] -= 1.0
         permutation.add\
-            (tuple(np.where(distance.cdist(positions.T, posrot) < 1e-10)[1]))
+            (tuple(np.where(distance.cdist(positions.T, posrot) < tol)[1]))
 
     return np.array(list(permutation))
 

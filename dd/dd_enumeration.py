@@ -124,12 +124,15 @@ class DDEnumeration:
  
     def nonequivalent_permutations(self, 
                                    structure=None, 
-                                   num_edges=None):
+                                   num_edges=None,
+                                   return_permutation=False):
         
         if structure is not None:
             self.st = structure
 
+        print('computing permutations')
         perm = get_permutation(self.st)
+        print('computing permutations (finished)')
 
         automorphism = []
         for p in perm:
@@ -142,6 +145,9 @@ class DDEnumeration:
 
         gs = GraphSet.graphs(permutations=automorphism, 
                              num_edges=num_edges)
+
+        if return_permutation == True:
+            return gs, perm
         return gs
 
     def including(self, node_idx):

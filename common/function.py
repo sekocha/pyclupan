@@ -4,7 +4,7 @@ from math import *
 def round_frac(x, tol=1e-13):
     return_x = x - floor(x)
     if return_x > 1 - tol:
-        return_x -= 1
+        return return_x - 1
     return return_x
 
 #def round_frac(x, tol=1e-13):
