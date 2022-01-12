@@ -86,6 +86,7 @@ class Cluster:
 
         if n_body_ub > 1:
             for n_body in range(2,n_body_ub+1):
+                print("  searching for "+str(n_body)+"-body clusters ...")
                 cut = cutoff[n_body-2]
                 clusters_cutoff = []
                 for cl, s in itertools.product(clusters_small, sites):
@@ -105,6 +106,8 @@ class Cluster:
 
                 clusters_small = sorted(cl_rep)
                 clusters.extend(clusters_small)
+                print("  ", len(clusters_small), 
+                      str(n_body)+"-body clusters are found.")
 
         print(' number of nonequivalent clusters (< cutoff) =', len(clusters))
 
