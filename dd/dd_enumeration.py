@@ -23,6 +23,14 @@ class DDEnumeration:
 
         GraphSet.set_universe(self.nodes)
 
+    def all(self):
+        gs = GraphSet({}).graphs()
+        return gs
+
+    def empty(self):
+        gs = GraphSet({'exclude': set(self.nodes)})
+        return gs
+
     def one_of_k(self):
 
         gs = GraphSet({'exclude': set(self.nodes)})
@@ -114,7 +122,9 @@ class DDEnumeration:
 
         return gs
  
-    def nonequivalent_permutations(self, structure=None):
+    def nonequivalent_permutations(self, 
+                                   structure=None, 
+                                   num_edges=None):
         
         if structure is not None:
             self.st = structure
@@ -130,6 +140,14 @@ class DDEnumeration:
                 auto1.append(((n_idx, n_idx), (n_idx_perm, n_idx_perm)))
             automorphism.append(auto1)
 
-        gs = GraphSet.graphs(permutations=automorphism)
+        gs = GraphSet.graphs(permutations=automorphism, 
+                             num_edges=num_edges)
         return gs
+
+    def including(self, node_idx):
+
+        gs = GraphSet({}).graphs()
+        gs = gs.including(node_idx)
+        return gs
+
 
