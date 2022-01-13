@@ -14,21 +14,9 @@ from pyclupan.common.reduced_cell import NiggliReduced
 from pyclupan.dd.dd_supercell import DDSupercell
 from pyclupan.dd.dd_enumeration import DDEnumeration
 
-class ClusterAttr:
+from pyclupan.dd.cluster import Cluster
 
-    def __init__(self, idx, n_body, site_indices, cell_indices):
-        self.idx = idx
-        self.n_body = n_body
-        self.site_indices = site_indices
-        self.cell_indices = cell_indices
-
-    def print(self):
-        print(' cluster', self.idx, ':', end=' ')
-        for site, cell in zip(self.site_indices, self.cell_indices):
-            print(cell, site, end=' ')
-        print('')
-
-class ClusterDD:
+class NonequivalentClusterDD:
 
     def __init__(self, structure, lattice=None):
 
@@ -124,10 +112,10 @@ class ClusterDD:
                 cell_indices.append(cell)
                 site_indices.append(idx)
 
-            cl_attr = ClusterAttr(cl_idx, 
-                                  len(site_indices), 
-                                  site_indices, 
-                                  cell_indices)
+            cl_attr = Cluster(cl_idx, 
+                              len(site_indices), 
+                              site_indices, 
+                              cell_indices)
             nonequiv_clusters.append(cl_attr)
 
         nonequiv_clusters = sorted(nonequiv_clusters, key=lambda u: u.n_body)
@@ -235,7 +223,7 @@ if __name__ == '__main__':
 
     st_p = Poscar(args.poscar).get_structure_class()
 
-    cl_dd = ClusterDD(st_p, lattice=args.lattice)
+    cl_dd = NonequivalentClusterDD(st_p, lattice=args.lattice)
 #   cl_dd.find_nonequivalent_sites()
     cl_dd.find_nonequivalent_clusters(n_body_ub=args.n_body, 
                                       cutoff=args.cutoff)
