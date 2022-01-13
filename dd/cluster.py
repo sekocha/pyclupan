@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
 import argparse
-import itertools
 import time
 
 from mlptools.common.structure import Structure
@@ -29,7 +28,6 @@ class Cluster:
         self.ele_indices = ele_indices
 
         self.cl_positions = None
-
         if primitive_lattice is not None:
             self.set_primitive_lattice(primitive_lattice)
         else:
@@ -40,18 +38,7 @@ class Cluster:
 
     def set_primitive_lattice(self, primitive_lattice):
         self.prim = primitive_lattice
-#        self.set_siteset_indices()
         self.set_positions()
-
-#    def set_siteset_indices(self):
-#        self.siteset_indices = []
-#        for s in self.site_indices:
-#            n_sum = 0
-#            for idx, n in enumerate(self.prim.n_atoms):
-#                n_sum += n;
-#                if s < n_sum:
-#                    self.siteset_indices.append(idx)
-#                    break
 
     def set_positions(self):
         self.cl_positions = []
@@ -63,7 +50,8 @@ class Cluster:
     def compute_orbit(self, 
                       supercell_st: Structure,
                       supercell_mat: np.array=None,
-                      permutations=None):
+                      permutations=None,
+                      distinguish_element=False):
 
         if permutations is None:
             perm = get_permutation(supercell_st)
@@ -71,9 +59,30 @@ class Cluster:
             perm = permutations
 
         sites = self.identify_cluster(supercell_st, supercell_mat)
-        orbit = set([tuple(sorted(cl_perm)) 
-                     for cl_perm in perm[:,np.array(sites)]])
-        return sorted(orbit)
+        sites_perm = perm[:,np.array(sites)]
+
+        if distinguish_element == False:
+            orbit = set([tuple(sorted(s1)) for s1 in sites_perm])
+            return sorted(orbit)
+        else:
+            orbit = set()
+            for s1 in sites_perm:
+                cmpnt = [tuple([s,e]) for s,e in zip(s1,self.ele_indices)]
+                orbit.add(tuple(sorted(cmpnt)))
+
+            s_all, e_all = [], []
+            for cmpnt in sorted(orbit):
+                s_array, e_array = [], []
+                for s, e in cmpnt:
+                    s_array.append(s)
+                    e_array.append(e)
+                s_all.append(s_array)
+                e_all.append(e_array)
+
+            s_all = np.array(s_all)
+            e_all = np.array(e_all)
+ 
+            return (s_all, e_all)
 
     def identify_cluster(self, 
                          supercell_st: Structure,
@@ -83,8 +92,8 @@ class Cluster:
             self.set_positions()
 
         if supercell_mat is None:
-            sup_mat_inv = np.dot(np.linalg.inv(supercell_st.axis), 
-                                 self.prim.axis)
+            sup_axis_inv = np.linalg.inv(supercell_st.axis)
+            sup_mat_inv = np.dot(sup_axis_inv, self.prim.axis)
         else:
             sup_mat_inv = np.linalg.inv(supercell_mat)
 
@@ -120,72 +129,59 @@ class ClusterSet:
         for cl in self.clusters:
             cl.print()
 
-#    def nonequiv_element_configs(self, elements_siteset=None):
-#
-#        perm = get_permutation(self.prim)
-#
-#        for cl in self.clusters:
-#            sites = cl.site_indices
-#            candidates = itertools.product\
-#                (*[elements_siteset[s] for s in cl.siteset_indices])
-#            perm_match = []
-#            for perm in perm[:,np.array(sites)]:
-#                if set(sites) == set(perm):
-#                    perm_match.append(perm)
-#            perm_match = np.array(perm_match)
-#            print(perm_match)
-#
-#            for i, s in enumerate(sites):
-#                perm_match == s
-#
-#                   
+# must be faster
+def count_orbit_components(orbit, labeling:np.array):
+    sites, ele = orbit
+    count = np.count_nonzero(np.all(labeling[sites] == ele, axis=1))
+    return count
 
 if __name__ == '__main__':
 
     ps = argparse.ArgumentParser()
-    ps.add_argument('-p',
-                    '--poscar',
-                    type=str,
-                    default='POSCAR',
-                    help='poscar file for primitive cell')
+    ps.add_argument('-p','--poscar',type=str,default='POSCAR')
     args = ps.parse_args()
  
     prim = Poscar(args.poscar).get_structure_class()
+
+    H = [[3,0,0],
+         [1,2,0],
+         [1,0,1]]
+    axis_s, positions_s, n_atoms_s = supercell(H, 
+                                               prim.axis, 
+                                               prim.positions, 
+                                               prim.n_atoms)
+    sup = Structure(axis_s, positions_s, n_atoms_s)
+    perm_sup = get_permutation(sup)
 
 #    # test FCC
 #    site_indices = [0,0,0]
 #    cell_indices = [[0,0,0],
 #                    [1,0,0],
 #                    [2,0,0]]
-#    n_body = len(site_indices)
-#    occ = [[0],[0],[0]]
-#    elements_siteset = [[0,1,2]]
 
     # test perovkite
-    # ***
-    site_indices = [2,3,3]
+    site_indices = [2,2]
     cell_indices = [[0,0,0],
                     [1,0,0],
                     [0,1,0]]
+    labeling = [2] * 6 + [3] * 6 + [0,1,0] * 6
+    labeling = np.array(labeling)
+
     n_body = len(site_indices)
-    occ = [[2],[2],[0],[1]]
-    elements_siteset = [[2],[3],[0,1]]
-
-
     cl = Cluster(0, n_body, site_indices, cell_indices, primitive_lattice=prim)
-    
-    H = [[3,0,0],
-         [1,2,0],
-         [1,0,1]]
-    axis_s, positions_s, n_atoms_s = supercell(H, prim.axis, 
-                                               prim.positions, 
-                                               prim.n_atoms)
-    sup = Structure(axis_s, positions_s, n_atoms_s)
-
-    orbit = cl.compute_orbit(sup, H)
+    orbit = cl.compute_orbit(sup, H, permutations=perm_sup)
+    cl.print()
+    print(' cluster orbit in supercell')
     print(orbit)
 
-    clset = ClusterSet([cl])
-    clset.print()
-#    clset.nonequiv_element_configs(elements_siteset=elements_siteset)
+    cl.set_element_indices([0,1])
+    orbit_ele = cl.compute_orbit(sup, H, 
+                                 permutations=perm_sup, 
+                                 distinguish_element=True)
+    print(' cluster orbit with element configurations in supercell')
+    print(orbit_ele)
+
+    n_count = count_orbit_components(orbit_ele, labeling)
+    print(' orbit components in labeling =', n_count)
+
 
