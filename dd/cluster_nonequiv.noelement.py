@@ -3,7 +3,6 @@ import numpy as np
 import argparse
 import itertools
 import time
-import copy
 
 from mlptools.common.readvasp import Poscar
 from mlptools.common.structure import Structure
@@ -38,15 +37,13 @@ class NonequivalentClusters:
         return sites
 
     def find_nonequivalent_sites(self):
+
         perm = get_permutation(self.st)
         sites = self.set_sites(self.st)
         nonequiv_sites = np.unique(np.min(perm[:,np.array(sites)], axis=0))
         print(' number of nonequivalent sites =', len(nonequiv_sites))
 
-    def find_nonequivalent_clusters(self, 
-                                    n_body_ub=2, 
-                                    cutoff=[1.0],
-                                    elements_lattice=None):
+    def find_nonequivalent_clusters(self, n_body_ub=2, cutoff=[1.0]):
 
         niggli = NiggliReduced(self.st.axis)
         niggli_axis, niggli_tmat = niggli.niggli_axis, niggli.tmat
@@ -99,13 +96,6 @@ class NonequivalentClusters:
 
         print(' number of nonequivalent clusters (< cutoff) =', len(clusters))
 
-        if elements_lattice is not None:
-            element_combs = self.find_nonequiv_element_combinations\
-                                                            (clusters, 
-                                                             perm, 
-                                                             st_s.types,
-                                                             elements_lattice)
- 
         nonequiv_clusters = []
         T = np.dot(niggli_tmat, H)
         for cl_idx, cl in enumerate(clusters):
@@ -141,20 +131,8 @@ class NonequivalentClusters:
         cl_set = ClusterSet(nonequiv_clusters)
         cl_set.print()
 
-        if elements_lattice is None:
-            return cl_set, None
-
-        nonequiv_clusters_ele = []
-        for cl, combs in zip(nonequiv_clusters, element_combs):
-            for ele_indices in combs:
-                cl1 = copy.copy(cl)
-                cl1.set_element_indices(ele_indices)
-                nonequiv_clusters_ele.append(cl1)
-
-        cl_set_ele = ClusterSet(nonequiv_clusters_ele)
-        cl_set_ele.print()
-        return cl_set, cl_set_ele
-          
+        return nonequiv_clusters
+           
     def compute_distance(self, axis, positions, i, j):
 
         diff1 = positions[:,j] - positions[:,i]
@@ -190,36 +168,6 @@ class NonequivalentClusters:
 
         return is_cutoff, positions_nearest
 
-    def find_nonequiv_element_combinations(self, 
-                                           clusters, 
-                                           perm, 
-                                           types,
-                                           elements_lattice):
-
-        element_combinations = []
-        for cl_sites in clusters:
-            cl_sites = np.array(cl_sites)
-            candidates = itertools.product\
-                (*[elements_lattice[types[s]] for s in cl_sites])
-
-            perm_match = set()
-            for p in perm[:,cl_sites]:
-                if set(cl_sites) == set(p):
-                    perm_match.add(tuple(p))
-
-            perm_match = np.array([np.array(p) for p in sorted(perm_match)])
-            for i, site in enumerate(cl_sites):
-                perm_match[np.where(perm_match == site)] = i
-
-            element_combs = set()
-            for c in candidates:
-                c_rep = min([tuple(np.array(c)[p]) for p in perm_match])
-                element_combs.add(c_rep)
-            element_combinations.append(sorted(element_combs))
-
-        return element_combinations
-
- 
 if __name__ == '__main__':
 
     # Examples
@@ -258,18 +206,10 @@ if __name__ == '__main__':
         for i in range(args.n_body - 1 - len(args.cutoff)):
             args.cutoff.append(args.cutoff[-1])
 
-    
-#    element_lattice = None
-    # fcc
-    elements_lattice = [[0,1]]
-    # perovskite
-#    elements_lattice = [[],[],[0,1]]
-
     st_p = Poscar(args.poscar).get_structure_class()
 
     cl = NonequivalentClusters(st_p, lattice=args.lattice)
     cl.find_nonequivalent_clusters(n_body_ub=args.n_body, 
-                                   cutoff=args.cutoff,
-                                   elements_lattice=elements_lattice)
+                                   cutoff=args.cutoff)
 #    cl.find_nonequivalent_sites()
 
