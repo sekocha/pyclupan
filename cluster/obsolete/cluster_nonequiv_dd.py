@@ -14,7 +14,7 @@ from pyclupan.common.reduced_cell import NiggliReduced
 from pyclupan.dd.dd_supercell import DDSupercell
 from pyclupan.dd.dd_enumeration import DDEnumeration
 
-from pyclupan.dd.cluster import Cluster
+from pyclupan.cluster.cluster import Cluster
 
 class NonequivalentClusterDD:
 

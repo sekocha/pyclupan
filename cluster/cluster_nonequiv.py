@@ -12,7 +12,7 @@ from pyclupan.common.supercell import supercell
 from pyclupan.common.symmetry import get_permutation
 from pyclupan.common.reduced_cell import NiggliReduced
 
-from pyclupan.dd.cluster import Cluster, ClusterSet
+from pyclupan.cluster.cluster import Cluster, ClusterSet
 from pyclupan.io.yaml import Yaml
 
 class NonequivalentClusters:

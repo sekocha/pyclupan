@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 import numpy as np
-import sys
 import yaml
 
 from mlptools.common.structure import Structure
-from pyclupan.dd.cluster import Cluster, ClusterSet
+from pyclupan.cluster.cluster import Cluster, ClusterSet
 
 class Yaml:
 
@@ -40,17 +39,32 @@ class Yaml:
             print('', file=f)
         print('', file=f)
 
-        self.write_primitive_cell(primitive_cell, f)
+        self._write_primitive_cell(primitive_cell, f)
 
         print('nonequiv_clusters:', file=f)
-        self.write_clusters(cluster_set, f)
+        self._write_clusters(cluster_set, f)
 
         if cluster_set_element is not None:
             print('nonequiv_element_configs:', file=f)
-            self.write_clusters(cluster_set_element, f)
+            self._write_clusters(cluster_set_element, f)
         f.close()
 
-    def write_primitive_cell(self, primitive_cell, stream):
+    def parse_clusters_yaml(self, filename='clusters.yaml'):
+
+        data = yaml.safe_load(open(filename))
+        prim = self._parse_primitive_cell(data)
+
+        clusters = self._parse_clusters(data, 
+                                        tag='nonequiv_clusters',
+                                        prim=prim)
+        cluster_set = ClusterSet(clusters)
+        clusters_ele = self._parse_clusters(data, 
+                                            tag='nonequiv_element_configs',
+                                            prim=prim)
+        cluster_set_ele = ClusterSet(clusters_ele)
+        return cluster_set, cluster_set_ele
+
+    def _write_primitive_cell(self, primitive_cell, stream):
 
         axis = primitive_cell.axis
         positions = primitive_cell.positions
@@ -70,11 +84,10 @@ class Yaml:
         print('  number_of_sites:   ', list(n_atoms), file=stream)
         print('', file=stream)
 
-
-    def write_clusters(self, set_obj, stream):
+    def _write_clusters(self, set_obj, stream):
 
         for cl in set_obj.clusters:
-            print('- id:   ', cl.idx, file=stream)
+            print('- id:     ', cl.idx, file=stream)
             print('  lattice_sites:   ', file=stream)
             if cl.ele_indices is None:
                 for site, cell in zip(cl.site_indices, cl.cell_indices):
@@ -90,30 +103,36 @@ class Yaml:
                     print('    element: ', ele, file=stream)
                     print('', file=stream)
 
-    def parse_primitive_cell(self, data):
+    def _parse_primitive_cell(self, data):
 
         axis = np.array(data['primitive_cell']['axis']).T
-        n_atoms = data['primitive_cell']['number_of_sites']
-
         positions = [d['coordinates'] for d in data['primitive_cell']['sites']]
         positions = np.array(positions).T
-        print(positions)
+        n_atoms = data['primitive_cell']['number_of_sites']
 
         return Structure(axis, positions, n_atoms)
 
-    def parse_clusters_yaml(self, filename='clusters.yaml'):
+    def _parse_clusters(self, data, prim=None, tag='nonequiv_clusters'):
 
-        data = yaml.safe_load(open(filename))
+        if not tag in data:
+            return []
 
-        prim = self.parse_primitive_cell(data)
-
-        for d in data['nonequiv_clusters']:
-            print(d)
-
-        # clusters = []
-        #
-        # cluster_set = ClusterSet(clusters)
-        # return cluster_set
-            
-
-
+        clusters = []
+        for d in data[tag]:
+            sites, cells, elements = [], [], []
+            for d1 in d['lattice_sites']:
+                sites.append(d1['site'])
+                cells.append(d1['cell'])
+                if 'element' in d1:
+                    elements.append(d1['element'])
+            if len(elements) == 0:
+                elements = None
+            cl = Cluster(idx=d['id'],
+                         n_body=len(sites),
+                         site_indices=sites,
+                         cell_indices=cells,
+                         ele_indices=elements,
+                         primitive_lattice=prim)
+            clusters.append(cl)
+        return clusters
+ 
