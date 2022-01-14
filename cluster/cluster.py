@@ -7,10 +7,6 @@ from mlptools.common.structure import Structure
 from pyclupan.common.symmetry import get_permutation
 from pyclupan.common.function import round_frac_array
 
-# for test
-from mlptools.common.readvasp import Poscar
-from pyclupan.common.supercell import supercell
-       
 class Cluster:
 
     def __init__(self, 
@@ -129,59 +125,10 @@ class ClusterSet:
         for cl in self.clusters:
             cl.print()
 
-# must be faster
-def count_orbit_components(orbit, labeling:np.array):
-    sites, ele = orbit
-    count = np.count_nonzero(np.all(labeling[sites] == ele, axis=1))
-    return count
-
-if __name__ == '__main__':
-
-    ps = argparse.ArgumentParser()
-    ps.add_argument('-p','--poscar',type=str,default='POSCAR')
-    args = ps.parse_args()
- 
-    prim = Poscar(args.poscar).get_structure_class()
-
-    H = [[3,0,0],
-         [1,2,0],
-         [1,0,1]]
-    axis_s, positions_s, n_atoms_s = supercell(H, 
-                                               prim.axis, 
-                                               prim.positions, 
-                                               prim.n_atoms)
-    sup = Structure(axis_s, positions_s, n_atoms_s)
-    perm_sup = get_permutation(sup)
-
-#    # test FCC
-#    site_indices = [0,0,0]
-#    cell_indices = [[0,0,0],
-#                    [1,0,0],
-#                    [2,0,0]]
-
-    # test perovkite
-    site_indices = [2,2]
-    cell_indices = [[0,0,0],
-                    [1,0,0],
-                    [0,1,0]]
-    labeling = [2] * 6 + [3] * 6 + [0,1,0] * 6
-    labeling = np.array(labeling)
-
-    n_body = len(site_indices)
-    cl = Cluster(0, n_body, site_indices, cell_indices, primitive_lattice=prim)
-    orbit = cl.compute_orbit(sup, H, permutations=perm_sup)
-    cl.print()
-    print(' cluster orbit in supercell')
-    print(orbit)
-
-    cl.set_element_indices([0,1])
-    orbit_ele = cl.compute_orbit(sup, H, 
-                                 permutations=perm_sup, 
-                                 distinguish_element=True)
-    print(' cluster orbit with element configurations in supercell')
-    print(orbit_ele)
-
-    n_count = count_orbit_components(orbit_ele, labeling)
-    print(' orbit components in labeling =', n_count)
-
-
+## must be faster
+#def count_orbit_components(orbit, labeling:np.array):
+#    sites, ele = orbit
+#    count = np.count_nonzero(np.all(labeling[sites] == ele, axis=1))
+#    return count
+#
+#

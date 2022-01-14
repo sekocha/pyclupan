@@ -273,5 +273,5 @@ if __name__ == '__main__':
 
     yaml = Yaml()
     yaml.write_clusters_yaml(st_p, args.cutoff, elements_lattice, cl, cl_ele)
-    yaml.parse_clusters_yaml()
+#    yaml.parse_clusters_yaml()
 

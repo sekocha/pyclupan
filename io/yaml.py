@@ -52,15 +52,15 @@ class Yaml:
     def parse_clusters_yaml(self, filename='clusters.yaml'):
 
         data = yaml.safe_load(open(filename))
-        prim = self._parse_primitive_cell(data)
+        self.prim = self._parse_primitive_cell(data)
 
         clusters = self._parse_clusters(data, 
                                         tag='nonequiv_clusters',
-                                        prim=prim)
+                                        prim=self.prim)
         cluster_set = ClusterSet(clusters)
         clusters_ele = self._parse_clusters(data, 
                                             tag='nonequiv_element_configs',
-                                            prim=prim)
+                                            prim=self.prim)
         cluster_set_ele = ClusterSet(clusters_ele)
         return cluster_set, cluster_set_ele
 
@@ -135,4 +135,7 @@ class Yaml:
                          primitive_lattice=prim)
             clusters.append(cl)
         return clusters
+
+    def get_primitive_cell(self):
+        return self.prim
  
