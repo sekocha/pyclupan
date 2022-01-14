@@ -222,9 +222,11 @@ class NonequivalentClusters:
 if __name__ == '__main__':
 
     # Examples
-    # cluster.py -p structures/perovskite-unitcell 
-    #           --lattice 2 --n_body 4 --cutoff 9.0 6.0 6.0
-    # cluster.py -p structures/fcc-primitive -c 2.1 -n 3
+    # cluster_nonequiv.py -p structures/perovskite-unitcell 
+    #                   --lattice 2 --n_body 4 --cutoff 9.0 6.0 6.0
+    # cluster_nonequiv.py -p structures/fcc-primitive -c 2.1 -n 3
+    # cluster_nonequiv.py -p structures/perovskite-unitcell 
+    #                   -c 7.0 5.0 -n 3 -l 2 -e 0 -e 1 -e 2 3
 
     ps = argparse.ArgumentParser()
     ps.add_argument('-p',
@@ -238,6 +240,13 @@ if __name__ == '__main__':
                     type=int,
                     default=None,
                     help='lattice indices')
+    ps.add_argument('-e',
+                    '--elements',
+                    nargs='*',
+                    type=int,
+                    action='append',
+                    default=None,
+                    help='elements on a lattice')
     ps.add_argument('-c',
                     '--cutoff',
                     nargs='*',
@@ -257,21 +266,24 @@ if __name__ == '__main__':
         for i in range(args.n_body - 1 - len(args.cutoff)):
             args.cutoff.append(args.cutoff[-1])
 
-#    element_lattice = None
-    # fcc
-#    elements_lattice = [[0,1]]
-    # perovskite
-    elements_lattice = [[],[],[0,1]]
+    prim = Poscar(args.poscar).get_structure_class()
 
-    st_p = Poscar(args.poscar).get_structure_class()
+    if args.elements is not None:
+        print(' elements on lattices =', args.elements)
+        if len(args.elements) != len(prim.n_atoms):
+            raise ValueError('-e options must be repeated n_lattice times')
+        if args.lattice is None:
+            args.lattice = [i for i, e in enumerate(args.elements) 
+                              if len(e) > 1]
+            print(' lattice =', args.lattice)
 
-    clobj = NonequivalentClusters(st_p, lattice=args.lattice)
+    clobj = NonequivalentClusters(prim, lattice=args.lattice)
     cl, cl_ele = clobj.find_nonequivalent_clusters\
                                      (n_body_ub=args.n_body, 
                                       cutoff=args.cutoff,
-                                      elements_lattice=elements_lattice)
+                                      elements_lattice=args.elements)
 
     yaml = Yaml()
-    yaml.write_clusters_yaml(st_p, args.cutoff, elements_lattice, cl, cl_ele)
-#    yaml.parse_clusters_yaml()
+    yaml.write_clusters_yaml(prim, args.cutoff, cl, args.elements, cl_ele)
+
 

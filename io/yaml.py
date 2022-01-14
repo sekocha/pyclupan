@@ -13,8 +13,8 @@ class Yaml:
     def write_clusters_yaml(self, 
                             primitive_cell,
                             cutoff,
-                            elements_lattice,
                             cluster_set: ClusterSet, 
+                            elements_lattice=None,
                             cluster_set_element: ClusterSet=None, 
                             filename='clusters.yaml'):
 
@@ -27,17 +27,16 @@ class Yaml:
         for i, c in enumerate(cutoff):
             print('- ' + str(i+2) + '-body:   ', c, file=f)
             print('', file=f)
-        print('', file=f)
 
-        print('element_configs:', file=f)
-        for i, elements in enumerate(elements_lattice):
-            print('- lattice:    ', i, file=f)
-            if len(elements) > 0:
-                print('  elements:   ', elements, file=f)
-            else:
-                print('  elements:   ', [], file=f)
-            print('', file=f)
-        print('', file=f)
+        if elements_lattice is not None:
+            print('element_configs:', file=f)
+            for i, elements in enumerate(elements_lattice):
+                print('- lattice:    ', i, file=f)
+                if len(elements) > 0:
+                    print('  elements:   ', elements, file=f)
+                else:
+                    print('  elements:   ', [], file=f)
+                print('', file=f)
 
         self._write_primitive_cell(primitive_cell, f)
 

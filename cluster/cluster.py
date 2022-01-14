@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import numpy as np
-import argparse
 import time
 
 from mlptools.common.structure import Structure
@@ -125,10 +124,3 @@ class ClusterSet:
         for cl in self.clusters:
             cl.print()
 
-## must be faster
-#def count_orbit_components(orbit, labeling:np.array):
-#    sites, ele = orbit
-#    count = np.count_nonzero(np.all(labeling[sites] == ele, axis=1))
-#    return count
-#
-#

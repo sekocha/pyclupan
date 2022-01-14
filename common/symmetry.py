@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import numpy as np
-import sys
 import spglib 
 import time
 
@@ -14,7 +13,6 @@ def structure_to_cell(st):
     lattice = st.get_axis()
     positions = st.get_positions()
     types = st.get_types()
-
     cell = np.array(lattice.T), np.array(positions.T), np.array(types)
     return cell
 
@@ -32,15 +30,14 @@ def get_symmetry(st: Structure, symprec=1e-5, superperiodic=False, hnf=None):
         return symmetry['rotations'], symmetry['translations']
     else:
         if hnf is None:
-            print(' hnf is required in ddtools.symmetry.get_symmetry')
-            sys.exit()
+            raise ValueError\
+                (' hnf is required in ddtools.symmetry.get_symmetry')
         rotations_lt, translations_lt = _get_lattice_translation(symmetry, hnf)
         return symmetry['rotations'], symmetry['translations'], \
-            rotations_lt, translations_lt
+                rotations_lt, translations_lt
 
 def get_permutation(st: Structure,
                     symprec=1e-5,
-                    origin=0,
                     superperiodic=False,
                     hnf=None):
 
@@ -53,18 +50,12 @@ def get_permutation(st: Structure,
 
     permutation = _symmetry_to_permutation(rotations, translations, positions)
     if superperiodic == False:
-        if origin == 0:
-            return permutation
-        else:
-            return permutation[:,origin:] - origin
+        return permutation
     else:
-        permutation_lt = _symmetry_to_permutation\
-            (rotations_lt, translations_lt, positions)
-        if origin == 0:
-            return permutation, permutation_lt
-        else:
-            return permutation[:,origin:] - origin, \
-                permutation_lt[:,origin:] - origin
+        permutation_lt = _symmetry_to_permutation(rotations_lt, 
+                                                  translations_lt, 
+                                                  positions)
+        return permutation, permutation_lt
 
 def _get_lattice_translation(symmetry, hnf):
 
