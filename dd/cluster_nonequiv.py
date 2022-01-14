@@ -13,6 +13,7 @@ from pyclupan.common.symmetry import get_permutation
 from pyclupan.common.reduced_cell import NiggliReduced
 
 from pyclupan.dd.cluster import Cluster, ClusterSet
+from pyclupan.io.yaml import Yaml
 
 class NonequivalentClusters:
 
@@ -139,7 +140,6 @@ class NonequivalentClusters:
             nonequiv_clusters.append(cl_attr)
 
         cl_set = ClusterSet(nonequiv_clusters)
-        cl_set.print()
 
         if elements_lattice is None:
             return cl_set, None
@@ -152,7 +152,6 @@ class NonequivalentClusters:
                 nonequiv_clusters_ele.append(cl1)
 
         cl_set_ele = ClusterSet(nonequiv_clusters_ele)
-        cl_set_ele.print()
         return cl_set, cl_set_ele
           
     def compute_distance(self, axis, positions, i, j):
@@ -258,18 +257,21 @@ if __name__ == '__main__':
         for i in range(args.n_body - 1 - len(args.cutoff)):
             args.cutoff.append(args.cutoff[-1])
 
-    
 #    element_lattice = None
     # fcc
-    elements_lattice = [[0,1]]
+#    elements_lattice = [[0,1]]
     # perovskite
-#    elements_lattice = [[],[],[0,1]]
+    elements_lattice = [[],[],[0,1]]
 
     st_p = Poscar(args.poscar).get_structure_class()
 
-    cl = NonequivalentClusters(st_p, lattice=args.lattice)
-    cl.find_nonequivalent_clusters(n_body_ub=args.n_body, 
-                                   cutoff=args.cutoff,
-                                   elements_lattice=elements_lattice)
-#    cl.find_nonequivalent_sites()
+    clobj = NonequivalentClusters(st_p, lattice=args.lattice)
+    cl, cl_ele = clobj.find_nonequivalent_clusters\
+                                     (n_body_ub=args.n_body, 
+                                      cutoff=args.cutoff,
+                                      elements_lattice=elements_lattice)
+
+    yaml = Yaml()
+    yaml.write_clusters_yaml(st_p, args.cutoff, elements_lattice, cl, cl_ele)
+    yaml.parse_clusters_yaml()
 
