@@ -44,7 +44,7 @@ class DDConstructor:
 
         return gs
 
-    def composition(self, comp):
+    def composition(self, comp, tol=1e-3):
 
         gs = GraphSet({'exclude': set(self.nodes)})
         for ele in self.elements:
@@ -52,7 +52,7 @@ class DDConstructor:
             gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
             if comp[ele] is not None:
                 val = len(tnodes) * comp[ele]
-                if abs(round(val) - val) < 1e-10:
+                if abs(round(val) - val) < tol:
                     n_edges = round(val)
                 else:
                     n_edges = 100000

@@ -102,32 +102,30 @@ def factorization(n):
 #    return [hnf_array[i] for i in set(reps.values())]
 #
 
-def get_nonequivalent_hnf(n, st: Structure, symprec=1e-5):
+def get_nonequivalent_hnf(n, st: Structure, symprec=1e-5, tol=1e-10):
 
-    t0 = time.time()
     rotations = get_rotations(st, symprec=symprec)
     hnf_array = enumerate_hnf(n)
     hnfinv_array = [np.linalg.inv(hnf) for hnf in hnf_array]
     dots = [[np.dot(rot, hnf) for rot in rotations] for hnf in hnf_array]
+    
+    snf_array = [tuple(sorted(np.diag(snf(h)[0]))) for h in hnf_array]
 
-    t1 = time.time()
-    ############# slow part #############
+    ############# time consuming part #############
     n_hnf = len(hnf_array)
     reps = dict(zip(range(n_hnf), range(n_hnf)))
     for i1, i2 in itertools.combinations(range(n_hnf),2):
-        if reps[i1] == i1 and reps[i2] == i2:
+        if reps[i1] == i1 and reps[i2] == i2 \
+            and snf_array[i1] == snf_array[i2]:
             hnf1inv = hnfinv_array[i1]
             # whether H^(-1) (rot * H') is unimodular
             for d in dots[i2]:
                 mat1 = np.dot(hnf1inv, d)
-#                if np.all(np.isclose(np.round(mat1), mat1)):
-                if np.linalg.norm(np.round(mat1)-mat1) < 1e-10:
-    #                and abs(np.linalg.det(mat1)) - 1 < 1e-10):
+                diff = mat1 - np.trunc(mat1)
+                if np.linalg.norm(diff) < tol:
                     reps[i2] = i1
                     break
-    ############# slow part end #############
-    t2 = time.time()
-    print(t1-t0, t2-t1)
+    ############# time consuming part end #############
 
     return [hnf_array[i] for i in set(reps.values())]
 
@@ -143,4 +141,4 @@ if __name__ == '__main__':
 
     prim = Poscar(args.poscar).get_structure_class()
     hnf_array = get_nonequivalent_hnf(8, prim)
-    print(len(hnf_array))
+    print(' number of Hermite normal form =', len(hnf_array))

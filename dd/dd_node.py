@@ -60,8 +60,8 @@ class DDNodeHandler:
             print('         setting comp and labeling (e.g. -e 0 -e 1 -e 5 4)')
 
             self.elements = sorted([e for elements in elements_lattice 
-                                    for e in elements_lattice])
-            self.n_elements = len(self.elements)
+                                      for e in elements])
+            self.n_elements = max(self.elements) + 1
 
             for l, elements in enumerate(elements_lattice):
                 begin = sum(n_sites[:l])
