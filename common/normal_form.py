@@ -6,6 +6,10 @@ import time
 from mlptools.common.structure import Structure
 from pyclupan.common.symmetry import get_rotations
 
+# for test
+import argparse
+from mlptools.common.readvasp import Poscar
+
 from smithnormalform import matrix, snfproblem, z
 def snf(mat):
 
@@ -69,8 +73,38 @@ def factorization(n):
             i += 1
     return factors
 
+#def get_nonequivalent_hnf(n, st: Structure, symprec=1e-5):
+#
+#    t0 = time.time()
+#    rotations = get_rotations(st, symprec=symprec)
+#    hnf_array = enumerate_hnf(n)
+#    hnfinv_array = [np.linalg.inv(hnf) for hnf in hnf_array]
+#    dots = [[np.dot(rot, hnf) for rot in rotations] for hnf in hnf_array]
+#
+#    t1 = time.time()
+#    ############# slow part #############
+#    n_hnf = len(hnf_array)
+#    reps = dict(zip(range(len(hnf_array)), range(len(hnf_array))))
+#    for i1, i2 in itertools.combinations(range(len(hnf_array)),2):
+#        if reps[i1] == i1 and reps[i2] == i2:
+#            hnf1inv = hnfinv_array[i1]
+#            # whether H^(-1) (rot * H') is unimodular
+#            for d in dots[i2]:
+#                mat1 = np.dot(hnf1inv, d)
+#                if np.linalg.norm(np.round(mat1)-mat1) < 1e-10:
+#    #                and abs(np.linalg.det(mat1)) - 1 < 1e-10):
+#                    reps[i2] = i1
+#                    break
+#    ############# slow part end #############
+#    t2 = time.time()
+#    print(t1-t0, t2-t1)
+#
+#    return [hnf_array[i] for i in set(reps.values())]
+#
+
 def get_nonequivalent_hnf(n, st: Structure, symprec=1e-5):
 
+    t0 = time.time()
     rotations = get_rotations(st, symprec=symprec)
     hnf_array = enumerate_hnf(n)
     hnfinv_array = [np.linalg.inv(hnf) for hnf in hnf_array]
@@ -78,18 +112,35 @@ def get_nonequivalent_hnf(n, st: Structure, symprec=1e-5):
 
     t1 = time.time()
     ############# slow part #############
-    reps = dict(zip(range(len(hnf_array)), range(len(hnf_array))))
-    for i1, i2 in itertools.combinations(range(len(hnf_array)),2):
+    n_hnf = len(hnf_array)
+    reps = dict(zip(range(n_hnf), range(n_hnf)))
+    for i1, i2 in itertools.combinations(range(n_hnf),2):
         if reps[i1] == i1 and reps[i2] == i2:
             hnf1inv = hnfinv_array[i1]
             # whether H^(-1) (rot * H') is unimodular
             for d in dots[i2]:
                 mat1 = np.dot(hnf1inv, d)
+#                if np.all(np.isclose(np.round(mat1), mat1)):
                 if np.linalg.norm(np.round(mat1)-mat1) < 1e-10:
     #                and abs(np.linalg.det(mat1)) - 1 < 1e-10):
                     reps[i2] = i1
                     break
     ############# slow part end #############
     t2 = time.time()
+    print(t1-t0, t2-t1)
 
     return [hnf_array[i] for i in set(reps.values())]
+
+if __name__ == '__main__':
+
+    ps = argparse.ArgumentParser()
+    ps.add_argument('-p',
+                    '--poscar',
+                    type=str,
+                    default='POSCAR',
+                    help='poscar file for primitive cell')
+    args = ps.parse_args()
+
+    prim = Poscar(args.poscar).get_structure_class()
+    hnf_array = get_nonequivalent_hnf(8, prim)
+    print(len(hnf_array))

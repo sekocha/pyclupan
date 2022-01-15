@@ -14,25 +14,16 @@ class Site:
         else:
             self.one_of_k = False
 
-class DDSupercell:
+class DDNodeHandler:
 
     def __init__(self, 
-                 axis=None, 
-                 hnf=None, 
-                 primitive_cell=None,
-                 positions=None, 
                  n_sites=None, 
-                 n_elements=2,
-                 occupation=[[0],[0]],
+                 occupation=None,
+                 elements_lattice=None,
                  min_n_elements=2,
                  one_of_k_rep=False,
                  inactive_elements=[]):
 
-        self.axis = axis
-        self.hnf = hnf
-        self.primitive_cell = primitive_cell
-
-        self.n_elements = n_elements
         self.n_total_sites = sum(n_sites)
 
         self.min_n_elements = min_n_elements
@@ -44,16 +35,42 @@ class DDSupercell:
         ############################################################### 
         #  initialization of self.nodes and related attributes
 
-        if len(occupation) != n_elements:
-            raise ValueError(
-                "length of occupation is not equal to n_elements")
+        if occupation is None and elements_lattice is None:
+            self.n_elements = 2
+            occupation = [[0],[0]]
 
         self.nodes = []
-        for ele_idx, occ1 in enumerate(occupation):
-            for occ2 in occ1:
-                begin = sum(n_sites[:occ2])
-                for site_idx in range(begin, begin+n_sites[occ2]):
-                    self.nodes.append(self.compose_node(site_idx, ele_idx))
+        if occupation is not None:
+            self.n_elements = len(occupation)
+            self.elements = list(range(self.n_elements))
+
+            for ele_idx, occ1 in enumerate(occupation):
+                for occ2 in occ1:
+                    begin = sum(n_sites[:occ2])
+                    end = begin + n_sites[occ2]
+                    for site_idx in range(begin, end):
+                        self.nodes.append(self.compose_node(site_idx, ele_idx))
+                            
+        elif elements_lattice is not None:
+            if len(n_sites) != len(elements_lattice):
+                raise ValueError\
+                    ("len(elements_lattice) is not equal to len(n_sites)")
+
+            print('Warning: elements_lattice implementation is in development')
+            print('         setting comp and labeling (e.g. -e 0 -e 1 -e 5 4)')
+
+            self.elements = sorted([e for elements in elements_lattice 
+                                    for e in elements_lattice])
+            self.n_elements = len(self.elements)
+
+            for l, elements in enumerate(elements_lattice):
+                begin = sum(n_sites[:l])
+                end = begin + n_sites[l]
+                for ele_idx in elements:
+                    for site_idx in range(begin, end):
+                        self.nodes.append(self.compose_node(site_idx, ele_idx))
+
+        self.nodes = sorted(self.nodes)
 
         self.site_attr, self.active_nodes = self.set_site_attr()
         self.active_site_attr = [site for site in self.site_attr 
@@ -61,8 +78,6 @@ class DDSupercell:
         self.inactive_nodes = sorted(set(self.nodes) - set(self.active_nodes))  
 
         self.sites = list(range(self.n_total_sites))
-        self.elements = list(range(self.n_elements))
-
         self.active_sites = [s.idx for s in self.site_attr if len(s.ele_dd) > 0]
         self.active_elements = [e for s in self.site_attr for e in s.ele_dd]
         self.active_elements = sorted(set(self.active_elements))
