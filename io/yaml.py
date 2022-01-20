@@ -4,11 +4,113 @@ import yaml
 
 from mlptools.common.structure import Structure
 from pyclupan.cluster.cluster import Cluster, ClusterSet
+from pyclupan.derivative.derivative import DSSet
 
 class Yaml:
 
     def __init__(self):
         pass
+
+    def write_derivative_yaml(self, 
+                              primitive_cell,
+                              ds_set_all,
+                              filename='derivative.yaml'):
+
+        f = open(filename, 'w')
+
+        print('#  Nonequivalent derivative structures (pyclupan)', file=f)
+        print('', file=f)
+
+        self._write_structure(primitive_cell, f, tag='primitive_cell')
+        self._write_ds(ds_set_all, f)
+
+        f.close()
+
+    def parse_derivative_yaml(self, filename='derivative.yaml'):
+
+        data = yaml.safe_load(open(filename))
+        prim = self._parse_structure(data, tag='primitive_cell')
+
+        ds_set_all = []
+        for d in data['derivative_structures']:
+            n_cell = d['n_cell']
+            hnf_set, supercell_set, supercell_idset = [], [], []
+            for cell in d['supercells']:
+                hnf_set.append(np.array(cell['HNF']))
+                sup = self._parse_structure(cell, tag='structure')
+                supercell_set.append(sup)
+                supercell_idset.append(cell['id'])
+
+            active_sites = d['active_sites']
+            inactive_sites = d['inactive_sites']
+            inactive_labeling = d['inactive_labeling']
+            active_labelings = np.array(d['active_labelings'])
+
+            ds_set = DSSet(active_labelings=active_labelings,
+                           inactive_labeling=inactive_labeling,
+                           active_sites=active_sites,
+                           inactive_sites=inactive_sites,
+                           primitive_cell=prim,
+                           n_expand=n_cell,
+                           hnf_set=hnf_set,
+                           supercell_set=supercell_set,
+                           supercell_idset=supercell_idset)
+            ds_set_all.append(ds_set)
+
+        return ds_set_all
+
+    def _write_ds(self, ds_set_all, stream):
+
+        print('derivative_structures:', file=stream)
+        for i, ds_set in enumerate(ds_set_all):
+            print('- group:', i, file=stream)
+            print('', file=stream)
+            print('  n_cell:', ds_set.n_expand, file=stream)
+            print('', file=stream)
+            print('  comp:', list(ds_set.comp), file=stream)
+            print('', file=stream)
+            print('  comp_lb:', list(ds_set.comp_lb), file=stream)
+            print('', file=stream)
+            print('  comp_ub:', list(ds_set.comp_ub), file=stream)
+            print('', file=stream)
+            print('  supercells:', file=stream)
+            for hnf, supercell, supercell_id in zip(ds_set.hnf_set,
+                                                    ds_set.supercell_set,
+                                                    ds_set.supercell_idset):
+                self._write_ds_supercell(supercell_id, 
+                                         hnf, 
+                                         stream)
+                self._write_structure(supercell, 
+                                      stream, 
+                                      tag='structure',
+                                      indent=4)
+
+            print('  inactive_sites:  ', end='', file=stream)
+            self._write_list_no_space(ds_set.inactive_sites, stream)
+            print('', file=stream)
+            print('  inactive_labeling:  ', end='', file=stream)
+            self._write_list_no_space(ds_set.inactive_labeling, stream)
+            print('', file=stream)
+            print('  active_sites:  ', end='', file=stream)
+            self._write_list_no_space(ds_set.active_sites, stream)
+            print('', file=stream)
+            print('  n_labelings:', ds_set.active_labelings.shape[0], 
+                  file=stream)
+            print('', file=stream)
+            print('  active_labelings:', file=stream)
+            for l in ds_set.active_labelings:
+                print('    -  ', end='', file=stream)
+                self._write_list_no_space(l, stream)
+            print('', file=stream)
+
+    def _write_ds_supercell(self, idx, hnf, stream, indent=2):
+
+        addspace = ' ' * 2
+        print(addspace + '- id:    ', idx, file=stream)
+        print(addspace + '  HNF:', file=stream)
+        for row in hnf:
+            print(addspace + '    -    ', list(row), file=stream)
+        print('', file=stream)
 
     def write_clusters_yaml(self, 
                             primitive_cell,
@@ -38,7 +140,7 @@ class Yaml:
                     print('  elements:   ', [], file=f)
                 print('', file=f)
 
-        self._write_primitive_cell(primitive_cell, f)
+        self._write_structure(primitive_cell, f, tag='primitive_cell')
 
         print('nonequiv_clusters:', file=f)
         self._write_clusters(cluster_set, f)
@@ -63,25 +165,38 @@ class Yaml:
         cluster_set_ele = ClusterSet(clusters_ele)
         return cluster_set, cluster_set_ele
 
-    def _write_primitive_cell(self, primitive_cell, stream):
+    def _write_structure(self, st, stream, tag='primitive_cell', indent=0):
 
-        axis = primitive_cell.axis
-        positions = primitive_cell.positions
-        n_atoms = primitive_cell.n_atoms
-        lattice = primitive_cell.types
+        axis = st.axis
+        positions = st.positions
+        n_atoms = st.n_atoms
+        lattice = st.types
 
-        print('primitive_cell:', file=stream)
-        print('  axis:   ', file=stream)
+        addspace = ' ' * indent
+
+        print(addspace + tag + ':', file=stream)
+        print(addspace + '  axis:   ', file=stream)
         for i in range(3):
-            print('    -   ', list(axis[:,i]), file=stream)
+            print(addspace + '    -   ', list(axis[:,i]), file=stream)
         print('', file=stream)
-        print('  sites:   ', file=stream)
+        print(addspace + '  sites:   ', file=stream)
         for i in range(positions.shape[1]):
-            print('    - coordinates:   ', list(positions[:,i]), file=stream)
-            print('      lattice:       ', lattice[i], file=stream)
+            print(addspace + '    - id:            ', i, file=stream)
+            print(addspace + '      coordinates:   ', 
+                  list(positions[:,i]), file=stream)
+            print(addspace + '      lattice:       ', lattice[i], file=stream)
             print('', file=stream)
-        print('  number_of_sites:   ', list(n_atoms), file=stream)
+        print(addspace + '  number_of_sites:   ', list(n_atoms), file=stream)
         print('', file=stream)
+
+    def _parse_structure(self, data, tag='primitive_cell'):
+
+        axis = np.array(data[tag]['axis']).T
+        positions = [d['coordinates'] for d in data[tag]['sites']]
+        positions = np.array(positions).T
+        n_atoms = data[tag]['number_of_sites']
+
+        return Structure(axis, positions, n_atoms)
 
     def _write_clusters(self, set_obj, stream):
 
@@ -101,15 +216,6 @@ class Yaml:
                     print('    cell:    ', list(cell), file=stream)
                     print('    element: ', ele, file=stream)
                     print('', file=stream)
-
-    def _parse_primitive_cell(self, data):
-
-        axis = np.array(data['primitive_cell']['axis']).T
-        positions = [d['coordinates'] for d in data['primitive_cell']['sites']]
-        positions = np.array(positions).T
-        n_atoms = data['primitive_cell']['number_of_sites']
-
-        return Structure(axis, positions, n_atoms)
 
     def _parse_clusters(self, data, prim=None, tag='nonequiv_clusters'):
 
@@ -138,3 +244,6 @@ class Yaml:
     def get_primitive_cell(self):
         return self.prim
  
+    def _write_list_no_space(self, a, stream):
+        print('[', end='', file=stream)
+        print(*list(a), sep=',', end=']\n', file=stream)

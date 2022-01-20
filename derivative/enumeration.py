@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import numpy as np
-import os, sys
 import argparse
 import time
+import joblib
+import itertools
 from fractions import Fraction
 
 import signal
@@ -10,11 +11,23 @@ import warnings
 
 from mlptools.common.readvasp import Poscar
 from mlptools.common.structure import Structure
+
 from pyclupan.common.supercell import supercell_from_structure
 from pyclupan.common.symmetry import get_permutation
+from pyclupan.common.normal_form import get_nonequivalent_hnf
 
 from pyclupan.dd.dd_node import DDNodeHandler
 from pyclupan.dd.dd_constructor import DDConstructor
+from pyclupan.io.yaml import Yaml
+from pyclupan.derivative.derivative import DSSet
+
+class SupercellSet:
+
+    def __init__(self, permutations, hnf_set, supercell_set, supercell_idset):
+        self.permutations = permutations
+        self.hnf_set = hnf_set
+        self.supercell_set = supercell_set
+        self.supercell_idset = supercell_idset
 
 def set_compositions(comp_in, n_elements):
 
@@ -25,6 +38,83 @@ def set_compositions(comp_in, n_elements):
             comp[ele] = c
     return comp
 
+#from pyclupan.common.isomorphism import permutation_isomorphism
+def get_nonequiv_permutation(primitive_cell, size, inactive_sites=None):
+
+    hnf_all = get_nonequivalent_hnf(size, primitive_cell)
+
+    sup_cell_all, site_perm_all = [], []
+    for hnf in hnf_all:
+        sup_cell = supercell_from_structure(primitive_cell, 
+                                            hnf, 
+                                            return_structure=True)
+
+        site_perm = get_permutation(sup_cell)
+        site_perm[:,np.array(inactive_sites)] = -1
+        normalized_site_perm \
+            = np.array(sorted(set([tuple(p) for p in site_perm])))
+
+        sup_cell_all.append(sup_cell)
+        site_perm_all.append(normalized_site_perm)
+
+    t1 = time.time()
+    n_hnf = len(hnf_all)
+    group = dict(zip(range(n_hnf), range(n_hnf)))
+    for i, j in itertools.combinations(range(n_hnf),2):
+        if group[i] == i and group[j] == j:
+            perm1, perm2 = site_perm_all[i], site_perm_all[j]
+            iso, map_sites = permutation_isomorphism(perm1, perm2)
+            if iso:
+                group[j] = i
+    t2 = time.time()
+    print(t2-t1)
+    print(group)
+
+#
+###def get_nonequiv_permutation(hnf_array, supercell_array, size):
+###
+###    n_hnf = len(hnf_array)
+###    permutation_array, permutation_lt_array = [], []
+###    for hnf, st in zip(hnf_array, supercell_array):
+###        permutation, permutation_lt \
+###            = get_permutation(st,superperiodic=True,hnf=hnf)
+###        permutation, permutation_lt \
+###            = permutation[:,:size], permutation_lt[:,:size]
+###        permutation = np.array(sorted([tuple(p) for p in permutation]))
+###
+###        permutation_array.append(permutation)
+###        permutation_lt_array.append(permutation_lt)
+###
+###    hnfmap = dict(zip(range(n_hnf), range(n_hnf)))
+###    for i, j in itertools.combinations(range(n_hnf),2):
+###        if hnfmap[i] == i and hnfmap[j] == j:
+###            perm1, perm2 = permutation_array[i], permutation_array[j]
+###            if perm1.shape == perm2.shape and np.all(perm1 - perm2 == 0):
+###                hnfmap[j] = i
+###
+###    uniq_map = list(set(hnfmap.values()))
+###    nonequiv_permutation = [permutation_array[i] for i in uniq_map]
+###    nonequiv_permutation_lt = [permutation_lt_array[i] for i in uniq_map]
+###
+###    permutation_map = [uniq_map.index(v) for k, v in sorted(hnfmap.items())]
+###    return nonequiv_permutation, nonequiv_permutation_lt, permutation_map
+###
+###           
+###
+####    if hnf is not None:
+####        hnf_array = [hnf]
+####    else:
+####        hnf_array = get_nonequivalent_hnf(supercell_size, st_p)
+####
+####    supercell_array = [supercell_from_structure\
+####        (st_p, hnf, return_structure=True) for hnf in hnf_array]
+####    print(' number of HNFs =', len(hnf_array))
+####
+####    print(' computing permutation isomorphism')
+####    nonequiv_permutation, nonequiv_permutation_lt, permutation_map \
+####        = get_nonequiv_permutation(hnf_array, supercell_array, size)
+####    print(' number of nonequivalent permutations =', len(nonequiv_permutation))
+#
 if __name__ == '__main__':
 
     # Examples
@@ -90,6 +180,9 @@ if __name__ == '__main__':
                     type=int, 
                     default=None,
                     help='Determinant of Hermite normal form')
+    ps.add_argument('--nodump',
+                    action='store_true',
+                    help='No dump file of DSSet object')
     args = ps.parse_args()
 
     if args.occupation is not None:
@@ -99,84 +192,64 @@ if __name__ == '__main__':
     else: 
         n_elements = 2
 
-
     comp = set_compositions(args.comp, n_elements)
     comp_lb = set_compositions(args.comp_lb, n_elements)
     comp_ub = set_compositions(args.comp_ub, n_elements)
 
     st_prim = Poscar(args.poscar).get_structure_class()
 
-#    if args.hnf is not None:
-#        hnf_array = [args.hnf]
-#    else:
-#        pass
-    H = np.array([[1,0,0], [0,1,0], [0,0,8]])
-    hnf_array = [H]
-    
-    for H in hnf_array:
-        st_sup = supercell_from_structure(st_prim, H, return_structure=True)
+    if args.hnf is not None:
+        hnf_all = [args.hnf]
+    else:
+        hnf_all = get_nonequivalent_hnf(args.n_expand, st_prim)
 
-        print('computing permutations')
-        site_perm = get_permutation(st_sup)
-        print('computing permutations (finished)')
-
-    dd_handler = DDNodeHandler(n_sites=st_sup.n_atoms,
+    n_sites = list(np.array(st_prim.n_atoms) * args.n_expand)
+    dd_handler = DDNodeHandler(n_sites=n_sites,
                                occupation=args.occupation,
                                elements_lattice=args.elements,
                                one_of_k_rep=False)
 
-    dd_const = DDConstructor(dd_handler)
-    gs_all = dd_const.enumerate_nonequiv_configs(site_permutations=site_perm,
+#    get_nonequiv_permutation(st_prim, 
+#                             n_expand, 
+#                             inactive_sites=dd_handler.inactive_sites)
+
+    ds_set_all = []
+    for idx, H in enumerate(hnf_all):
+        st_sup = supercell_from_structure(st_prim, H, return_structure=True)
+        site_perm = get_permutation(st_sup)
+
+        dd_const = DDConstructor(dd_handler)
+        gs = dd_const.enumerate_nonequiv_configs(site_permutations=site_perm,
                                                  comp=comp,
                                                  comp_lb=comp_lb,
                                                  comp_ub=comp_ub)
-    t1 = time.time()
-    labelings = dd_handler.convert_graphs_to_labelings(gs_all)
-    t2 = time.time()
-    print(' elapsed time (labeling)    =', t2-t1)
+        t1 = time.time()
+        res = dd_handler.convert_graphs_to_labelings(gs)
+        active_labelings, inactive_labeling, active_sites, inactive_sites = res
+        t2 = time.time()
+        print(' elapsed time (labeling)    =', t2-t1)
 
+        ds_set = DSSet(active_labelings=active_labelings,
+                       inactive_labeling=inactive_labeling,
+                       active_sites=active_sites,
+                       inactive_sites=inactive_sites,
+                       primitive_cell=st_prim,
+                       n_expand=args.n_expand,
+                       elements=dd_handler.elements,
+                       comp=comp,
+                       comp_lb=comp_lb,
+                       comp_ub=comp_ub,
+                       hnf=H,
+                       supercell=st_sup,
+                       supercell_id=idx)
+        ds_set_all.append(ds_set)
 
-###def get_nonequiv_permutation(hnf_array, supercell_array, size):
-###
-###    n_hnf = len(hnf_array)
-###    permutation_array, permutation_lt_array = [], []
-###    for hnf, st in zip(hnf_array, supercell_array):
-###        permutation, permutation_lt \
-###            = get_permutation(st,superperiodic=True,hnf=hnf)
-###        permutation, permutation_lt \
-###            = permutation[:,:size], permutation_lt[:,:size]
-###        permutation = np.array(sorted([tuple(p) for p in permutation]))
-###
-###        permutation_array.append(permutation)
-###        permutation_lt_array.append(permutation_lt)
-###
-###    hnfmap = dict(zip(range(n_hnf), range(n_hnf)))
-###    for i, j in itertools.combinations(range(n_hnf),2):
-###        if hnfmap[i] == i and hnfmap[j] == j:
-###            perm1, perm2 = permutation_array[i], permutation_array[j]
-###            if perm1.shape == perm2.shape and np.all(perm1 - perm2 == 0):
-###                hnfmap[j] = i
-###
-###    uniq_map = list(set(hnfmap.values()))
-###    nonequiv_permutation = [permutation_array[i] for i in uniq_map]
-###    nonequiv_permutation_lt = [permutation_lt_array[i] for i in uniq_map]
-###
-###    permutation_map = [uniq_map.index(v) for k, v in sorted(hnfmap.items())]
-###    return nonequiv_permutation, nonequiv_permutation_lt, permutation_map
-###
-###           
-###
-####    if hnf is not None:
-####        hnf_array = [hnf]
-####    else:
-####        hnf_array = get_nonequivalent_hnf(supercell_size, st_p)
-####
-####    supercell_array = [supercell_from_structure\
-####        (st_p, hnf, return_structure=True) for hnf in hnf_array]
-####    print(' number of HNFs =', len(hnf_array))
-####
-####    print(' computing permutation isomorphism')
-####    nonequiv_permutation, nonequiv_permutation_lt, permutation_map \
-####        = get_nonequiv_permutation(hnf_array, supercell_array, size)
-####    print(' number of nonequivalent permutations =', len(nonequiv_permutation))
-###
+        # Pending: should eliminate superlattces
+
+    prefix = 'derivative-'+str(args.n_expand)
+    yaml = Yaml()
+    yaml.write_derivative_yaml(st_prim, ds_set_all, filename=prefix+'.yaml')
+
+    if args.nodump == False:
+        joblib.dump(ds_set_all, prefix+'.pkl', compress=3)
+

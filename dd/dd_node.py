@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import numpy as np
-import time
 
 class Site:
 
@@ -79,6 +78,8 @@ class DDNodeHandler:
 
         self.sites = list(range(self.n_total_sites))
         self.active_sites = [s.idx for s in self.site_attr if len(s.ele_dd) > 0]
+        self.active_sites = sorted(self.active_sites)
+        self.inactive_sites = sorted(set(self.sites) - set(self.active_sites))  
         self.active_elements = [e for s in self.site_attr for e in s.ele_dd]
         self.active_elements = sorted(set(self.active_elements))
 
@@ -174,7 +175,7 @@ class DDNodeHandler:
             return [(i, i) for i in nodes_match]
         return nodes_match
 
-    def convert_graphs_to_labelings(self, graphs):
+    def convert_graphs_to_entire_labelings(self, graphs):
         
         labelings = np.zeros((len(graphs), self.n_total_sites), dtype=int)
         for n_idx in self.inactive_nodes:
@@ -190,4 +191,38 @@ class DDNodeHandler:
                 labelings[i,smap[n_idx]] = emap[n_idx]
 
         return labelings
+
+    def convert_graphs_to_labelings(self, graphs):
+        
+        inactive, active, active_no_dd = [], [], []
+        inactive_labeling = []
+        for site in self.site_attr:
+            if len(site.ele) == 1:
+                inactive.append(site.idx)
+                inactive_labeling.append(site.ele[0])
+            else:
+                active.append(site.idx)
+                if len(site.ele) != len(site.ele_dd):
+                    e_idx = list(set(site.ele) - set(site.ele_dd))[0]
+                    active_no_dd.append((site.idx, e_idx))
+
+        smap, emap = dict(), dict()
+        for n_idx in self.active_nodes:
+            smap[n_idx], emap[n_idx] = self.decompose_node(n_idx)
+
+        map_active_sites = dict()
+        for i, s_idx in enumerate(active):
+            map_active_sites[s_idx] = i
+
+        labelings = np.zeros((len(graphs),len(active)), dtype=int)
+        for s_idx, e_idx in active_no_dd:
+            a_idx = map_active_sites[s_idx]
+            labelings[:,a_idx] = e_idx
+
+        for i, graph in enumerate(graphs):
+            for n_idx, _ in graph:
+                a_idx = map_active_sites[smap[n_idx]]
+                labelings[i,a_idx] = emap[n_idx]
+
+        return (labelings, inactive_labeling, active, inactive)
 
