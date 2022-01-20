@@ -74,10 +74,7 @@ class Cluster:
                 s_all.append(s_array)
                 e_all.append(e_array)
 
-            s_all = np.array(s_all)
-            e_all = np.array(e_all)
- 
-            return (s_all, e_all)
+            return (np.array(s_all), np.array(e_all))
 
     def identify_cluster(self, 
                          supercell_st: Structure,
@@ -95,11 +92,15 @@ class Cluster:
         cl_positions_sup = np.dot(sup_mat_inv, self.cl_positions)
         cl_positions_sup = round_frac_array(cl_positions_sup)
 
+        ########## time consuming part #############
         site_indices = []
         for pos1 in cl_positions_sup.T:
             for idx, pos2 in enumerate(supercell_st.positions.T):
-                if np.all(np.isclose(pos1, pos2)):
+                if np.linalg.norm(pos1 - pos2) < 1e-10:
                     site_indices.append(idx)
+                    break
+        ############################################
+
         return site_indices
 
     def print(self):
@@ -115,7 +116,7 @@ class ClusterSet:
     def __init__(self, clusters, primitive_lattice=None):
 
         self.clusters = clusters
-        if primitive_lattice is None:
+        if len(self.clusters) > 0 and primitive_lattice is None:
             self.prim = clusters[0].prim
         else:
             self.prim = primitive_lattice

@@ -3,9 +3,7 @@ import numpy as np
 import os
 import itertools
 import random
-import collections
 import time
-
 
 class DSSample:
 
@@ -58,6 +56,14 @@ class DSSample:
     def get_labeling(self, n_cell, s_id, l_id):
         g_id = self.map_to_gid[(n_cell, s_id)]
         return self.ds_set_all[g_id].all_labelings[l_id]
+
+    def get_supercell(self, n_cell, s_id):
+        g_id = self.map_to_gid[(n_cell, s_id)]
+        return self.ds_set_all[g_id].get_supercell_from_id(s_id)
+
+    def get_hnf(self, n_cell, s_id):
+        g_id = self.map_to_gid[(n_cell, s_id)]
+        return self.ds_set_all[g_id].get_hnf_from_id(s_id)
 
 class DSSet:
 
@@ -148,8 +154,11 @@ class DSSet:
         idx = self.supercell_map[supercell_id]
         return self.supercell_set[idx]
 
+    def get_hnf_from_id(self, supercell_id):
+        idx = self.supercell_map[supercell_id]
+        return self.hnf_set[idx]
+
     def sample(self, supercell_id, labeling_id, return_labeling=False):
-        #labeling = self.combine_labeling(labeling_id)
         labelings = self.all_labelings[labeling_id]
         if return_labeling == True:
             return self.get_supercell_from_id(supercell_id), labeling
@@ -159,7 +168,6 @@ class DSSet:
         return (order, n_atoms)
 
     def sample_all(self, return_labeling=False):
-       # labelings = self.combine_all_labelings()
         labelings = self.all_labelings
         if return_labeling == True:
             return self.supercell_set, self.supercell_idset, labelings

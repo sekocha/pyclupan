@@ -130,6 +130,8 @@ if __name__ == '__main__':
     for idx in sorted(remove_indices, reverse=True):
         del elements[idx]
 
+    joblib.dump(ds_samp, 'derivative-all.pkl', compress=3)
+
     dir1 = 'derivative_poscars/'
     os.makedirs(dir1, exist_ok=True)
 
@@ -152,4 +154,5 @@ if __name__ == '__main__':
                                 elements,
                                 remove_indices=remove_indices,
                                 filename=fname)
+
    

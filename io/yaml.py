@@ -153,7 +153,7 @@ class Yaml:
     def parse_clusters_yaml(self, filename='clusters.yaml'):
 
         data = yaml.safe_load(open(filename))
-        self.prim = self._parse_primitive_cell(data)
+        self.prim = self._parse_structure(data, tag='primitive_cell')
 
         clusters = self._parse_clusters(data, 
                                         tag='nonequiv_clusters',
