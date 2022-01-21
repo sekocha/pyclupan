@@ -248,11 +248,11 @@ if __name__ == '__main__':
         # eliminate superlattces
         obj = pyclupancpp.NonequivLBLSuperPeriodic(ds_set.all_labelings, 
                                                    site_perm_lt)
-        ds_set.all_labelings = obj.get_labelings()
-        ds_set.active_labelings = ds_set.all_labelings[:,active_sites]
+        all_labelings = obj.get_labelings()
+        ds_set.replace_labelings(all_labelings)
 
         print(' number of structures (superperiodic eliminated) =', 
-                ds_set.all_labelings.shape[0])
+                all_labelings.shape[0])
         ##########################
 
         ds_set_all.append(ds_set)

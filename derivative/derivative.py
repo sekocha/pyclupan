@@ -104,7 +104,6 @@ class DSSet:
         self.n_sites = max(max(self.active_sites), max(inactive_sites)) + 1 
 
         self.elements = elements
-        self.n_labelings = self.active_labelings.shape[0]
 
         # single supercell
         if hnf is not None:
@@ -140,6 +139,11 @@ class DSSet:
                 self.n_expand = round(np.linalg.det(self.hnf_set[0]))
 
         self.all_labelings = self.combine_all_labelings()
+
+    def replace_labelings(self, all_labelings):
+        self.all_labelings = all_labelings
+        self.active_labelings = self.all_labelings[:,self.active_sites]
+        self.n_labelings = all_labelings.shape[0]
 
     def is_none(self, a, b):
         if a is None and b is None:
