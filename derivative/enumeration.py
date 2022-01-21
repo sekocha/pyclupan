@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import numpy as np
 import argparse
+import os, sys
 import time
 import joblib
 import itertools
@@ -15,19 +16,14 @@ from mlptools.common.structure import Structure
 from pyclupan.common.supercell import supercell_from_structure
 from pyclupan.common.symmetry import get_permutation
 from pyclupan.common.normal_form import get_nonequivalent_hnf
+from pyclupan.common.io.yaml import Yaml
 
 from pyclupan.dd.dd_node import DDNodeHandler
 from pyclupan.dd.dd_constructor import DDConstructor
-from pyclupan.io.yaml import Yaml
 from pyclupan.derivative.derivative import DSSet
 
-class SupercellSet:
-
-    def __init__(self, permutations, hnf_set, supercell_set, supercell_idset):
-        self.permutations = permutations
-        self.hnf_set = hnf_set
-        self.supercell_set = supercell_set
-        self.supercell_idset = supercell_idset
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../c++/lib')
+import pyclupancpp
 
 def set_compositions(comp_in, n_elements):
 
@@ -98,6 +94,8 @@ def get_nonequiv_permutation(primitive_cell, size, inactive_sites=None):
 ###
 ###    permutation_map = [uniq_map.index(v) for k, v in sorted(hnfmap.items())]
 ###    return nonequiv_permutation, nonequiv_permutation_lt, permutation_map
+
+
 ###
 ###           
 ###
@@ -216,7 +214,11 @@ if __name__ == '__main__':
     ds_set_all = []
     for idx, H in enumerate(hnf_all):
         st_sup = supercell_from_structure(st_prim, H, return_structure=True)
-        site_perm = get_permutation(st_sup)
+
+        site_perm, site_perm_lt = get_permutation(st_sup, 
+                                                  superperiodic=True, 
+                                                  hnf=H)
+#        site_perm = get_permutation(st_sup)
 
         dd_const = DDConstructor(dd_handler)
         gs = dd_const.enumerate_nonequiv_configs(site_permutations=site_perm,
@@ -242,9 +244,18 @@ if __name__ == '__main__':
                        hnf=H,
                        supercell=st_sup,
                        supercell_id=idx)
-        ds_set_all.append(ds_set)
 
-        # Pending: should eliminate superlattces
+        # eliminate superlattces
+        obj = pyclupancpp.NonequivLBLSuperPeriodic(ds_set.all_labelings, 
+                                                   site_perm_lt)
+        ds_set.all_labelings = obj.get_labelings()
+        ds_set.active_labelings = ds_set.all_labelings[:,active_sites]
+
+        print(' number of structures (superperiodic eliminated) =', 
+                ds_set.all_labelings.shape[0])
+        ##########################
+
+        ds_set_all.append(ds_set)
 
     prefix = 'derivative-'+str(args.n_expand)
     yaml = Yaml()

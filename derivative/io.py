@@ -7,7 +7,7 @@ import time
 
 from mlptools.common.structure import Structure
 
-from pyclupan.io.yaml import Yaml
+from pyclupan.common.io.yaml import Yaml
 from pyclupan.derivative.derivative import DSSet, DSSample
 
 def get_file_list(inputs):

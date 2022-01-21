@@ -11,9 +11,9 @@ from mlptools.common.structure import Structure
 from pyclupan.common.supercell import supercell
 from pyclupan.common.symmetry import get_permutation
 from pyclupan.common.reduced_cell import NiggliReduced
+from pyclupan.common.io.yaml import Yaml
 
 from pyclupan.cluster.cluster import Cluster, ClusterSet
-from pyclupan.io.yaml import Yaml
 
 class NonequivalentClusters:
 

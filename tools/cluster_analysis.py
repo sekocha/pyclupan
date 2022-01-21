@@ -7,17 +7,48 @@ import time
 
 from mlptools.common.structure import Structure
 from pyclupan.common.symmetry import get_permutation
-
-from pyclupan.io.yaml import Yaml
+from pyclupan.common.io.yaml import Yaml
 from pyclupan.cluster.cluster import Cluster, ClusterSet
 from pyclupan.derivative.derivative import DSSet, DSSample
        
 def count_orbit_components(orbit, labeling: np.array):
+
     sites, ele = orbit
     count = np.count_nonzero(np.all(labeling[sites] == ele, axis=1))
     return count
 
+# must be reconsidered
+# How to consider duplicate clusters (How to compute coordination number) ?
+def compute_orbits(ds_samp, 
+                   n_cell,
+                   s_id, 
+                   clusters_set, 
+                   distinguish_element=False):
+
+    supercell = ds_samp.get_supercell(n_cell, s_id)
+    hnf = ds_samp.get_hnf(n_cell, s_id)
+    perm = get_permutation(supercell)
+
+    orbit_array = []
+    for cl in clusters_set.clusters:
+        orbit_ele = cl.compute_orbit(supercell, hnf,
+                                     permutations=perm, 
+                                     distinguish_element=True)
+        orbit_array.append(orbit_ele)
+
+    return orbit_array
+
 if __name__ == '__main__':
+
+    # Examples:
+    #
+    #  cluster_analysis.py --poscars derivative_poscars/00001/POSCAR-*
+    #
+    # Examples for parsing results of cluster_analysis
+    #
+    #  _, ids, counts = joblib.load('cluster_analysis.pkl')
+    #  _, ids, counts = yaml.parse_cluster_analysis_yaml()
+    #
 
     ps = argparse.ArgumentParser()
     ps.add_argument('--derivative_pkl',
@@ -37,8 +68,6 @@ if __name__ == '__main__':
 
     yaml = Yaml()
     _, clusters_ele = yaml.parse_clusters_yaml(filename=args.clusters_yaml)
-#    prim = yaml.get_primitive_cell()
-
     ds_samp = joblib.load(args.derivative_pkl)
 
     target_ids = []
@@ -52,73 +81,25 @@ if __name__ == '__main__':
     for n_cell, s_id, l_id in target_ids:
         labeling = ds_samp.get_labeling(n_cell, s_id, l_id)
 
-        t1 = time.time()
         if n_cell != n_cell_prev or s_id != s_id_prev:
-            supercell = ds_samp.get_supercell(n_cell, s_id)
-            hnf = ds_samp.get_hnf(n_cell, s_id)
-            perm = get_permutation(supercell)
-
-            orbit_array = []
-            for cl in clusters_ele.clusters:
-                orbit_ele = cl.compute_orbit(supercell, hnf,
-                                             permutations=perm, 
-                                             distinguish_element=True)
-                orbit_array.append(orbit_ele)
+            orbit_array = compute_orbits(ds_samp, 
+                                         n_cell, 
+                                         s_id, 
+                                         clusters_ele, 
+                                         distinguish_element=True)
 
         n_all = [count_orbit_components(orbit_ele, labeling)
-                    for orbit_ele in orbit_array]
+                            for orbit_ele in orbit_array]
         n_counts.append(n_all)
 
-        n_cell_prev = n_cell
-        s_id_prev = s_id
+        n_cell_prev, s_id_prev = n_cell, s_id
 
-        t2 = time.time()
-   #     print(t2-t1)
     n_counts = np.array(n_counts)
-    print(n_counts.shape)
-    f = open('cluster_analysis.dat', 'w')
-    for ids, n in zip(target_ids, n_counts):
-        name = '-'.join([str(i) for i in ids])
-        print('', name, list(n), file=f)
-    f.close()
+    print(' (n_structures, n_clusters) =', n_counts.shape)
 
-    test1, test2 = False, False
-    if test1:
-        site_indices = [2,2]
-        cell_indices = [[0,0,0],
-                        [1,0,0],
-                        [0,1,0]]
+    yaml.write_cluster_analysis_yaml(clusters_ele, target_ids, n_counts)
+    joblib.dump((clusters_ele, target_ids, n_counts), 
+                'cluster_analysis.pkl', 
+                compress=3)
 
-        n_body = len(site_indices)
-        cl = Cluster(0, n_body, site_indices, cell_indices, 
-                     primitive_lattice=prim)
-        orbit = cl.compute_orbit(sup, H, permutations=perm_sup)
-        cl.print()
-        print(' cluster orbit in supercell')
-        print(orbit)
-
-        cl.set_element_indices([0,1])
-        orbit_ele = cl.compute_orbit(sup, H, 
-                                     permutations=perm_sup, 
-                                     distinguish_element=True)
-        print(' cluster orbit with element configurations in supercell')
-        print(orbit_ele)
-
-        n_count = count_orbit_components(orbit_ele, labeling)
-        print(' orbit components in labeling =', n_count)
-
-    if test2:
-        n_count_all = []
-        t1 = time.time()
-        for cl in clusters_ele.clusters:
-            orbit_ele = cl.compute_orbit(sup, H, 
-                                         permutations=perm_sup, 
-                                         distinguish_element=True)
-            n_count = count_orbit_components(orbit_ele, labeling)
-            n_count_all.append(n_count)
-            print(' idx:', cl.idx, ', elements =', cl.ele_indices)
-            print(' orbit components in labeling =', n_count)
-        print(n_count_all)
-        t2 = time.time()
-        print(t2-t1)
 
