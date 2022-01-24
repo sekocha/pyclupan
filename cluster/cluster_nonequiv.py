@@ -8,7 +8,7 @@ import copy
 from mlptools.common.readvasp import Poscar
 from mlptools.common.structure import Structure
 
-from pyclupan.common.supercell import supercell
+from pyclupan.common.supercell import Supercell
 from pyclupan.common.symmetry import get_permutation
 from pyclupan.common.reduced_cell import NiggliReduced
 from pyclupan.common.io.yaml import Yaml
@@ -57,11 +57,13 @@ class NonequivalentClusters:
         niggli_norm = np.linalg.norm(niggli_axis, axis=0)
         H = np.diag(np.ceil(np.ones(3)*maxcut*2 / niggli_norm))
 
-        axis_s, positions_s, n_atoms_s = supercell(H, 
-                                                   niggli_axis,
-                                                   niggli_positions,
-                                                   self.st.n_atoms)
-        st_s = Structure(axis_s, positions_s, n_atoms_s)
+        sup = Supercell(axis=niggli_axis,
+                        positions=niggli_positions,
+                        n_atoms=self.st.n_atoms,
+                        hnf=H)
+        st_s = sup.get_supercell()
+        axis_s = st_s.axis
+        positions_s = st_s.positions
 
         print(' computing permutations ... ')
         perm = get_permutation(st_s)

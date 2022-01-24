@@ -78,8 +78,12 @@ def _symmetry_to_permutation(rotations, translations, positions, tol=1e-10):
         posrot = np.dot(rot, positions) + np.tile(trans,(n_atom,1)).T
         posrot = (posrot - np.floor(posrot)).T
         posrot[np.where(posrot > 1-tol)] -= 1.0
+
+#        perm = sorted(zip(*np.where(distance.cdist(posrot, positions.T) < tol)))
+#        print(np.where(distance.cdist(posrot, positions.T) < tol))
+#        permutation.add(tuple([p[1] for p in perm]))
         permutation.add\
-            (tuple(np.where(distance.cdist(positions.T, posrot) < tol)[1]))
+            (tuple(np.where(distance.cdist(posrot, positions.T) < tol)[1]))
 
     return np.array(list(permutation))
 

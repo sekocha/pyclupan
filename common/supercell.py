@@ -5,57 +5,127 @@ from math import *
 
 from mlptools.common.structure import Structure
 from mlptools.common.readvasp import Poscar
+
 from pyclupan.common.normal_form import snf
-from pyclupan.common.function import round_frac
+from pyclupan.common.function import round_frac, round_frac_array
 
-def supercell(H, axis, positions, n_atoms):
+class SupercellSite:
+    
+    def __init__(self, idx, site_pl, cell_plrep, position_plrep):
+        self.idx = idx
+        self.site_pl = site_pl
+        self.cell_plrep = cell_plrep
+        self.position_plrep = position_plrep
 
-    ## S = U * H * V, H = U^(-1) * S * V^(-1)
-    S, U, V = snf(H)
-    Hinv = np.linalg.inv(H)
+class Supercell:
+    
+    def __init__(self, 
+                 st_prim=None, 
+                 poscar_name=None,
+                 axis=None, 
+                 positions=None, 
+                 n_atoms=None,
+                 hnf=None):
 
-    axis_new = np.dot(axis, H)
-    n_expand = S[0,0] * S[1,1] * S[2,2]
-    n_atoms_new = [n * n_expand for n in n_atoms]
+        if st_prim is not None:
+            self.st_prim = st_prim
+        elif poscar_name is not None:
+            p = Poscar(poscar_name)
+            self.st_prim = p.get_structure_class()
+        else:
+            self.st_prim = Structure(axis, positions, n_atoms)
 
-    ###########################################################
-    # 1. a basis for supercell: A * H
-    # 2. another basis: A * H * V
-    # 3. Using the new basis, the lattice is isomorphic to 
-    #       Z_S[0,0] + Z_S[1,1] + Z_S[2,2]
-    #   A * H * V * z = A * [U^(-1)] * S * z 
-    #   (z: fractional coordinates in basis A * H * V)
-    # 4. fractional coordinates in basis A * H: V * z
-    ###########################################################
+        if hnf is None:
+            raise ValueError('hnf is required in Supercell')
 
-    coord_int = itertools.product(*[range(S[0,0]),range(S[1,1]),range(S[2,2])])
-    plattice_H = [np.dot(V, np.array(c) / np.diag(S)) for c in coord_int]
+        self.hnf = hnf
+        self.hnf_inv = np.linalg.inv(self.hnf)
+        self.construct_supercell()
 
-    positions_H = np.dot(Hinv, positions)
-    positions_new = []
-    for pos, lattice in itertools.product(*[positions_H.T, plattice_H]):
-        positions_new.append([round_frac(p) for p in (pos + lattice)])
-    positions_new = np.array(positions_new).T
+    def construct_supercell(self):
 
-    return axis_new, positions_new, n_atoms_new
+        axis = self.st_prim.axis
+        positions = self.st_prim.positions
+        n_atoms = self.st_prim.n_atoms
+        H = self.hnf
+        Hinv = self.hnf_inv
+    
+        ## S = U * H * V, H = U^(-1) * S * V^(-1)
+        S, U, V = snf(H)
+    
+        axis_new = np.dot(axis, H)
+        n_expand = S[0,0] * S[1,1] * S[2,2]
+        n_atoms_new = [n * n_expand for n in n_atoms]
+    
+        ###########################################################
+        # 1. a basis for supercell: A * H
+        # 2. another basis: A * H * V
+        # 3. Using the new basis, the lattice is isomorphic to 
+        #       Z_S[0,0] + Z_S[1,1] + Z_S[2,2]
+        #   A * H * V * z = A * [U^(-1)] * S * z 
+        #   (z: fractional coordinates in basis A * H * V)
+        # 4. fractional coordinates in basis A * H: V * z
+        ###########################################################
+    
+        coord_int = itertools.product(*[range(S[0,0]),
+                                        range(S[1,1]),
+                                        range(S[2,2])])
+        self.plattice_H = [np.dot(V, np.array(c) / np.diag(S)) 
+                           for c in coord_int]
+    
+        positions_H = np.dot(Hinv, positions)
+        positions_new = []
+        for pos, lattice in itertools.product(*[positions_H.T, 
+                                                self.plattice_H]):
+            positions_new.append([round_frac(p) for p in (pos + lattice)])
+        positions_new = np.array(positions_new).T
+    
+        self.st_supercell = Structure(axis_new, positions_new, n_atoms_new)
 
-def supercell_from_structure(st, H, return_structure=False):
+        self.primitive_sites = [i for i in range(positions.shape[1]) 
+                                  for n in range(n_expand)]
+#        self.positions_pl_rep = None
 
-    axis_new, positions_new, n_atoms_new \
-        = supercell(H,st.get_axis(),st.get_positions(),st.get_n_atoms())
-    if return_structure == False:
-        return axis_new, positions_new, n_atoms_new
-    return Structure(axis_new, positions_new, n_atoms_new)
+    def get_supercell(self):
+        return self.st_supercell
 
-def supercell_from_poscar(poscar_name, H, return_structure=False):
+    def get_primitive_contraction(self, supercell_site_idx):
+        p_site_idx = self.primitive_sites[supercell_site_idx]
+        return p_site_idx, self.st_prim.positions[:,p_site_idx]
 
-    p = Poscar(poscar_name)
-    axis, positions, n_atoms, _, _ = p.get_structure()
+    def get_lattice_positions_primitive_lattice_representation(self):
+        return np.dot(self.hnf, self.plattice_H.T)
 
-    axis_new, positions_new, n_atoms_new = supercell(H,axis,positions,n_atoms)
-    if return_structure == False:
-        return axis_new, positions_new, n_atoms_new
-    return Structure(axis_new, positions_new, n_atoms_new)
+    def set_primitive_lattice_representation(self):
+
+        positions_plrep = np.dot(self.hnf, self.st_supercell.positions)
+
+        self.plrep = []
+        for i, pos_plrep in enumerate(positions_plrep.T):
+            site_pl, pos_pl = self.get_primitive_contraction(i)
+            cell_plrep = np.round(pos_plrep - pos_pl).astype(int)
+            self.plrep.append(SupercellSite(i, site_pl, cell_plrep, pos_plrep))
+
+        self.map_plrep = dict()
+        for site in self.plrep:
+            self.map_plrep[(site.site_pl,tuple(site.cell_plrep))] = site.idx
+
+        return self.plrep, self.map_plrep
+
+    # set_primitive_lattice_representation must be called in advance
+    def identify_site_idx(self, site_pl, cell_plrep):
+
+        attr = (site_pl, tuple(cell_plrep))
+        if not attr in self.map_plrep:
+            pos = self.st_prim.positions[:,site_pl] + np.array(cell_plrep)
+            rpos = round_frac_array(np.dot(self.hnf_inv, pos))
+            cell_plrep_rev = np.dot(self.hnf, rpos) \
+                           - self.st_prim.positions[:,site_pl]
+            cell_plrep_rev = np.round(cell_plrep_rev).astype(int)
+            attr_rev = (site_pl, tuple(cell_plrep_rev))
+            self.map_plrep[attr] = self.map_plrep[attr_rev]
+
+        return self.map_plrep[attr]
 
 if __name__ == '__main__':
 

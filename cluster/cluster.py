@@ -76,6 +76,41 @@ class Cluster:
 
             return (np.array(s_all), np.array(e_all))
 
+    def compute_orbit_with_weight(self, 
+                                  supercell_st: Structure,
+                                  supercell_mat: np.array=None,
+                                  permutations=None,
+                                  distinguish_element=False):
+
+        if permutations is None:
+            perm = get_permutation(supercell_st)
+        else:
+            perm = permutations
+
+        sites = self.identify_cluster(supercell_st, supercell_mat)
+        sites_perm = perm[:,np.array(sites)]
+
+        if distinguish_element == False:
+            orbit = set([tuple(sorted(s1)) for s1 in sites_perm])
+            return sorted(orbit)
+        else:
+            orbit = set()
+            for s1 in sites_perm:
+                cmpnt = [tuple([s,e]) for s,e in zip(s1,self.ele_indices)]
+                orbit.add(tuple(sorted(cmpnt)))
+
+            s_all, e_all = [], []
+            for cmpnt in sorted(orbit):
+                s_array, e_array = [], []
+                for s, e in cmpnt:
+                    s_array.append(s)
+                    e_array.append(e)
+                s_all.append(s_array)
+                e_all.append(e_array)
+
+            return (np.array(s_all), np.array(e_all))
+
+
     def identify_cluster(self, 
                          supercell_st: Structure,
                          supercell_mat: np.array=None):

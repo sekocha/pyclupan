@@ -13,7 +13,9 @@ import warnings
 from mlptools.common.readvasp import Poscar
 from mlptools.common.structure import Structure
 
-from pyclupan.common.supercell import supercell_from_structure
+#from pyclupan.common.supercell import supercell_from_structure
+
+from pyclupan.common.supercell import Supercell
 from pyclupan.common.symmetry import get_permutation
 from pyclupan.common.normal_form import get_nonequivalent_hnf
 from pyclupan.common.io.yaml import Yaml
@@ -41,9 +43,8 @@ def get_nonequiv_permutation(primitive_cell, size, inactive_sites=None):
 
     sup_cell_all, site_perm_all = [], []
     for hnf in hnf_all:
-        sup_cell = supercell_from_structure(primitive_cell, 
-                                            hnf, 
-                                            return_structure=True)
+        sup = Supercell(st_prim=primitive_cell, hnf=hnf)
+        sup_cell = sup.get_supercell()
 
         site_perm = get_permutation(sup_cell)
         site_perm[:,np.array(inactive_sites)] = -1
@@ -213,7 +214,8 @@ if __name__ == '__main__':
 
     ds_set_all = []
     for idx, H in enumerate(hnf_all):
-        st_sup = supercell_from_structure(st_prim, H, return_structure=True)
+        sup = Supercell(st_prim=st_prim, hnf=H)
+        st_sup = sup.get_supercell()
 
         site_perm, site_perm_lt = get_permutation(st_sup, 
                                                   superperiodic=True, 
