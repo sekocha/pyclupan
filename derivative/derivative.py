@@ -22,7 +22,6 @@ class DSSample:
             n_cell = self.n_cell_all[g_id]
             for sup_id in ds_set.supercell_idset:
                 self.map_to_gid[(n_cell, sup_id)] = g_id
-                
 
     def sample_random(self, k=5, element_symbols=None):
 
@@ -53,17 +52,38 @@ class DSSample:
                     id_all.extend(ids)
         return st_attr_all, id_all
 
+    def get_all_labelings(self, n_cell_ub=None):
+
+        if n_cell_ub is None:
+            n_cell_ub = np.inf
+
+        labelings_all, id_all = [], []
+        for g_id, (ds_set, n_cell) in enumerate(zip(self.ds_set_all, 
+                                                    self.n_cell_all)):
+            if n_cell <= n_cell_ub:
+                labelings = ds_set.all_labelings
+                n_labelings = ds_set.n_labelings
+                for s_id in ds_set.supercell_idset:
+                    ids = [(n_cell,s_id,l_id) for l_id in range(n_labelings)]
+                    id_all.extend(ids)
+                    labelings_all.extend(labelings)
+
+        return labelings_all, id_all
+
     def get_labeling(self, n_cell, s_id, l_id):
         g_id = self.map_to_gid[(n_cell, s_id)]
         return self.ds_set_all[g_id].all_labelings[l_id]
+
+    def get_hnf(self, n_cell, s_id):
+        g_id = self.map_to_gid[(n_cell, s_id)]
+        return self.ds_set_all[g_id].get_hnf_from_id(s_id)
 
     def get_supercell(self, n_cell, s_id):
         g_id = self.map_to_gid[(n_cell, s_id)]
         return self.ds_set_all[g_id].get_supercell_from_id(s_id)
 
-    def get_hnf(self, n_cell, s_id):
-        g_id = self.map_to_gid[(n_cell, s_id)]
-        return self.ds_set_all[g_id].get_hnf_from_id(s_id)
+    def get_primitive_cell(self):
+        return self.ds_set_all[0].prim
 
 class DSSet:
 

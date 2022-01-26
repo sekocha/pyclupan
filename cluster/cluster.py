@@ -23,6 +23,28 @@ class OrbitAttr:
     def optimize_type(self):
         self.cells = np.array(self.cells)
 
+    def eliminate_duplicates(self):
+
+        orbit = [(s,e) for s, e in zip(self.supercell_sites, self.elements)]
+        count = collections.Counter(orbit)
+
+        supercell_sites, elements = [], []
+        for k, v in count.items():
+            multiplicity = round(v/len(k[0]))
+            for i in range(multiplicity):
+                supercell_sites.append(k[0])
+                elements.append(k[1])
+
+        self.supercell_sites = supercell_sites
+        self.elements = elements
+
+    def get_orbit_supercell(self):
+        return np.array(self.supercell_sites), np.array(self.elements)
+
+    def count(self):
+        orbit = [(s,e) for s, e in zip(self.supercell_sites, self.elements)]
+        return collections.Counter(orbit)
+
 class Cluster:
 
     def __init__(self, 
@@ -177,8 +199,8 @@ class Cluster:
                     # time consuming part
                     for sites, cells in zip(orbit_attr.sites,
                                             orbit_cells_plrep):
-                        sup_sites = [sup.identify_site_idx(s, c)
-                                     for s, c in zip(sites, cells)]
+                        sup_sites = tuple([sup.identify_site_idx(s, c)
+                                          for s, c in zip(sites, cells)])
                         orbit_supercell.supercell_sites.append(sup_sites)
                         key = (sites, tuple(cells.ravel()))
                         orbit_supercell.map_supercell_sites[key] = sup_sites
@@ -199,6 +221,8 @@ class Cluster:
                     #############
                     orbit_supercell.elements.extend(orbit_attr.elements)
 
+        orbit_supercell.eliminate_duplicates()
+
         t3 = time.time()
         #print(t2-t1, t3-t2)
         return orbit_supercell
@@ -216,12 +240,6 @@ class ClusterSet:
     def print(self):
         for cl in self.clusters:
             cl.print()
-
-#    def compute_orbits(self, distinguish_element=False):
-#
-#        if distinguish_element == False:
-#            
-#            pass
 
 ###########################################################################
 # obsolete functions

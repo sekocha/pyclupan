@@ -25,7 +25,8 @@ class Supercell:
                  axis=None, 
                  positions=None, 
                  n_atoms=None,
-                 hnf=None):
+                 hnf=None,
+                 st_supercell=None):
 
         if st_prim is not None:
             self.st_prim = st_prim
@@ -40,7 +41,16 @@ class Supercell:
 
         self.hnf = hnf
         self.hnf_inv = np.linalg.inv(self.hnf)
-        self.construct_supercell()
+
+        if st_supercell is None:
+            self.construct_supercell()
+        else:
+            self.st_supercell = st_supercell
+            self.n_expand = round(np.linalg.det(self.hnf))
+
+        self.primitive_sites \
+                = [i for i in range(self.st_prim.positions.shape[1]) 
+                     for n in range(self.n_expand)]
 
         self.plrep = None
         self.map_plrep = None
@@ -84,8 +94,6 @@ class Supercell:
         positions_new = np.array(positions_new).T
     
         self.st_supercell = Structure(axis_new, positions_new, n_atoms_new)
-        self.primitive_sites = [i for i in range(positions.shape[1]) 
-                                  for n in range(self.n_expand)]
 
     def get_supercell(self):
         return self.st_supercell
