@@ -72,19 +72,31 @@ def _symmetry_to_permutation(rotations, translations, positions, tol=1e-10):
 
     # permutation (slice notation)
     positions = positions.astype(float)
-    n_rot, n_atom = len(rotations), positions.shape[1]
     permutation = set()
-    for n, (rot, trans) in enumerate(zip(rotations,translations)):
-        posrot = np.dot(rot, positions) + np.tile(trans,(n_atom,1)).T
-        posrot = (posrot - np.floor(posrot)).T
-        posrot[np.where(posrot > 1-tol)] -= 1.0
-
-#        perm = sorted(zip(*np.where(distance.cdist(posrot, positions.T) < tol)))
-#        print(np.where(distance.cdist(posrot, positions.T) < tol))
-#        permutation.add(tuple([p[1] for p in perm]))
-        permutation.add\
-            (tuple(np.where(distance.cdist(posrot, positions.T) < tol)[1]))
+    for rot, trans in zip(rotations,translations):
+        posrot = (np.dot(rot, positions).T + trans).T
+        cells = np.floor(posrot).astype(int)
+        rposrot = posrot - cells
+        rposrot[np.where(rposrot > 1-tol)] -= 1.0
+        sites = np.where(distance.cdist(rposrot.T, positions.T) < tol)[1]
+        permutation.add(tuple(sites))
 
     return np.array(list(permutation))
 
+def apply_symmetric_operations(rotations, 
+                               translations, 
+                               positions, 
+                               positions_ref,
+                               tol=1e-10):
 
+    sites_all, cells_all = [], []
+    for rot, trans in zip(rotations, translations):
+        posrot = (np.dot(rot, positions).T + trans).T
+        cells = np.floor(posrot).astype(int)
+        rposrot = posrot - cells
+        sites = np.where(distance.cdist(rposrot.T, positions_ref.T) < tol)[1]
+        sites_all.append(sites)
+        cells_all.append(cells)
+
+    return sites_all, cells_all
+    

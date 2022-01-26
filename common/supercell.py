@@ -42,6 +42,9 @@ class Supercell:
         self.hnf_inv = np.linalg.inv(self.hnf)
         self.construct_supercell()
 
+        self.plrep = None
+        self.map_plrep = None
+
     def construct_supercell(self):
 
         axis = self.st_prim.axis
@@ -54,9 +57,9 @@ class Supercell:
         S, U, V = snf(H)
     
         axis_new = np.dot(axis, H)
-        n_expand = S[0,0] * S[1,1] * S[2,2]
-        n_atoms_new = [n * n_expand for n in n_atoms]
-    
+        self.n_expand = S[0,0] * S[1,1] * S[2,2]
+        n_atoms_new = [n * self.n_expand for n in n_atoms]
+   
         ###########################################################
         # 1. a basis for supercell: A * H
         # 2. another basis: A * H * V
@@ -81,10 +84,8 @@ class Supercell:
         positions_new = np.array(positions_new).T
     
         self.st_supercell = Structure(axis_new, positions_new, n_atoms_new)
-
         self.primitive_sites = [i for i in range(positions.shape[1]) 
-                                  for n in range(n_expand)]
-#        self.positions_pl_rep = None
+                                  for n in range(self.n_expand)]
 
     def get_supercell(self):
         return self.st_supercell
@@ -112,15 +113,19 @@ class Supercell:
 
         return self.plrep, self.map_plrep
 
-    # set_primitive_lattice_representation must be called in advance
     def identify_site_idx(self, site_pl, cell_plrep):
 
+#        # set_primitive_lattice_representation must be called in advance
+#        if self.plrep is None:
+#            self.set_primitive_lattice_representation()
+
+        prim = self.st_prim
         attr = (site_pl, tuple(cell_plrep))
         if not attr in self.map_plrep:
-            pos = self.st_prim.positions[:,site_pl] + np.array(cell_plrep)
-            rpos = round_frac_array(np.dot(self.hnf_inv, pos))
-            cell_plrep_rev = np.dot(self.hnf, rpos) \
-                           - self.st_prim.positions[:,site_pl]
+            pos_plrep = prim.positions[:,site_pl] + np.array(cell_plrep)
+            pos_slrep = round_frac_array(np.dot(self.hnf_inv, pos_plrep))
+            pos_plrep_rev = np.dot(self.hnf, pos_slrep)
+            cell_plrep_rev = pos_plrep_rev - prim.positions[:,site_pl]
             cell_plrep_rev = np.round(cell_plrep_rev).astype(int)
             attr_rev = (site_pl, tuple(cell_plrep_rev))
             self.map_plrep[attr] = self.map_plrep[attr_rev]
