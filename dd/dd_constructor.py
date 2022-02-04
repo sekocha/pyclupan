@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import numpy as np
 import time
+import collections
 from math import *
 
 from pyclupan.dd.dd_node import DDNodeHandler
+from pyclupan.dd.dd_combinations import DDCombinations
 from graphillion import GraphSet
 
 class DDConstructor:
@@ -164,6 +166,49 @@ class DDConstructor:
             t2 = time.time()
             print(' number of structures (nonequiv.)   =', gs.len())
             print(' elapsed time (nonequiv.)   =', t2-t1)
+
+        return gs
+
+    def excluding_cluster(self, gs, cluster_nodes):
+        
+        for nodes in cluster_nodes:
+            edges = [self.handler.get_edge_rep(n) for n in nodes]
+            gs -= gs.including(edges)
+        return gs
+
+    # slow ?
+    def num_clusters_smaller(self, gs, cluster_nodes, n_clusters=1):
+
+        if n_clusters < 1:
+            gs = GraphSet().graphs() # empty graphs
+        elif n_clusters == 1:
+            gs = self.excluding_cluster(gs, cluster_nodes)
+        else:
+            count = collections.Counter([tuple(n) for n in cluster_nodes])
+
+            nodes, weight = [], []
+            for k, v in count.items():
+                nodes.append(k)
+                weight.append(v)
+            n_total_clusters = sum(weight)
+
+            components = list(range(len(nodes)))
+            comb_obj = DDCombinations(components, weight=weight)
+            lb = n_total_clusters-n_clusters + 1
+            combs = comb_obj.sum_weight(lb=lb)
+
+            gs_array = []
+            for k in count.keys():
+                edges = [self.handler.get_edge_rep(n) for n in k]
+                gs_array.append(gs.including(edges))
+
+            gs0 = GraphSet().graphs()
+            for comb in combs:
+                gs1 = gs_array[comb[0]].copy()
+                for c in comb[1:]:
+                    gs1 |= gs_array[c]
+                gs0 |= gs - gs1
+            gs = gs0
 
         return gs
 

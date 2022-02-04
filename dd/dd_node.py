@@ -137,6 +137,9 @@ class DDNodeHandler:
             return self.active_sites
         return self.sites
 
+    def get_edge_rep(self, node_idx):
+        return (node_idx, node_idx)
+
     def get_nodes(self, 
                   edge_rep=True, 
                   active=False,
