@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python 
 import numpy as np
 import argparse
 import joblib
@@ -8,7 +8,6 @@ import time
 from mlptools.common.structure import Structure
 
 from pyclupan.common.supercell import Supercell
-from pyclupan.common.symmetry import get_symmetry
 from pyclupan.common.io.yaml import Yaml
 from pyclupan.cluster.cluster import Cluster, ClusterSet
 from pyclupan.derivative.derivative import DSSet, DSSample
@@ -16,8 +15,7 @@ from pyclupan.derivative.derivative import DSSet, DSSample
 def compute_orbits(ds_samp, 
                    n_cell,
                    s_id, 
-                   clusters, 
-                   clusters_ele, 
+                   target_cluster_set, 
                    distinguish_element=True):
 
     prim = ds_samp.get_primitive_cell()
@@ -29,22 +27,8 @@ def compute_orbits(ds_samp,
                     st_supercell=supercell)
     sup.set_primitive_lattice_representation()
 
-    orbit_all = []
-    if distinguish_element == False:
-        for cl in clusters.clusters:
-            orbit = cl.find_orbit_supercell(sup)
-            # must be revised
-            orbit_all.append(orbit)
-    else:
-        orbit_set = [None] * len(clusters.clusters)
-        for cl in clusters_ele.clusters:
-            orbit_pre = orbit_set[cl.idx]
-            orbit_obj = cl.find_orbit_supercell(sup,
-                                                orbit=orbit_pre,
-                                                distinguish_element=True)
-            orbit_all.append(orbit_obj.get_orbit_supercell())
-            if orbit_set[cl.idx] is None:
-                orbit_set[cl.idx] = orbit_obj
+    orbit_all = target_cluster_set.compute_orbit_supercell\
+                                (sup, distinguish_element=True)
 
     return orbit_all
 
@@ -134,20 +118,11 @@ if __name__ == '__main__':
     # setting for computing cluster orbits efficiently
 
     print(' initial setting for computing cluster orbits ...')
-    rotations, translations = get_symmetry(prim)
-    for cl in clusters.clusters:
-        cl.apply_sym_operations(rotations, translations)
-    for cl in clusters_ele.clusters:
-        cl.sites_sym = clusters.clusters[cl.idx].sites_sym
-        cl.cells_sym = clusters.clusters[cl.idx].cells_sym
-
     distinguish_element = True
-    if distinguish_element == False:
-        for cl in clusters.clusters:
-            cl.find_orbit_primitive_cell()
-    else:
-        for cl in clusters_ele.clusters:
-            cl.find_orbit_primitive_cell(distinguish_element=True)
+    clusters.apply_sym_operations()
+    clusters_ele.precompute_orbit_supercell\
+                                (cluster_set=clusters,
+                                 distinguish_element=distinguish_element)
 
     #################################################################
 
@@ -155,14 +130,14 @@ if __name__ == '__main__':
     orbit_all = dict()
     for ids in sorted(labelings_ids.keys()):
         n_cell, s_id = ids
-        orbits = compute_orbits(ds_samp, n_cell, s_id, clusters, clusters_ele)
+        orbits = compute_orbits(ds_samp, n_cell, s_id, clusters_ele)
         orbit_all[ids] = orbits
 
     print(' computing number of clusters in structures (labelings) ...')
     n_total = len(target_ids)
     print('   - total number of structures =', n_total)
     if n_total > 100000:
-        n_jobs = 5 
+        n_jobs = 8
     elif n_total > 20000:
         n_jobs = 3 
     else:
@@ -185,12 +160,3 @@ if __name__ == '__main__':
        yaml.write_cluster_analysis_yaml(clusters_ele, target_ids, n_counts)
 
 
-# backup
-#    n_counts = []
-#    for ids in sorted(labelings_ids.keys()):
-#        orbits = orbit_all[ids]
-#        labelings[ids] = np.array(labelings[ids])
-#        n_all = [count_orbit_components(orb, labelings[ids]) for orb in orbits]
-#        n_counts.extend(np.array(n_all).T)
-#
-#

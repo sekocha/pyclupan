@@ -13,8 +13,6 @@ import warnings
 from mlptools.common.readvasp import Poscar
 from mlptools.common.structure import Structure
 
-#from pyclupan.common.supercell import supercell_from_structure
-
 from pyclupan.common.supercell import Supercell
 from pyclupan.common.symmetry import get_permutation
 from pyclupan.common.normal_form import get_nonequivalent_hnf

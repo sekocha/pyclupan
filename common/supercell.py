@@ -46,7 +46,7 @@ class Supercell:
             self.construct_supercell()
         else:
             self.st_supercell = st_supercell
-            self.n_expand = round(np.linalg.det(self.hnf))
+            self.n_expand = int(round(np.linalg.det(self.hnf)))
 
         self.primitive_sites \
                 = [i for i in range(self.st_prim.positions.shape[1]) 
