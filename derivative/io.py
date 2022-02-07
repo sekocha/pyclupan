@@ -4,6 +4,7 @@ import argparse
 import joblib
 import glob, os
 import time
+import copy
 
 from mlptools.common.structure import Structure
 
@@ -35,10 +36,11 @@ def print_poscar_tofile(supercell,
 
     # remove_indices must be sorted
     if len(remove_indices) > 0:
+        positions = supercell.positions[:,order]
         for idx in remove_indices:
             begin = int(np.sum(n_atoms[:idx]))
             end = begin + n_atoms[idx]
-            positions = np.delete(supercell.positions[:,order], 
+            positions = np.delete(positions,
                                   range(begin,end), 
                                   axis=1)
             n_atoms = np.delete(n_atoms, idx)
@@ -127,7 +129,8 @@ if __name__ == '__main__':
 
     remove_indices = [i for i, e in enumerate(elements) 
                         if e == 'vac' or e == 'Vac' or e == 'VAC']
-    for idx in sorted(remove_indices, reverse=True):
+    remove_indices = sorted(remove_indices, reverse=True)
+    for idx in remove_indices:
         del elements[idx]
 
     joblib.dump(ds_samp, 'derivative-all.pkl', compress=3)

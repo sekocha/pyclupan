@@ -141,7 +141,10 @@ class DSSet:
         self.inactive_labeling = inactive_labeling
         self.active_sites = np.array(active_sites)
         self.inactive_sites = np.array(inactive_sites)
-        self.n_sites = max(max(self.active_sites), max(inactive_sites)) + 1 
+
+        max1 = max(self.active_sites) if len(self.active_sites) > 0 else 0
+        max2 = max(self.inactive_sites) if len(self.inactive_sites) > 0 else 0
+        self.n_sites = max(max1, max2) + 1 
 
         self.elements = elements
 
@@ -224,13 +227,15 @@ class DSSet:
     def combine_labeling(self, labeling_idx):
         labeling = np.zeros(self.n_sites, dtype=int)
         labeling[self.active_sites] = self.active_labelings[labeling_idx]
-        labeling[self.inactive_sites] = self.inactive_labeling
+        if len(self.inactive_sites) > 0:
+            labeling[self.inactive_sites] = self.inactive_labeling
         return labeling
 
     def combine_all_labelings(self):
         n_labelings = self.active_labelings.shape[0]
         labelings = np.zeros((n_labelings, self.n_sites), dtype=int)
         labelings[:,self.active_sites] = self.active_labelings
-        labelings[:,self.inactive_sites] = self.inactive_labeling
+        if len(self.inactive_sites) > 0:
+            labelings[:,self.inactive_sites] = self.inactive_labeling
         return labelings
 

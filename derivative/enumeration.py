@@ -25,14 +25,24 @@ from pyclupan.derivative.derivative import DSSet
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../c++/lib')
 import pyclupancpp
 
+#def set_compositions(comp_in, n_elements):
+#
+#    comp = [None for i in range(n_elements)]
+#    if comp_in is not None:
+#        for i in range(round(len(comp_in)/2)):
+#            ele, c = int(comp_in[2*i]), Fraction(comp_in[2*i+1])
+#            comp[ele] = c
+#    return comp
+
 def set_compositions(comp_in, n_elements):
 
     comp = [None for i in range(n_elements)]
     if comp_in is not None:
-        for i in range(round(len(comp_in)/2)):
-            ele, c = int(comp_in[2*i]), Fraction(comp_in[2*i+1])
+        for ele, c in comp_in:
+            ele, c = int(ele), Fraction(c)
             comp[ele] = c
     return comp
+
 
 #from pyclupan.common.isomorphism import permutation_isomorphism
 def get_nonequiv_permutation(primitive_cell, size, inactive_sites=None):
@@ -120,13 +130,15 @@ if __name__ == '__main__':
     #       = occupation: [[0],[1],[2],[2]],
     #
     #  enumeration.py -p structures/perovskite-unitcell 
-    #                   -e 0 -e 1 -e 2 3
+    #                   -e 0 -e 1 -e 2 3 
     #       = elements_lattice: [[0],[1],[2,3]]
     #
     #  enumeration.py -p structures/perovskite-unitcell 
     #                   -e 0 -e 1 -e 2 3
     #                   -c 2 2/3 3 1/3
     #
+    #
+
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     warnings.simplefilter('ignore')
@@ -155,16 +167,19 @@ if __name__ == '__main__':
                     '--comp',
                     nargs='*',
                     type=str,
+                    action='append',
                     default=None,
                     help='composition (n_elements / n_sites)')
     ps.add_argument('--comp_lb',
                     nargs='*',
                     type=str,
+                    action='append',
                     default=None,
                     help='Lower bound of composition (n_elements / n_sites)')
     ps.add_argument('--comp_ub',
                     nargs='*',
                     type=str,
+                    action='append',
                     default=None,
                     help='Upper bound of composition (n_elements / n_sites)')
     ps.add_argument('--hnf',
@@ -246,13 +261,16 @@ if __name__ == '__main__':
                        supercell_id=idx)
 
         # eliminate superlattces
+        t2 = time.time()
         obj = pyclupancpp.NonequivLBLSuperPeriodic(ds_set.all_labelings, 
                                                    site_perm_lt)
         all_labelings = obj.get_labelings()
         ds_set.replace_labelings(all_labelings)
+        t3 = time.time()
 
         print(' number of structures (superperiodic eliminated) =', 
                 all_labelings.shape[0])
+        print(' elapsed time (superperiodic)    =', t3-t2)
         ##########################
 
         ds_set_all.append(ds_set)

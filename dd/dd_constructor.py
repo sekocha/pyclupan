@@ -126,7 +126,8 @@ class DDConstructor:
  
     def nonequivalent_permutations(self, 
                                    site_permutations,
-                                   num_edges=None):
+                                   num_edges=None,
+                                   gs=None):
         
         automorphism = []
         for p in site_permutations:
@@ -137,8 +138,12 @@ class DDConstructor:
                 auto1.append(((n_idx, n_idx), (n_idx_perm, n_idx_perm)))
             automorphism.append(auto1)
 
-        gs = GraphSet.graphs(permutations=automorphism, 
-                             num_edges=num_edges)
+        if gs is None:
+            gs = GraphSet.graphs(permutations=automorphism, 
+                                 num_edges=num_edges)
+        else:
+            gs = gs.graphs(permutations=automorphism,
+                           num_edges=num_edges)
 
         return gs
 
@@ -162,7 +167,8 @@ class DDConstructor:
 
         if site_permutations is not None:
             t1 = time.time()
-            gs &= self.nonequivalent_permutations(site_permutations)
+            #gs &= self.nonequivalent_permutations(site_permutations)
+            gs = self.nonequivalent_permutations(site_permutations, gs=gs)
             t2 = time.time()
             print(' number of structures (nonequiv.)   =', gs.len())
             print(' elapsed time (nonequiv.)   =', t2-t1)
