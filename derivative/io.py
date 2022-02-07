@@ -99,6 +99,9 @@ if __name__ == '__main__':
     else:
         files = get_file_list(args.yaml)
         dump = False
+
+    if 'derivative-all.pkl' in files:
+        files.remove('derivative-all.pkl')
     print(' files =', files)
 
     ds_set_all = []
@@ -138,7 +141,7 @@ if __name__ == '__main__':
     dir1 = 'derivative_poscars/'
     os.makedirs(dir1, exist_ok=True)
 
-    n_div = round(n_samples/1000)
+    n_div = int(np.ceil(n_samples/1000))
     indices_split = np.array_split(range(n_samples), n_div)
     for i, div in enumerate(indices_split):
         print(' generating poscars ... step:', i + 1, '...')
