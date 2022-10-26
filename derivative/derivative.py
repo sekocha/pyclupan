@@ -52,26 +52,6 @@ class DSSample:
                     id_all.extend(ids)
         return st_attr_all, id_all
 
-#    def get_all_labelings(self, n_cell_ub=None):
-#
-#        if n_cell_ub is None:
-#            n_cell_ub = np.inf
-#
-#        labelings_all, id_all = [], []
-#        for g_id, (ds_set, n_cell) in enumerate(zip(self.ds_set_all, 
-#                                                    self.n_cell_all)):
-#            if n_cell <= n_cell_ub:
-#                labelings = ds_set.all_labelings
-#                n_labelings = ds_set.n_labelings
-#                for s_id in ds_set.supercell_idset:
-#                    #ids = [(n_cell,s_id,l_id) for l_id in range(n_labelings)]
-#                    #id_all.extend(ids)
-#                    #labelings_all.extend(labelings)
-#                    id_all.extend((n_cell, s_id))
-#                    labelings_all.append(labelings)
-#
-#        return labelings_all, id_all
-
     def get_all_labelings(self, n_cell_ub=None):
 
         if n_cell_ub is None:

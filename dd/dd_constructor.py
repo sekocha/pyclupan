@@ -15,7 +15,8 @@ class DDConstructor:
         self.handler = handler
 
         self.nodes = handler.get_nodes(active=True)
-        self.elements = handler.get_elements(active=True)
+        self.elements_dd = handler.get_elements(active=True, dd=True)
+        self.elements = handler.get_elements(active=True, dd=False)
         self.site_attr = handler.active_site_attr
 
         GraphSet.set_universe(self.nodes)
@@ -49,7 +50,7 @@ class DDConstructor:
     def composition(self, comp, tol=1e-3):
 
         gs = GraphSet({'exclude': set(self.nodes)})
-        for ele in self.elements:
+        for ele in self.elements_dd:
             tnodes = self.handler.get_nodes(element=ele, active=True)
             gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
             if comp[ele] is not None:
@@ -65,10 +66,11 @@ class DDConstructor:
     
         return gs
     
+    # must be revised
     def composition_range(self, comp_lb, comp_ub):
     
         gs = GraphSet({'exclude': set(self.nodes)})
-        for ele in self.elements:
+        for ele in self.elements_dd:
             tnodes = self.handler.get_nodes(element=ele, active=True)
             gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)}).graphs()
             if comp_lb[ele] is not None:
@@ -79,6 +81,22 @@ class DDConstructor:
                 gs1 = gs1.smaller(ub+1)
             gs = gs.join(gs1)
     
+        return gs
+
+    def no_endmembers(self):
+
+        gs = GraphSet({'exclude': set(self.nodes)})
+
+        for ele in self.elements_dd:
+            tnodes = self.handler.get_nodes(element=ele, active=True)
+            gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
+            gs1 = gs1.larger(0)
+            gs1 = gs1.smaller(len(tnodes))
+            gs = gs.join(gs1)
+
+        n_hidden_ele = len(self.elements) - len(self.elements_dd)
+        if n_hidden_ele > 0:
+            gs = gs.smaller(len(self.site_attr) + 1 - n_hidden_ele)
         return gs
 
     def charge_balance(self, charge, comp=None, eps=1e-5):
@@ -93,7 +111,7 @@ class DDConstructor:
 
         nodes_noweight = []
         if comp is not None:
-            for ele in self.elements:
+            for ele in self.elements_dd:
                 if comp[ele] is not None:
                     tnodes = self.handler.get_nodes(element=ele, active=True)
                     sites = [self.handler.get_site(n_idx) 
@@ -167,7 +185,6 @@ class DDConstructor:
 
         if site_permutations is not None:
             t1 = time.time()
-            #gs &= self.nonequivalent_permutations(site_permutations)
             gs = self.nonequivalent_permutations(site_permutations, gs=gs)
             t2 = time.time()
             print(' number of structures (nonequiv.)   =', gs.len())

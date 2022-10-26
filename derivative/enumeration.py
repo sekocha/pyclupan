@@ -25,15 +25,6 @@ from pyclupan.derivative.derivative import DSSet
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../c++/lib')
 import pyclupancpp
 
-#def set_compositions(comp_in, n_elements):
-#
-#    comp = [None for i in range(n_elements)]
-#    if comp_in is not None:
-#        for i in range(round(len(comp_in)/2)):
-#            ele, c = int(comp_in[2*i]), Fraction(comp_in[2*i+1])
-#            comp[ele] = c
-#    return comp
-
 def set_compositions(comp_in, n_elements):
 
     comp = [None for i in range(n_elements)]
@@ -72,56 +63,8 @@ def get_nonequiv_permutation(primitive_cell, size, inactive_sites=None):
             if iso:
                 group[j] = i
     t2 = time.time()
-    print(t2-t1)
-    print(group)
-
-#
-###def get_nonequiv_permutation(hnf_array, supercell_array, size):
-###
-###    n_hnf = len(hnf_array)
-###    permutation_array, permutation_lt_array = [], []
-###    for hnf, st in zip(hnf_array, supercell_array):
-###        permutation, permutation_lt \
-###            = get_permutation(st,superperiodic=True,hnf=hnf)
-###        permutation, permutation_lt \
-###            = permutation[:,:size], permutation_lt[:,:size]
-###        permutation = np.array(sorted([tuple(p) for p in permutation]))
-###
-###        permutation_array.append(permutation)
-###        permutation_lt_array.append(permutation_lt)
-###
-###    hnfmap = dict(zip(range(n_hnf), range(n_hnf)))
-###    for i, j in itertools.combinations(range(n_hnf),2):
-###        if hnfmap[i] == i and hnfmap[j] == j:
-###            perm1, perm2 = permutation_array[i], permutation_array[j]
-###            if perm1.shape == perm2.shape and np.all(perm1 - perm2 == 0):
-###                hnfmap[j] = i
-###
-###    uniq_map = list(set(hnfmap.values()))
-###    nonequiv_permutation = [permutation_array[i] for i in uniq_map]
-###    nonequiv_permutation_lt = [permutation_lt_array[i] for i in uniq_map]
-###
-###    permutation_map = [uniq_map.index(v) for k, v in sorted(hnfmap.items())]
-###    return nonequiv_permutation, nonequiv_permutation_lt, permutation_map
 
 
-###
-###           
-###
-####    if hnf is not None:
-####        hnf_array = [hnf]
-####    else:
-####        hnf_array = get_nonequivalent_hnf(supercell_size, st_p)
-####
-####    supercell_array = [supercell_from_structure\
-####        (st_p, hnf, return_structure=True) for hnf in hnf_array]
-####    print(' number of HNFs =', len(hnf_array))
-####
-####    print(' computing permutation isomorphism')
-####    nonequiv_permutation, nonequiv_permutation_lt, permutation_map \
-####        = get_nonequiv_permutation(hnf_array, supercell_array, size)
-####    print(' number of nonequivalent permutations =', len(nonequiv_permutation))
-#
 if __name__ == '__main__':
 
     # Examples
@@ -148,28 +91,28 @@ if __name__ == '__main__':
                     '--poscar',
                     type=str,
                     default='POSCAR',
-                    help='poscar file for primitive cell')
+                    help='POSCAR file for primitive cell')
     ps.add_argument('-e',
                     '--elements',
                     nargs='*',
                     type=int,
                     action='append',
                     default=None,
-                    help='elements on a lattice')
+                    help='Elements on a lattice')
     ps.add_argument('-o',
                     '--occupation',
                     nargs='*',
                     type=int,
                     action='append',
                     default=None,
-                    help='elements on a lattice')
+                    help='Lattice IDs that are occupied by an element')
     ps.add_argument('-c',
                     '--comp',
                     nargs='*',
                     type=str,
                     action='append',
                     default=None,
-                    help='composition (n_elements / n_sites)')
+                    help='Composition (n_elements / n_sites)')
     ps.add_argument('--comp_lb',
                     nargs='*',
                     type=str,
@@ -192,10 +135,19 @@ if __name__ == '__main__':
                     type=int, 
                     default=None,
                     help='Determinant of Hermite normal form')
+    ps.add_argument('--superperiodic',
+                    action='store_true',
+                    help='Including superperiodic structures')
+    ps.add_argument('--endmember',
+                    action='store_true',
+                    help='Including endmembers (incomplete structures)')
     ps.add_argument('--nodump',
                     action='store_true',
                     help='No dump file of DSSet object')
     args = ps.parse_args()
+
+    if args.occupation is None and args.elements is None:
+        raise KeyError(' occupation or elements is required.')
 
     if args.occupation is not None:
         n_elements = len(args.occupation)
@@ -210,6 +162,9 @@ if __name__ == '__main__':
 
     st_prim = Poscar(args.poscar).get_structure_class()
 
+    if args.n_expand is None and args.hnf is None:
+        raise KeyError(' n_expand or hnf is required.')
+
     if args.hnf is not None:
         hnf_all = [args.hnf]
     else:
@@ -219,11 +174,8 @@ if __name__ == '__main__':
     dd_handler = DDNodeHandler(n_sites=n_sites,
                                occupation=args.occupation,
                                elements_lattice=args.elements,
+                               comp=comp,
                                one_of_k_rep=False)
-
-#    get_nonequiv_permutation(st_prim, 
-#                             n_expand, 
-#                             inactive_sites=dd_handler.inactive_sites)
 
     ds_set_all = []
     for idx, H in enumerate(hnf_all):
@@ -233,13 +185,15 @@ if __name__ == '__main__':
         site_perm, site_perm_lt = get_permutation(st_sup, 
                                                   superperiodic=True, 
                                                   hnf=H)
-#        site_perm = get_permutation(st_sup)
-
         dd_const = DDConstructor(dd_handler)
         gs = dd_const.enumerate_nonequiv_configs(site_permutations=site_perm,
                                                  comp=comp,
                                                  comp_lb=comp_lb,
                                                  comp_ub=comp_ub)
+        gs &= dd_const.no_endmembers()
+        print(' number of structures (end members eliminated) =', 
+                gs.len())
+
         t1 = time.time()
         res = dd_handler.convert_graphs_to_labelings(gs)
         active_labelings, inactive_labeling, active_sites, inactive_sites = res
@@ -260,18 +214,17 @@ if __name__ == '__main__':
                        supercell=st_sup,
                        supercell_id=idx)
 
-        # eliminate superlattces
-        t2 = time.time()
-        obj = pyclupancpp.NonequivLBLSuperPeriodic(ds_set.all_labelings, 
-                                                   site_perm_lt)
-        all_labelings = obj.get_labelings()
-        ds_set.replace_labelings(all_labelings)
-        t3 = time.time()
+        if args.superperiodic == False:
+            t2 = time.time()
+            obj = pyclupancpp.NonequivLBLSuperPeriodic(ds_set.all_labelings, 
+                                                       site_perm_lt)
+            all_labelings = obj.get_labelings()
+            ds_set.replace_labelings(all_labelings)
+            t3 = time.time()
 
-        print(' number of structures (superperiodic eliminated) =', 
-                all_labelings.shape[0])
-        print(' elapsed time (superperiodic)    =', t3-t2)
-        ##########################
+            print(' number of structures (superperiodic eliminated) =', 
+                    all_labelings.shape[0])
+            print(' elapsed time (superperiodic)    =', t3-t2)
 
         ds_set_all.append(ds_set)
 
@@ -281,4 +234,5 @@ if __name__ == '__main__':
 
     if args.nodump == False:
         joblib.dump(ds_set_all, prefix+'.pkl', compress=3)
+
 
