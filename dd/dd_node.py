@@ -52,9 +52,7 @@ class DDNodeHandler:
                     for site_idx in range(begin, end):
                         self.nodes.append(self.compose_node(site_idx, ele_idx))
 
-            #if comp is not None and any(c is not None for c in comp):
-            #    ex_elements_dd = self.set_excluding_elements_dd(occupation)
-                            
+                           
         elif elements_lattice is not None:
             if len(n_sites) != len(elements_lattice):
                 raise ValueError\
@@ -97,33 +95,37 @@ class DDNodeHandler:
 
         ###############################################################
 
+    def convert_occupation_to_element(self, occupation):
+
+        max_lattice_id = max([oc2 for oc1 in occupation for oc2 in oc1])
+        elements_lattice = [[] for i in range(max_lattice_id + 1)]
+        for e, oc1 in enumerate(occupation):
+            for oc2 in oc1:
+                elements_lattice[oc2].append(e)
+        elements_lattice = [sorted(e1) for e1 in elements_lattice]
+
+        return elements_lattice
+
     def set_excluding_elements_dd(self, 
                                   occupation=None, 
                                   elements_lattice=None):
 
         if occupation is not None:
-            uniq_occ = dict()
-            for ele_id, occ in enumerate(occupation):
-                occ_t = tuple(sorted(occ))
-                if occ_t not in uniq_occ:
-                    uniq_occ[occ_t] = [ele_id]
-                else:
-                    uniq_occ[occ_t].append(ele_id)
+            elements_lattice = self.convert_occupation_to_element(occupation)
 
-            elements_dd_exclude = []
-            for k1, v1 in uniq_occ.items():
-                common = False
-                for k2 in uniq_occ.keys():
-                    if k1 != k2 and len(set(k1) & set(k2)) > 0:
-                        common = True
-                        break
-                if common == False:
-                    elements_dd_exclude.append(v1[-1])
+        elements_dd_exclude = []
+        for ele1 in elements_lattice:
+            common = False
+            for ele2 in elements_lattice:
+                if tuple(ele1) != tuple(ele2) \
+                    and len(set(ele1) & set(ele2)) > 0:
+                    common = True
+                    break
+            if common == False:
+                elements_dd_exclude.append(ele1[-1])
+                
+        return elements_dd_exclude
 
-            return elements_dd_exclude
-
-        elif elements_lattice is not None:
-            pass
 
     def set_site_attr(self, occupation=None, elements_lattice=None):
 
