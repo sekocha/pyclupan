@@ -37,47 +37,29 @@ class DDNodeHandler:
         #  initialization of self.nodes and related attributes
 
         if occupation is None and elements_lattice is None:
-            self.n_elements = 2
-            occupation = [[0],[0]]
-
-        self.nodes = []
-        if occupation is not None:
-            self.n_elements = len(occupation)
-            self.elements = list(range(self.n_elements))
-
-            for ele_idx, occ1 in enumerate(occupation):
-                for occ2 in occ1:
-                    begin = sum(n_sites[:occ2])
-                    end = begin + n_sites[occ2]
-                    for site_idx in range(begin, end):
-                        self.nodes.append(self.compose_node(site_idx, ele_idx))
-
-                           
+            elements_lattice = [[0, 1]]   # occupation = [[0],[0]]
         elif elements_lattice is not None:
             if len(n_sites) != len(elements_lattice):
-                raise ValueError\
-                    ("len(elements_lattice) is not equal to len(n_sites)")
+                raise ValueError("len(elements_lattice) != len(n_sites)")
+        elif occupation is not None:
+            elements_lattice = self.convert_occupation_to_element(occupation)
 
-            print('Warning: elements_lattice format (-e options) ')
-            print('         for setting comp and labeling in dd_node.py')
-            print('         (e.g. -e 0 -e 1 -e 5 4) is being developed.')
+        self.elements = sorted(set([e2 for e1 in elements_lattice 
+                                    for e2 in e1]))
+        self.n_elements = max(self.elements) + 1
 
-            self.elements = sorted([e for elements in elements_lattice 
-                                      for e in elements])
-            self.n_elements = max(self.elements) + 1
-
-            for l, elements in enumerate(elements_lattice):
-                begin = sum(n_sites[:l])
-                end = begin + n_sites[l]
-                for ele_idx in elements:
-                    for site_idx in range(begin, end):
-                        self.nodes.append(self.compose_node(site_idx, ele_idx))
+        self.nodes = []
+        for l, elements in enumerate(elements_lattice):
+            begin = sum(n_sites[:l])
+            end = begin + n_sites[l]
+            for ele_idx in elements:
+                for site_idx in range(begin, end):
+                    self.nodes.append(self.compose_node(site_idx, ele_idx))
 
         self.nodes = sorted(self.nodes)
 
         self.site_attr, self.active_nodes, self.element_orbit \
-                    = self.set_site_attr(occupation=occupation,
-                                         elements_lattice=elements_lattice)
+                                = self.set_site_attr(elements_lattice)
 
         self.active_site_attr = [site for site in self.site_attr 
                                       if len(site.ele_dd) > 0]
@@ -106,12 +88,7 @@ class DDNodeHandler:
 
         return elements_lattice
 
-    def set_excluding_elements_dd(self, 
-                                  occupation=None, 
-                                  elements_lattice=None):
-
-        if occupation is not None:
-            elements_lattice = self.convert_occupation_to_element(occupation)
+    def set_excluding_elements_dd(self, elements_lattice):
 
         elements_dd_exclude = []
         for ele1 in elements_lattice:
@@ -127,12 +104,11 @@ class DDNodeHandler:
         return elements_dd_exclude
 
 
-    def set_site_attr(self, occupation=None, elements_lattice=None):
+    def set_site_attr(self, elements_lattice=None):
 
         if self.one_of_k_rep == False:
-            elements_dd_exclude = self.set_excluding_elements_dd\
-                                        (occupation=occupation,
-                                         elements_lattice=elements_lattice)
+            elements_dd_exclude \
+                = self.set_excluding_elements_dd(elements_lattice)
 
         site_attr, active_nodes = [], []
         uniq_ele = set()
