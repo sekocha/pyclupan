@@ -17,6 +17,7 @@ class DDConstructor:
         self.nodes = handler.get_nodes(active=True)
         self.elements_dd = handler.get_elements(active=True, dd=True)
         self.elements = handler.get_elements(active=True, dd=False)
+        self.element_orbit = handler.get_element_orbit()
         self.site_attr = handler.active_site_attr
 
         GraphSet.set_universe(self.nodes)
@@ -69,6 +70,9 @@ class DDConstructor:
     # must be revised
     def composition_range(self, comp_lb, comp_ub):
     
+        print(' Warning: composition_range in dd.constructor.py' \
+            + ' is being developed. Results must be carefully examined.')
+
         gs = GraphSet({'exclude': set(self.nodes)})
         for ele in self.elements_dd:
             tnodes = self.handler.get_nodes(element=ele, active=True)
@@ -87,16 +91,29 @@ class DDConstructor:
 
         gs = GraphSet({'exclude': set(self.nodes)})
 
-        for ele in self.elements_dd:
-            tnodes = self.handler.get_nodes(element=ele, active=True)
-            gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
-            gs1 = gs1.larger(0)
-            gs1 = gs1.smaller(len(tnodes))
-            gs = gs.join(gs1)
+        print(' element orbit used for eliminating end members')
+        print('  =', self.element_orbit)
+        for ele, ele_dd in self.element_orbit:
+            gs1_all = GraphSet({'exclude': set(self.nodes)})
+            for e in ele_dd:
+                tnodes = self.handler.get_nodes(element=e, active=True)
+                gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
+                gs1 = gs1.larger(0)
+                gs1 = gs1.smaller(len(tnodes))
+                gs1_all = gs1_all.join(gs1)
 
-        n_hidden_ele = len(self.elements) - len(self.elements_dd)
-        if n_hidden_ele > 0:
-            gs = gs.smaller(len(self.site_attr) + 1 - n_hidden_ele)
+            n_hidden_ele = len(ele) - len(ele_dd)
+            if n_hidden_ele > 0:
+                sites = set()
+                for e in ele_dd:
+                    tnodes = self.handler.get_nodes(element=e, active=True)
+                    for n in tnodes:
+                        sites.add(self.handler.get_site(n[0]))
+                n_sites = len(sites)
+                gs1_all = gs1_all.smaller(n_sites + 1 - n_hidden_ele)
+
+            gs = gs.join(gs1_all)
+
         return gs
 
     def charge_balance(self, charge, comp=None, eps=1e-5):

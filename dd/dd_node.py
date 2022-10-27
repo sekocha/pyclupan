@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
+import itertools
 
 class Site:
 
@@ -40,7 +41,6 @@ class DDNodeHandler:
             occupation = [[0],[0]]
 
         self.nodes = []
-        ex_elements_dd = None
         if occupation is not None:
             self.n_elements = len(occupation)
             self.elements = list(range(self.n_elements))
@@ -52,9 +52,8 @@ class DDNodeHandler:
                     for site_idx in range(begin, end):
                         self.nodes.append(self.compose_node(site_idx, ele_idx))
 
-            print('setting elements for DD')
-            if comp is not None and any(c is not None for c in comp):
-                ex_elements_dd = self.set_excluding_elements_dd(occupation)
+            #if comp is not None and any(c is not None for c in comp):
+            #    ex_elements_dd = self.set_excluding_elements_dd(occupation)
                             
         elif elements_lattice is not None:
             if len(n_sites) != len(elements_lattice):
@@ -76,14 +75,12 @@ class DDNodeHandler:
                     for site_idx in range(begin, end):
                         self.nodes.append(self.compose_node(site_idx, ele_idx))
 
-#            if comp is not None:
-#                ex_elements_dd = self.set_excluding_elements_dd\
-#                                    (elements_lattice=elements_lattice)
-
         self.nodes = sorted(self.nodes)
 
-        self.site_attr, self.active_nodes \
-            = self.set_site_attr(ex_elements_dd=ex_elements_dd)
+        self.site_attr, self.active_nodes, self.element_orbit \
+                    = self.set_site_attr(occupation=occupation,
+                                         elements_lattice=elements_lattice)
+
         self.active_site_attr = [site for site in self.site_attr 
                                       if len(site.ele_dd) > 0]
         self.inactive_nodes = sorted(set(self.nodes) - set(self.active_nodes))  
@@ -100,58 +97,87 @@ class DDNodeHandler:
 
         ###############################################################
 
-    def set_excluding_elements_dd(self, occupation):
+    def set_excluding_elements_dd(self, 
+                                  occupation=None, 
+                                  elements_lattice=None):
 
-        ex_elements_dd = []
-        uniq_occ = dict()
+        if occupation is not None:
+            uniq_occ = dict()
+            for ele_id, occ in enumerate(occupation):
+                occ_t = tuple(sorted(occ))
+                if occ_t not in uniq_occ:
+                    uniq_occ[occ_t] = [ele_id]
+                else:
+                    uniq_occ[occ_t].append(ele_id)
 
-        for ele_id, occ in enumerate(occupation):
-            occ_t = tuple(sorted(occ))
-            if occ_t not in uniq_occ:
-                uniq_occ[occ_t] = [ele_id]
-            else:
-                uniq_occ[occ_t].append(ele_id)
+            elements_dd_exclude = []
+            for k1, v1 in uniq_occ.items():
+                common = False
+                for k2 in uniq_occ.keys():
+                    if k1 != k2 and len(set(k1) & set(k2)) > 0:
+                        common = True
+                        break
+                if common == False:
+                    elements_dd_exclude.append(v1[-1])
 
-        for k1, v1 in uniq_occ.items():
-            if len(v1) > 1:
-                sum_common = 0
-                for k2, v2 in uniq_occ.items():
-                    if k1 != k2:
-                        sum_common += len(set(k1) & set(k2))
-                if sum_common == 0:
-                    ex_elements_dd.append(v1[-1])
+            return elements_dd_exclude
 
-        return ex_elements_dd
+        elif elements_lattice is not None:
+            pass
 
-    def set_site_attr(self, ex_elements_dd=None):
+    def set_site_attr(self, occupation=None, elements_lattice=None):
 
-        site_attr = []
+        if self.one_of_k_rep == False:
+            elements_dd_exclude = self.set_excluding_elements_dd\
+                                        (occupation=occupation,
+                                         elements_lattice=elements_lattice)
+
+        site_attr, active_nodes = [], []
+        uniq_ele = set()
         for s in range(self.n_total_sites):
             nodes = [i for i in self.nodes if self.get_site(i) == s]
             ele = [self.get_element(n) for n in nodes]
-
-            if ex_elements_dd is None:
-                if len(ele) >= self.min_n_elements:
-                    ele_dd = sorted(set(ele) - set(self.inactive_elements))
-                    if self.one_of_k_rep == False:
-                        if len(ele_dd) == len(ele):
-                            ele_dd = ele[:-1]
-                else:
-                    ele_dd = []
+            if self.one_of_k_rep == False:
+                ele_dd = sorted(set(ele) - set(elements_dd_exclude))
             else:
-                ele_dd = sorted(set(ele) - set(ex_elements_dd))
+                ele_dd = sorted(set(ele) - set(self.inactive_elements))
 
             site = Site(s, ele, ele_dd)
             site_attr.append(site)
-            print(' site', s, ': elements =', ele, ': elements(dd) =', ele_dd)
 
-        active_nodes = []
-        for site in site_attr:
-            for e in site.ele_dd:
+            for e in ele_dd:
                 node = self.compose_node(site.idx, e)
                 active_nodes.append(node)
 
-        return site_attr, sorted(active_nodes)
+            uniq_ele.add((tuple(ele),tuple(ele_dd)))
+            print(' site', s, ': elements =', ele, ': elements(dd) =', ele_dd)
+
+        element_orbit = self.find_element_orbit(uniq_ele)
+
+        return site_attr, sorted(active_nodes), element_orbit
+
+    def find_element_orbit(self, uniq_ele):
+
+        uniq_ele = sorted(uniq_ele)
+        orbit_id = list(range(len(uniq_ele)))
+        for i, j in itertools.combinations(orbit_id, 2):
+            ele1, _ = uniq_ele[i]
+            ele2, _ = uniq_ele[j]
+            intersect = set(ele1) & set(ele2)
+            if len(intersect) > 0:
+                min_id = min(orbit_id[i], orbit_id[j]) 
+                orbit_id[i] = min_id
+                orbit_id[j] = min_id
+
+        element_orbit = []
+        for i in sorted(set(orbit_id)):
+            ele, ele_dd = set(), set()
+            for idx in np.where(np.array(orbit_id) == i)[0]:
+                ele |= set(uniq_ele[idx][0])
+                ele_dd |= set(uniq_ele[idx][1])
+            element_orbit.append([sorted(ele), sorted(ele_dd)])
+
+        return element_orbit
 
     def compose_node(self, site_idx, element_idx):
         return int(element_idx * 1000 + site_idx)
@@ -171,6 +197,9 @@ class DDNodeHandler:
         elif active and dd == False:
             return self.active_elements
         return self.elements
+
+    def get_element_orbit(self):
+        return self.element_orbit
 
     def get_site(self, node_idx):
         site_idx = int(node_idx % 1000)
