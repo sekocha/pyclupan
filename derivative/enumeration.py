@@ -174,7 +174,6 @@ if __name__ == '__main__':
     dd_handler = DDNodeHandler(n_sites=n_sites,
                                occupation=args.occupation,
                                elements_lattice=args.elements,
-                               comp=comp,
                                one_of_k_rep=False)
 
     ds_set_all = []
@@ -191,8 +190,7 @@ if __name__ == '__main__':
                                                  comp_lb=comp_lb,
                                                  comp_ub=comp_ub)
         gs &= dd_const.no_endmembers()
-        print(' number of structures (end members eliminated) =', 
-                gs.len())
+        print(' number of structures (end members eliminated) =', gs.len())
 
         t1 = time.time()
         res = dd_handler.convert_graphs_to_labelings(gs)

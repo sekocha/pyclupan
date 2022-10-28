@@ -22,19 +22,15 @@ class DDNodeHandler:
                  elements_lattice=None,
                  min_n_elements=2,
                  one_of_k_rep=False,
-                 comp=None,
                  inactive_elements=[]):
 
         self.n_total_sites = sum(n_sites)
+        self.inactive_elements = inactive_elements
 
         self.min_n_elements = min_n_elements
         self.one_of_k_rep = one_of_k_rep
-        self.inactive_elements = inactive_elements
         if self.min_n_elements == 1:
             self.one_of_k_rep = True
-
-        ############################################################### 
-        #  initialization of self.nodes and related attributes
 
         if occupation is None and elements_lattice is None:
             elements_lattice = [[0, 1]]   # occupation = [[0],[0]]
@@ -48,6 +44,7 @@ class DDNodeHandler:
                                     for e2 in e1]))
         self.n_elements = max(self.elements) + 1
 
+        #  initialization of self.nodes and related attributes
         self.nodes = []
         for l, elements in enumerate(elements_lattice):
             begin = sum(n_sites[:l])
@@ -55,7 +52,6 @@ class DDNodeHandler:
             for ele_idx in elements:
                 for site_idx in range(begin, end):
                     self.nodes.append(self.compose_node(site_idx, ele_idx))
-
         self.nodes = sorted(self.nodes)
 
         self.site_attr, self.active_nodes, self.element_orbit \
@@ -74,8 +70,6 @@ class DDNodeHandler:
         self.active_elements = [e for s in self.site_attr 
                                 if len(s.ele_dd) > 0 for e in s.ele]
         self.active_elements = sorted(set(self.active_elements))
-
-        ###############################################################
 
     def convert_occupation_to_element(self, occupation):
 
@@ -102,7 +96,6 @@ class DDNodeHandler:
                 elements_dd_exclude.append(ele1[-1])
                 
         return elements_dd_exclude
-
 
     def set_site_attr(self, elements_lattice=None):
 

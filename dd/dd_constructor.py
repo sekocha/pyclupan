@@ -36,7 +36,7 @@ class DDConstructor:
 
     def one_of_k(self):
 
-        gs = GraphSet({'exclude': set(self.nodes)})
+        gs = self.empty()
         for site in self.site_attr:
             tnodes = self.handler.get_nodes(site=site.idx, active=True)
             gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
@@ -50,7 +50,7 @@ class DDConstructor:
 
     def composition(self, comp, tol=1e-3):
 
-        gs = GraphSet({'exclude': set(self.nodes)})
+        gs = self.empty()
         for ele in self.elements_dd:
             tnodes = self.handler.get_nodes(element=ele, active=True)
             gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
@@ -73,7 +73,7 @@ class DDConstructor:
         print(' Warning: composition_range in dd.constructor.py' \
             + ' is being developed. Results must be carefully examined.')
 
-        gs = GraphSet({'exclude': set(self.nodes)})
+        gs = self.empty()
         for ele in self.elements_dd:
             tnodes = self.handler.get_nodes(element=ele, active=True)
             gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)}).graphs()
@@ -89,8 +89,7 @@ class DDConstructor:
 
     def no_endmembers(self):
 
-        gs = GraphSet({'exclude': set(self.nodes)})
-
+        gs = self.empty()
         print(' element orbit used for eliminating end members')
         print('  =', self.element_orbit)
         for ele, ele_dd in self.element_orbit:
@@ -118,7 +117,7 @@ class DDConstructor:
 
     def charge_balance(self, charge, comp=None, eps=1e-5):
 
-        gs = GraphSet({'exclude': set(self.nodes)})
+        gs = self.empty()
 
         charge_sum = 0.0
         inactive_nodes = self.handler.get_nodes(inactive=True,edge_rep=False)
