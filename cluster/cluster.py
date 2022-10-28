@@ -5,7 +5,8 @@ import time
 from collections import defaultdict
 
 from mlptools.common.structure import Structure
-from pyclupan.common.symmetry import apply_symmetric_operations, get_symmetry
+from pyclupan.common.symmetry import apply_symmetric_operations
+from pyclupan.common.symmetry import get_symmetry
 
 class OrbitAttr:
 
