@@ -9,7 +9,8 @@ import copy
 from mlptools.common.structure import Structure
 
 from pyclupan.common.io.yaml import Yaml
-from pyclupan.derivative.derivative import DSSet, DSSample
+from pyclupan.derivative.derivative import DSSet
+from pyclupan.derivative.derivative import DSSample
 
 def get_file_list(inputs):
 
@@ -84,6 +85,11 @@ if __name__ == '__main__':
                     type=str,
                     default=None,
                     help='elements')
+    ps.add_argument('--no_poscars',
+                    action='store_true',
+                    help='Only derivative-all.pkl is generated.\
+                          No poscar files are generated.')
+ 
     args = ps.parse_args()
 
     if args.dump is None and args.yaml is None:
@@ -116,49 +122,51 @@ if __name__ == '__main__':
     n_st = sum([ds_set.n_labelings for ds_set in ds_set_all])
     print(' total number of structures =', n_st)
 
+    #joblib.dump(ds_samp, 'derivative-all.pkl', compress=3)
+    joblib.dump(ds_set_all, 'derivative-all.pkl', compress=3)
     ds_samp = DSSample(ds_set_all)
-    if args.random is not None:
-        st_attr, indices = ds_samp.sample_random(k=args.random)
-    else:
-        st_attr, indices = ds_samp.sample_all(n_cell_ub=args.n_cell_ub)
-    n_samples = len(st_attr)
-    print(' total number of sampled structures =', n_samples)
 
-    if args.elements is None:
-        strings = 'ABCDEFGHIJK'
-        elements = [strings[e] for e in ds_set_all[0].elements]
-    else:
-        elements = args.elements
+    if args.no_poscars == False:
+        if args.random is not None:
+            st_attr, indices = ds_samp.sample_random(k=args.random)
+        else:
+            st_attr, indices = ds_samp.sample_all(n_cell_ub=args.n_cell_ub)
+        n_samples = len(st_attr)
+        print(' total number of sampled structures =', n_samples)
 
-    remove_indices = [i for i, e in enumerate(elements) 
-                        if e == 'vac' or e == 'Vac' or e == 'VAC']
-    remove_indices = sorted(remove_indices, reverse=True)
-    for idx in remove_indices:
-        del elements[idx]
+        if args.elements is None:
+            strings = 'ABCDEFGHIJK'
+            elements = [strings[e] for e in ds_set_all[0].elements]
+        else:
+            elements = args.elements
 
-    joblib.dump(ds_samp, 'derivative-all.pkl', compress=3)
+        remove_indices = [i for i, e in enumerate(elements) 
+                            if e == 'vac' or e == 'Vac' or e == 'VAC']
+        remove_indices = sorted(remove_indices, reverse=True)
+        for idx in remove_indices:
+            del elements[idx]
 
-    dir1 = 'derivative_poscars/'
-    os.makedirs(dir1, exist_ok=True)
+        dir1 = 'derivative_poscars/'
+        os.makedirs(dir1, exist_ok=True)
 
-    n_div = int(np.ceil(n_samples/1000))
-    indices_split = np.array_split(range(n_samples), n_div)
-    for i, div in enumerate(indices_split):
-        print(' generating poscars ... step:', i + 1, '...')
-        dir2 = dir1 + str(i+1).zfill(5) + '/'
-        os.makedirs(dir2, exist_ok=True)
-        for j in div:
-            order, n_atoms = st_attr[j]
-            n_cell, g_id, s_id, l_id = indices[j]
+        n_div = int(np.ceil(n_samples/1000))
+        indices_split = np.array_split(range(n_samples), n_div)
+        for i, div in enumerate(indices_split):
+            print(' generating poscars ... step:', i + 1, '...')
+            dir2 = dir1 + str(i+1).zfill(5) + '/'
+            os.makedirs(dir2, exist_ok=True)
+            for j in div:
+                order, n_atoms = st_attr[j]
+                n_cell, g_id, s_id, l_id = indices[j]
 
-            fname = dir2 + 'POSCAR-' + str(n_cell) + '-' \
-                         + str(s_id) + '-' + str(l_id)
-            cell = ds_set_all[g_id].get_supercell_from_id(s_id)
-            print_poscar_tofile(cell, 
-                                n_atoms, 
-                                order, 
-                                elements,
-                                remove_indices=remove_indices,
-                                filename=fname)
+                fname = dir2 + 'POSCAR-' + str(n_cell) + '-' \
+                             + str(s_id) + '-' + str(l_id)
+                cell = ds_set_all[g_id].get_supercell_from_id(s_id)
+                print_poscar_tofile(cell, 
+                                    n_atoms, 
+                                    order, 
+                                    elements,
+                                    remove_indices=remove_indices,
+                                    filename=fname)
 
    

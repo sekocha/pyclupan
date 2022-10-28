@@ -262,6 +262,9 @@ class ClusterSet:
         else:
             self.prim = primitive_lattice
 
+    def get_num_clusters(self):
+        return len(self.clusters)
+
     def print(self):
         for cl in self.clusters:
             cl.print()
