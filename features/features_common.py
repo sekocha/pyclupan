@@ -21,12 +21,22 @@ class Features:
         self.labeling_ids = labeling_ids
         self.labelings = labelings
         self.features = features
+        self.orbits = None
+        self.orbit_sizes = None
 
     def set_features(self, features):
         self.features = features
 
     def set_orbits(self, orbits):
-        self.orbits = orbits
+
+        """
+        orbits = [[sites, ele], # cluster1 
+                  [sites, ele], # cluster2
+                  ...]
+        """
+        self.orbits = orbits  
+        self.orbit_sizes = np.array([orb[0].shape[0] for orb in orbits])
+
 
 def parse_clusters_yaml(filename):
 

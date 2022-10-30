@@ -251,6 +251,7 @@ class Yaml:
 
     def write_count_clusters_yaml(self, 
                                   cluster_set_element: ClusterSet, 
+                                  orbit_sizes,
                                   structure_indices,
                                   n_clusters: np.array,
                                   filename='count_clusters.yaml'):
@@ -258,6 +259,15 @@ class Yaml:
         f = open(filename, 'w')
         print('nonequiv_element_configs:', file=f)
         self._write_clusters(cluster_set_element, f)
+
+        print('orbit_sizes:', file=f)
+        for ids, sizes in sorted(orbit_sizes.items()):
+            n_cell, s_id = ids
+            print('- n_cell:        ', n_cell, file=f)
+            print('  supercell_id:  ', s_id, file=f)
+            print('  orbit_sizes:    ', end='', file=f)
+            self._write_list_no_space(sizes, f)
+            print('', file=f)
 
         print('number_of_clusters:', file=f)
         for indices, n_all in zip(structure_indices, n_clusters):
@@ -276,12 +286,15 @@ class Yaml:
         data = yaml.safe_load(open(filename))
         cluster_set = self._parse_clusters(data,tag='nonequiv_element_configs')
 
-        structure_indices, n_clusters = [], []
-        n_clusters = []
+        orbit_sizes, structure_indices, n_clusters = dict(), [], []
+        for d in data['orbit_sizes']:
+            ids = (d['n_cell'], d['supercell_id'])
+            orbit_sizes[ids] = np.array(d['orbit_sizes'])
+
         for d in data['number_of_clusters']:
             st_id = (d['n_cell'], d['supercell_id'], d['labeling_id'])
             structure_indices.append(st_id)
             n_clusters.append(d['n_clusters'])
 
-        return cluster_set, structure_indices, np.array(n_clusters)
+        return cluster_set, orbit_sizes, structure_indices, np.array(n_clusters)
 

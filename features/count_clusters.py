@@ -91,17 +91,16 @@ if __name__ == '__main__':
         orbits = compute_orbits(ds_samp, f.n_cell, f.s_id, clusters_ele)
         f.set_orbits(orbits)
 
-#    print(' computing number of clusters in structures (labelings) ...')
-#    n_total = len(target_ids)
-#    print('   - total number of structures =', n_total)
+    print(' computing number of clusters in structures (labelings) ...')
+    n_total = sum([f.labelings.shape[0] for f in features_array])
+    print('   - total number of structures =', n_total)
 
-    n_jobs = 1
-    #if n_total > 100000:
-    #    n_jobs = 8
-    #elif n_total > 20000:
-    #    n_jobs = 3 
-    #else:
-    #    n_jobs = 1
+    if n_total > 100000:
+        n_jobs = 8
+    elif n_total > 20000:
+        n_jobs = 3 
+    else:
+        n_jobs = 1
 
     t1 = time.time()
     n_all = Parallel(n_jobs=n_jobs)(delayed(function1)
@@ -110,20 +109,25 @@ if __name__ == '__main__':
         f.set_features(np.array(n).T)
     t2 = time.time()
 
+
     n_counts = np.vstack([f.features for f in features_array])
     target_ids = [(f.n_cell, f.s_id, l_id) 
                   for f in features_array for l_id in f.labeling_ids]
+    orbit_sizes = [((f.n_cell, f.s_id), f.orbit_sizes) for f in features_array]
+    orbit_sizes = dict(orbit_sizes)
 
     print('  - elapsed time (counting) =', f'{t2-t1:.2f}', '(s)')
     print('  - (n_structures, n_clusters) =', n_counts.shape)
-    print(n_counts.shape)
     
     # output
     print(' generating output files ...')
-    joblib.dump((clusters_ele, target_ids, n_counts), 
+    joblib.dump((clusters_ele, orbit_sizes, target_ids, n_counts), 
                 'count_clusters.pkl', compress=3)
     if args.yaml:
         yaml = Yaml()
-        yaml.write_count_clusters_yaml(clusters_ele, target_ids, n_counts)
+        yaml.write_count_clusters_yaml(clusters_ele, 
+                                       orbit_sizes, 
+                                       target_ids, 
+                                       n_counts)
 #
 #
