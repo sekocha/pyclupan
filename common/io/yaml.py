@@ -249,11 +249,11 @@ class Yaml:
         print('[', end='', file=stream)
         print(*list(a), sep=',', end=']\n', file=stream)
 
-    def write_cluster_analysis_yaml(self, 
-                                    cluster_set_element: ClusterSet, 
-                                    structure_indices,
-                                    n_clusters: np.array,
-                                    filename='cluster_analysis.yaml'):
+    def write_count_clusters_yaml(self, 
+                                  cluster_set_element: ClusterSet, 
+                                  structure_indices,
+                                  n_clusters: np.array,
+                                  filename='count_clusters.yaml'):
 
         f = open(filename, 'w')
         print('nonequiv_element_configs:', file=f)
@@ -271,7 +271,7 @@ class Yaml:
 
         f.close()
 
-    def parse_cluster_analysis_yaml(self, filename='cluster_analysis.yaml'):
+    def parse_count_clusters_yaml(self, filename='count_clusters.yaml'):
 
         data = yaml.safe_load(open(filename))
         cluster_set = self._parse_clusters(data,tag='nonequiv_element_configs')

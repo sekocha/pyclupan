@@ -17,31 +17,16 @@ from pyclupan.derivative.derivative import DSSample
 from pyclupan.features.features_common import parse_clusters_yaml
 from pyclupan.features.features_common import parse_derivatives
 from pyclupan.features.features_common import sample_from_ds
-
-def compute_orbits(ds_samp, 
-                   n_cell,
-                   s_id, 
-                   target_cluster_set, 
-                   distinguish_element=True):
-
-    prim = ds_samp.get_primitive_cell()
-    supercell = ds_samp.get_supercell(n_cell, s_id)
-    hnf = ds_samp.get_hnf(n_cell, s_id)
-
-    sup = Supercell(st_prim=prim,
-                    hnf=hnf,
-                    st_supercell=supercell)
-    sup.set_primitive_lattice_representation()
-
-    orbit_all = target_cluster_set.compute_orbit_supercell\
-                                (sup, distinguish_element=True)
-
-    return orbit_all
+from pyclupan.features.features_common import compute_orbits
+from pyclupan.features.features_common import Features
 
 def count_orbit_components(orbit, labelings: np.array):
     sites, ele = orbit
-    count = np.count_nonzero(np.all(labelings[:,sites] == ele, axis=2), axis=1)
-    return count
+    if len(sites) > 0:
+        count = np.count_nonzero\
+            (np.all(labelings[:,sites] == ele, axis=2), axis=1)
+        return count
+    return np.zeros(labelings.shape[0], dtype=int)
 
 def function1(orbits, lbls):
     n_all = [count_orbit_components(orb, lbls) for orb in orbits]
@@ -87,77 +72,58 @@ if __name__ == '__main__':
     prim = ds_samp.get_primitive_cell()
 
     print(' building structure list ...')
-    print(args.n_cell_ub)
-    print(args.poscars)
-    labelings, target_ids = sample_from_ds(ds_samp, 
-                                           poscars=args.poscars, 
-                                           n_cell_ub=args.n_cell_ub)
-    print(labelings)
-
-#    if args.poscars is not None:
-#        for string in args.poscars:
-#            ids_string = string.split('/')[-1].replace('POSCAR-','').split('-')
-#            target_ids.append(tuple([int(i) for i in ids_string]))
-#        target_ids = sorted(target_ids)
-#
-#        labelings, labelings_ids = dict(), dict()
-#        for n_cell, s_id, l_id in target_ids:
-#            ids = (n_cell, s_id)
-#            l = ds_samp.get_labeling(n_cell, s_id, l_id)
-#            if ids in labelings:
-#                labelings[ids].append(l)
-#                labelings_ids[ids].append(l_id)
-#            else:
-#                labelings[ids] = [l]
-#                labelings_ids[ids] = [l_id]
-#
-#        for ids in labelings_ids.keys():
-#            labelings[ids] = np.array(labelings[ids])
-
+    features_array = sample_from_ds(ds_samp, 
+                                    poscars=args.poscars, 
+                                    n_cell_ub=args.n_cell_ub)
 
     #################################################################
-    # setting for computing cluster orbits efficiently
+    # non-colored cluster orbits are pre-computed
 
-    print(' initial setting for computing cluster orbits ...')
-    distinguish_element = True
+    print(' initial setting for computing non-colored cluster orbits ...')
     clusters.apply_sym_operations()
-    clusters_ele.precompute_orbit_supercell\
-                                (cluster_set=clusters,
-                                 distinguish_element=distinguish_element)
+    clusters_ele.find_orbits_primitive(noncolored_cluster_set=clusters,
+                                       distinguish_element=True)
 
     #################################################################
 
     print(' computing cluster orbits ...')
-    orbit_all = dict()
-    for ids in sorted(labelings_ids.keys()):
-        n_cell, s_id = ids
-        orbits = compute_orbits(ds_samp, n_cell, s_id, clusters_ele)
-        orbit_all[ids] = orbits
+    for f in features_array:
+        orbits = compute_orbits(ds_samp, f.n_cell, f.s_id, clusters_ele)
+        f.set_orbits(orbits)
 
-    print(' computing number of clusters in structures (labelings) ...')
-    n_total = len(target_ids)
-    print('   - total number of structures =', n_total)
-    if n_total > 100000:
-        n_jobs = 8
-    elif n_total > 20000:
-        n_jobs = 3 
-    else:
-        n_jobs = 1
+#    print(' computing number of clusters in structures (labelings) ...')
+#    n_total = len(target_ids)
+#    print('   - total number of structures =', n_total)
+
+    n_jobs = 1
+    #if n_total > 100000:
+    #    n_jobs = 8
+    #elif n_total > 20000:
+    #    n_jobs = 3 
+    #else:
+    #    n_jobs = 1
 
     t1 = time.time()
     n_all = Parallel(n_jobs=n_jobs)(delayed(function1)
-                                (orbit_all[ids], labelings[ids])
-                                 for ids in sorted(labelings_ids.keys()))
-    n_counts = np.hstack(n_all).T
+                        (f.orbits, f.labelings) for f in features_array)
+    for f, n in zip(features_array, n_all):
+        f.set_features(np.array(n).T)
     t2 = time.time()
+
+    n_counts = np.vstack([f.features for f in features_array])
+    target_ids = [(f.n_cell, f.s_id, l_id) 
+                  for f in features_array for l_id in f.labeling_ids]
+
     print('  - elapsed time (counting) =', f'{t2-t1:.2f}', '(s)')
     print('  - (n_structures, n_clusters) =', n_counts.shape)
-
+    print(n_counts.shape)
+    
+    # output
     print(' generating output files ...')
     joblib.dump((clusters_ele, target_ids, n_counts), 
-                'cluster_analysis.pkl', 
-                compress=3)
+                'count_clusters.pkl', compress=3)
     if args.yaml:
-       yaml.write_cluster_analysis_yaml(clusters_ele, target_ids, n_counts)
-
-
+        yaml = Yaml()
+        yaml.write_count_clusters_yaml(clusters_ele, target_ids, n_counts)
+#
+#

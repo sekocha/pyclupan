@@ -123,7 +123,7 @@ class Cluster:
                                              translations,
                                              self.cl_positions,
                                              self.prim.positions)
-            self.sites_sym, self.cells_sym = res
+            self.sites_sym, self.cells_sym = np.array(res[0]), np.array(res[1])
 
         return self.sites_sym, self.cells_sym
 
@@ -262,6 +262,11 @@ class ClusterSet:
         else:
             self.prim = primitive_lattice
 
+        if self.clusters[0].ele_indices is None:
+            colored = False
+        else:
+            colored = True
+
     def get_num_clusters(self):
         return len(self.clusters)
 
@@ -269,34 +274,38 @@ class ClusterSet:
         for cl in self.clusters:
             cl.print()
 
-    def apply_sym_operations(self, cluster_set=None):
+    def apply_sym_operations(self, noncolored_cluster_set=None):
 
-        if cluster_set is None:
+        if noncolored_cluster_set is None:
             rotations, translations = get_symmetry(self.prim)
             for cl in self.clusters:
                 cl.apply_sym_operations(rotations, translations)
         else:
+            noncolored_clusters = noncolored_cluster_set.clusters
             for cl in self.clusters:
-                cl.sites_sym = cluster_set.clusters[cl.idx].sites_sym
-                cl.cells_sym = cluster_set.clusters[cl.idx].cells_sym
+                cl.sites_sym = noncolored_clusters[cl.idx].sites_sym
+                cl.cells_sym = noncolored_clusters[cl.idx].cells_sym
 
     # required for efficiently computing cluster orbits in supercell 
-    def precompute_orbit_supercell(self, 
-                                   cluster_set=None, 
-                                   cluster_ids=None,
-                                   distinguish_element=True):
+    def find_orbits_primitive(self, 
+                              noncolored_cluster_set=None, 
+                              cluster_ids=None,
+                              distinguish_element=True):
+
+        self.apply_sym_operations\
+            (noncolored_cluster_set=noncolored_cluster_set)
 
         if cluster_ids is not None:
             target_clusters = [self.clusters[i] for i in cluster_ids]
         else:
             target_clusters = self.clusters
 
-        self.apply_sym_operations(cluster_set=cluster_set)
+
         for cl in target_clusters:
             cl.find_orbit_primitive_cell\
                     (distinguish_element=distinguish_element)
 
-    def compute_orbit_supercell(self, sup, ids=None, distinguish_element=True):
+    def find_orbits_supercell(self, sup, ids=None, distinguish_element=True):
 
         if ids is not None:
             target_clusters = [self.clusters[i] for i in ids]
@@ -304,7 +313,7 @@ class ClusterSet:
             target_clusters = self.clusters
 
         size = max([cl.idx for cl in self.clusters]) + 1
-        orbit_set = [None] * size
+        orbit_set = [None for i in range(size)]
 
         orbit_all = []
         for cl in target_clusters:

@@ -64,30 +64,9 @@ class DSSample:
                 labelings = ds_set.all_labelings
                 n_labelings = ds_set.n_labelings
                 for s_id in ds_set.supercell_idset:
-                    labelings_all[(n_cell,s_id)] \
-                        = (labelings, list(range(n_labelings)))
+                    labelings_all[(n_cell,s_id)] = labelings
 
         return labelings_all
-
-
-    # bak
-    #def get_all_labelings(self, n_cell_ub=None):
-
-    #    if n_cell_ub is None:
-    #        n_cell_ub = np.inf
-
-    #    labelings_all, id_all = dict(), dict()
-    #    for g_id, (ds_set, n_cell) in enumerate(zip(self.ds_set_all, 
-    #                                                self.n_cell_all)):
-    #        if n_cell <= n_cell_ub:
-    #            labelings = ds_set.all_labelings
-    #            n_labelings = ds_set.n_labelings
-    #            for s_id in ds_set.supercell_idset:
-    #                labelings_all[(n_cell,s_id)] = labelings
-    #                id_all[(n_cell,s_id)] = list(range(n_labelings))
-
-    #    return labelings_all, id_all
-
 
     def get_labeling(self, n_cell, s_id, l_id):
         g_id = self.map_to_gid[(n_cell, s_id)]
