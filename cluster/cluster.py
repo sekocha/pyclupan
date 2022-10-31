@@ -255,7 +255,7 @@ class Cluster:
 
 class ClusterSet:
     
-    def __init__(self, clusters, primitive_lattice=None):
+    def __init__(self, clusters, primitive_lattice=None, elements_lattice=None):
 
         self.clusters = clusters
         if len(self.clusters) > 0 and primitive_lattice is None:
@@ -267,6 +267,8 @@ class ClusterSet:
             colored = False
         else:
             colored = True
+
+        self.elements_lattice = elements_lattice
 
     def get_num_clusters(self):
         return len(self.clusters)

@@ -162,7 +162,16 @@ class Yaml:
         clusters_ele = self._parse_clusters(data, 
                                             tag='nonequiv_element_configs',
                                             prim=self.prim)
-        cluster_set_ele = ClusterSet(clusters_ele)
+
+        if len(data['element_configs']) > 0:
+            elements_lattice = []
+            for d in data['element_configs']:
+                elements_lattice.append(d['elements'])
+        else:
+            elements_lattice = None
+
+        cluster_set_ele = ClusterSet(clusters_ele, 
+                                     elements_lattice=elements_lattice)
         return cluster_set, cluster_set_ele
 
     def _write_structure(self, st, stream, tag='primitive_cell', indent=0):
