@@ -1,9 +1,6 @@
 #!/usr/bin/env python 
 import numpy as np
-import joblib
 
-from pyclupan.common.io.yaml import Yaml
-from pyclupan.common.supercell import Supercell
 from pyclupan.cluster.cluster import ClusterSet
 from pyclupan.derivative.derivative import DSSet
 from pyclupan.derivative.derivative import DSSample
@@ -37,29 +34,6 @@ class Features:
         self.orbits = orbits  
         self.orbit_sizes = np.array([orb[0].shape[0] for orb in orbits])
 
-
-def parse_clusters_yaml(filename):
-
-    yaml = Yaml()
-    clusters, clusters_ele = yaml.parse_clusters_yaml(filename=filename)
-    print('  - yaml file (cluster) =', filename)
-
-    if clusters_ele.get_num_clusters() == 0:
-        raise RuntimeError(
-                'Unable to parse nonequiv_element_config in clusters.yaml')
-    return clusters, clusters_ele
-
-def parse_derivatives(filenames):
-
-    if len(filenames) > 1 and 'derivative-all.pkl' in filenames:
-        filenames.remove('derivative-all.pkl')
-    print('  - pkl files (derivative st.) =', filenames)
-
-    ds_set_all = []
-    for f in filenames:
-        ds_set_all.extend(joblib.load(f))
-
-    return DSSample(ds_set_all)
 
 def sample_from_ds(ds_samp: DSSample, poscars=None, n_cell_ub=None):
 
@@ -101,19 +75,10 @@ def sample_from_ds(ds_samp: DSSample, poscars=None, n_cell_ub=None):
  
     return features_array
 
-def compute_orbits(ds_samp,
-                   n_cell,
-                   s_id,
-                   cluster_set,
-                   distinguish_element=True):
+def compute_orbits(ds_samp, n_cell, s_id, cluster_set):
 
-    prim = ds_samp.get_primitive_cell()
-    supercell = ds_samp.get_supercell(n_cell, s_id)
+    sup = ds_samp.get_supercell(n_cell, s_id)
     hnf = ds_samp.get_hnf(n_cell, s_id)
-
-    sup = Supercell(st_prim=prim, hnf=hnf, st_supercell=supercell)
-    sup.set_primitive_lattice_representation()
-
-    return cluster_set.find_orbits_supercell(sup, distinguish_element=True)
+    return cluster_set.find_orbits_supercell(sup, hnf, distinguish_element=True)
 
 

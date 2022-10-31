@@ -5,6 +5,7 @@ import time
 from collections import defaultdict
 
 from mlptools.common.structure import Structure
+from pyclupan.common.supercell import Supercell
 from pyclupan.common.symmetry import apply_symmetric_operations
 from pyclupan.common.symmetry import get_symmetry
 
@@ -305,7 +306,21 @@ class ClusterSet:
             cl.find_orbit_primitive_cell\
                     (distinguish_element=distinguish_element)
 
-    def find_orbits_supercell(self, sup, ids=None, distinguish_element=True):
+    def find_orbits_supercell(self, 
+                              supercell, 
+                              hnf, 
+                              ids=None, 
+                              distinguish_element=True):
+
+        sup = Supercell(st_prim=self.prim, hnf=hnf, st_supercell=supercell)
+        sup.set_primitive_lattice_representation()
+        orbit_all = self.find_orbits_supercell_obj(sup, 
+                                                   ids=ids,
+                                                   distinguish_element=True)
+        return orbit_all
+
+    def find_orbits_supercell_obj(self, sup, 
+                                  ids=None, distinguish_element=True):
 
         if ids is not None:
             target_clusters = [self.clusters[i] for i in ids]
