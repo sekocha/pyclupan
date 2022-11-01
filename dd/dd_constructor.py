@@ -15,11 +15,17 @@ class DDConstructor:
         self.handler = handler
 
         self.nodes = handler.get_nodes(active=True)
+        self.nodes_single_rep = [i for i, j in self.nodes]
+
         self.elements_dd = handler.get_elements(active=True, dd=True)
         self.elements = handler.get_elements(active=True, dd=False)
         self.element_orbit = handler.get_element_orbit()
-        self.site_attr = handler.active_site_attr
 
+        self.site_attr = handler.active_site_attr
+        self.site_attr_dict = dict()
+        for attr in self.site_attr:
+            self.site_attr_dict[attr.idx] = attr
+ 
         GraphSet.set_universe(self.nodes)
 
     def all(self):
@@ -28,10 +34,6 @@ class DDConstructor:
 
     def empty(self):
         gs = GraphSet({'exclude': set(self.nodes)})
-        return gs
-
-    def including(self, node_idx):
-        gs = GraphSet({}).graphs().including(node_idx)
         return gs
 
     def one_of_k(self):
@@ -67,7 +69,7 @@ class DDConstructor:
     
         return gs
     
-    # must be revised
+    # a test is required
     def composition_range(self, comp_lb, comp_ub):
     
         print(' Warning: composition_range in dd.constructor.py' \
@@ -87,11 +89,13 @@ class DDConstructor:
     
         return gs
 
-    def no_endmembers(self):
+    def no_endmembers(self, verbose=1):
+
+        if verbose > 0:
+            print(' element orbit used for eliminating end members')
+            print('  =', self.element_orbit)
 
         gs = self.empty()
-        print(' element orbit used for eliminating end members')
-        print('  =', self.element_orbit)
         for ele, ele_dd in self.element_orbit:
             gs1_all = GraphSet({'exclude': set(self.nodes)})
             for e in ele_dd:
@@ -115,49 +119,7 @@ class DDConstructor:
 
         return gs
 
-    def charge_balance(self, charge, comp=None, eps=1e-5):
 
-        gs = self.empty()
-
-        charge_sum = 0.0
-        inactive_nodes = self.handler.get_nodes(inactive=True,edge_rep=False)
-        for n_idx in inactive_nodes:
-            ele = self.handler.get_element(n_idx)
-            charge_sum -= charge[ele]
-
-        nodes_noweight = []
-        if comp is not None:
-            for ele in self.elements_dd:
-                if comp[ele] is not None:
-                    tnodes = self.handler.get_nodes(element=ele, active=True)
-                    sites = [self.handler.get_site(n_idx) 
-                                for n_idx, _ in tnodes]
-                    if len(sites) == len(set(sites)):
-                        charge_sum -= charge[ele] * len(sites) * comp[ele]
-                        nodes_noweight.extend([n for n in tnodes])
-
-                        gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
-                        val = len(tnodes) * comp[ele]
-                        if abs(round(val) - val) < 1e-10:
-                            n_edges = round(val)
-                        else:
-                            n_edges = 100000
-                        gs1 = gs1.graphs(num_edges=n_edges)
-                        gs = gs.join(gs1)
- 
-        weight = []
-        nodes_weight = sorted(set(self.nodes) - set(nodes_noweight))
-        for n_idx, _ in nodes_weight:
-            ele = self.handler.get_element(n_idx)
-            weight.append((n_idx,n_idx,charge[ele]))
-        lconst = [(weight, (charge_sum-eps, charge_sum+eps))]
-
-        gs1 = GraphSet({'exclude':nodes_noweight})
-        gs1 = gs1.graphs(linear_constraints=lconst)
-        gs = gs.join(gs1)
-
-        return gs
- 
     def nonequivalent_permutations(self, 
                                    site_permutations,
                                    num_edges=None,
@@ -208,13 +170,57 @@ class DDConstructor:
 
         return gs
 
-    def excluding_cluster(self, gs, cluster_nodes):
-        
-        for nodes in cluster_nodes:
-            edges = [self.handler.get_edge_rep(n) for n in nodes]
-            gs -= gs.including(edges)
+    def define_functions(self, node_idx):
+
+        if node_idx in self.nodes_single_rep:
+            f_include = True
+            return ([node_idx], f_include)
+
+        f_include = False
+        site = self.handler.get_site(node_idx)
+        ids = [self.handler.compose_node(site, e) 
+               for e in self.site_attr_dict[site].ele_dd]
+        return (ids, f_include)
+
+    def including(self, node_idx):
+        gs = self.all()
+        gs = gs.including(node_idx)
         return gs
 
+    def including_single_cluster(self, nodes, gs=None):
+
+        if gs is None:
+            gs = self.one_of_k()
+
+        for n in nodes:
+            ids, f_include = self.define_functions(n)
+            if f_include == True:
+                for i in ids:
+                    gs &= gs.including(i)
+            else:
+                for i in ids:
+                    gs = gs.excluding(i)
+        return gs
+
+    def excluding_single_cluster(self, nodes, gs=None):
+
+        if gs is None:
+            gs = self.one_of_k()
+
+        gs -= self.including_single_cluster(nodes, gs=self.all())
+        return gs
+
+    def excluding_clusters(self, nodes_list, gs=None):
+
+        if gs is None:
+            gs = self.one_of_k()
+
+        for nodes in nodes_list:
+            gs &= self.excluding_single_cluster(nodes, gs=self.all())
+
+        return gs
+
+    # a test is required
     # slow ?
     def num_clusters_smaller(self, gs, cluster_nodes, n_clusters=1):
 
@@ -251,4 +257,47 @@ class DDConstructor:
 
         return gs
 
+    # a test is required
+    def charge_balance(self, charge, comp=None, eps=1e-5):
 
+        gs = self.empty()
+
+        charge_sum = 0.0
+        inactive_nodes = self.handler.get_nodes(inactive=True,edge_rep=False)
+        for n_idx in inactive_nodes:
+            ele = self.handler.get_element(n_idx)
+            charge_sum -= charge[ele]
+
+        nodes_noweight = []
+        if comp is not None:
+            for ele in self.elements_dd:
+                if comp[ele] is not None:
+                    tnodes = self.handler.get_nodes(element=ele, active=True)
+                    sites = [self.handler.get_site(n_idx) 
+                                for n_idx, _ in tnodes]
+                    if len(sites) == len(set(sites)):
+                        charge_sum -= charge[ele] * len(sites) * comp[ele]
+                        nodes_noweight.extend([n for n in tnodes])
+
+                        gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
+                        val = len(tnodes) * comp[ele]
+                        if abs(round(val) - val) < 1e-10:
+                            n_edges = round(val)
+                        else:
+                            n_edges = 100000
+                        gs1 = gs1.graphs(num_edges=n_edges)
+                        gs = gs.join(gs1)
+ 
+        weight = []
+        nodes_weight = sorted(set(self.nodes) - set(nodes_noweight))
+        for n_idx, _ in nodes_weight:
+            ele = self.handler.get_element(n_idx)
+            weight.append((n_idx,n_idx,charge[ele]))
+        lconst = [(weight, (charge_sum-eps, charge_sum+eps))]
+
+        gs1 = GraphSet({'exclude':nodes_noweight})
+        gs1 = gs1.graphs(linear_constraints=lconst)
+        gs = gs.join(gs1)
+
+        return gs
+ 
