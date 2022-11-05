@@ -45,6 +45,7 @@ class Yaml:
             inactive_sites = d['inactive_sites']
             inactive_labeling = d['inactive_labeling']
             active_labelings = np.array(d['active_labelings'])
+            print(active_labelings)
 
             ds_set = DSSet(active_labelings=active_labelings,
                            inactive_labeling=inactive_labeling,
@@ -67,12 +68,17 @@ class Yaml:
             print('', file=stream)
             print('  n_cell:', ds_set.n_expand, file=stream)
             print('', file=stream)
-            print('  comp:', list(ds_set.comp), file=stream)
-            print('', file=stream)
-            print('  comp_lb:', list(ds_set.comp_lb), file=stream)
-            print('', file=stream)
-            print('  comp_ub:', list(ds_set.comp_ub), file=stream)
-            print('', file=stream)
+
+            if ds_set.comp is not None:
+                print('  comp:', list(ds_set.comp), file=stream)
+                print('', file=stream)
+            if ds_set.comp_lb is not None:
+                print('  comp_lb:', list(ds_set.comp_lb), file=stream)
+                print('', file=stream)
+            if ds_set.comp_ub is not None:
+                print('  comp_ub:', list(ds_set.comp_ub), file=stream)
+                print('', file=stream)
+
             print('  supercells:', file=stream)
             for hnf, supercell, supercell_id in zip(ds_set.hnf_set,
                                                     ds_set.supercell_set,

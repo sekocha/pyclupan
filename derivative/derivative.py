@@ -86,6 +86,7 @@ class DSSample:
 class DSSet:
 
     def __init__(self, 
+                 labelings_info=None,
                  active_labelings=None,
                  inactive_labeling=None,
                  active_sites=None,
@@ -115,10 +116,16 @@ class DSSet:
         self.comp_lb = comp_lb
         self.comp_ub = comp_ub
 
-        self.active_labelings = active_labelings
-        self.inactive_labeling = inactive_labeling
-        self.active_sites = np.array(active_sites)
-        self.inactive_sites = np.array(inactive_sites)
+        if labelings_info is not None:
+            self.active_labelings, self.inactive_labeling, \
+                self.active_sites, self.inactive_sites = labelings_info
+            self.active_sites = np.array(self.active_sites)
+            self.inactive_sites = np.array(self.inactive_sites)
+        else:
+            self.active_labelings = active_labelings
+            self.inactive_labeling = inactive_labeling
+            self.active_sites = np.array(active_sites)
+            self.inactive_sites = np.array(inactive_sites)
 
         max1 = max(self.active_sites) if len(self.active_sites) > 0 else 0
         max2 = max(self.inactive_sites) if len(self.inactive_sites) > 0 else 0
@@ -160,6 +167,10 @@ class DSSet:
                 self.n_expand = round(np.linalg.det(self.hnf_set[0]))
 
         self.all_labelings = self.combine_all_labelings()
+        self.n_labelings = self.all_labelings.shape[0]
+
+    def get_size(self):
+        return self.all_labelings.shape[0]
 
     def replace_labelings(self, all_labelings):
         self.all_labelings = all_labelings

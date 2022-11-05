@@ -273,3 +273,14 @@ class DDNodeHandler:
 
         return (labelings, inactive_labeling, active, inactive)
 
+    def convert_to_orbit_dd(self, orbit):
+        sites, ele = orbit
+        orbit_node_rep = []
+        for s1, e1 in zip(sites, ele):
+            nodes = [self.compose_node(s2,e2) for s2,e2 in zip(s1,e1)]
+            orbit_node_rep.append(tuple(sorted(nodes)))
+        return orbit_node_rep
+
+        
+        
+        
