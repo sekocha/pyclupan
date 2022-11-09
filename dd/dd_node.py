@@ -169,8 +169,10 @@ class DDNodeHandler:
             return self.active_elements
         return self.elements
 
-    def get_element_orbit(self):
-        return self.element_orbit
+    def get_element_orbit(self, dd=False):
+        if dd == True:
+            return self.element_orbit
+        return [ele for ele, _ in self.element_orbit]
 
     def get_site(self, node_idx):
         site_idx = int(node_idx % 1000)
@@ -281,6 +283,4 @@ class DDNodeHandler:
             orbit_node_rep.append(tuple(sorted(nodes)))
         return orbit_node_rep
 
-        
-        
         

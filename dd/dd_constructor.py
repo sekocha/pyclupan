@@ -19,7 +19,7 @@ class DDConstructor:
 
         self.elements_dd = handler.get_elements(active=True, dd=True)
         self.elements = handler.get_elements(active=True, dd=False)
-        self.element_orbit = handler.get_element_orbit()
+        self.element_orbit = handler.get_element_orbit(dd=True)
 
         self.site_attr = handler.active_site_attr
         self.site_attr_dict = dict()

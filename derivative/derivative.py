@@ -11,6 +11,7 @@ class DSSample:
 
         self.ds_set_all = ds_set_all
         self.n_cell_all = [ds_set.n_expand for ds_set in self.ds_set_all]
+        self.element_orbit = ds_set_all[0].element_orbit
 
         self.serial_id_list = []
         for group_id, ds_set in enumerate(self.ds_set_all):
@@ -93,6 +94,7 @@ class DSSet:
                  inactive_sites=None,
                  primitive_cell=None,
                  elements=None,
+                 element_orbit=None,
                  n_expand=None,
                  comp=None,
                  comp_lb=None,
@@ -132,6 +134,7 @@ class DSSet:
         self.n_sites = max(max1, max2) + 1 
 
         self.elements = elements
+        self.element_orbit = element_orbit
 
         # single supercell
         if hnf is not None:

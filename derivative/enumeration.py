@@ -194,17 +194,14 @@ if __name__ == '__main__':
 
         t1 = time.time()
         res = dd_handler.convert_graphs_to_labelings(gs)
-        active_labelings, inactive_labeling, active_sites, inactive_sites = res
         t2 = time.time()
         print(' elapsed time (labeling)    =', t2-t1)
 
-        ds_set = DSSet(active_labelings=active_labelings,
-                       inactive_labeling=inactive_labeling,
-                       active_sites=active_sites,
-                       inactive_sites=inactive_sites,
+        ds_set = DSSet(labelings_info=res,
                        primitive_cell=st_prim,
                        n_expand=args.n_expand,
                        elements=dd_handler.elements,
+                       element_orbit=dd_handler.get_element_orbit(),
                        comp=comp,
                        comp_lb=comp_lb,
                        comp_ub=comp_ub,

@@ -22,6 +22,7 @@ class Yaml:
         print('', file=f)
 
         self._write_structure(primitive_cell, f, tag='primitive_cell')
+        self._write_element_orbit(ds_set_all, f)
         self._write_ds(ds_set_all, f)
 
         f.close()
@@ -30,6 +31,9 @@ class Yaml:
 
         data = yaml.safe_load(open(filename))
         prim = self._parse_structure(data, tag='primitive_cell')
+
+        element_orbit = [d['elements'] for d in data['element_sets']]
+        elements = sorted([e for ele in element_orbit for e in ele])
 
         ds_set_all = []
         for d in data['derivative_structures']:
@@ -45,7 +49,6 @@ class Yaml:
             inactive_sites = d['inactive_sites']
             inactive_labeling = d['inactive_labeling']
             active_labelings = np.array(d['active_labelings'])
-            print(active_labelings)
 
             ds_set = DSSet(active_labelings=active_labelings,
                            inactive_labeling=inactive_labeling,
@@ -54,11 +57,23 @@ class Yaml:
                            primitive_cell=prim,
                            n_expand=n_cell,
                            hnf_set=hnf_set,
+                           elements=elements,
+                           element_orbit=element_orbit,
                            supercell_set=supercell_set,
                            supercell_idset=supercell_idset)
             ds_set_all.append(ds_set)
 
         return ds_set_all
+
+    def _write_element_orbit(self, ds_set_all, stream):
+
+        element_orbit = ds_set_all[0].element_orbit
+        if element_orbit is not None:
+            print('element_sets:', file=stream)
+            for i, ele in enumerate(element_orbit):
+                print('- id:         ', i, file=stream)
+                print('  elements:   ', ele, file=stream)
+                print('', file=stream)
 
     def _write_ds(self, ds_set_all, stream):
 
