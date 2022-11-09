@@ -311,6 +311,23 @@ class Yaml:
 
         f.close()
 
+    def parse_count_clusters_yaml(self, filename='count_clusters.yaml'):
+
+        data = yaml.safe_load(open(filename))
+        cluster_set = self._parse_clusters(data,tag='nonequiv_element_configs')
+
+        orbit_sizes, structure_indices, n_clusters = dict(), [], []
+        for d in data['orbit_sizes']:
+            ids = (d['n_cell'], d['supercell_id'])
+            orbit_sizes[ids] = np.array(d['orbit_sizes'])
+
+        for d in data['number_of_clusters']:
+            st_id = (d['n_cell'], d['supercell_id'], d['labeling_id'])
+            structure_indices.append(st_id)
+            n_clusters.append(d['n_clusters'])
+
+        return cluster_set, orbit_sizes, structure_indices, np.array(n_clusters)
+
     def write_correlations_yaml(self, 
                                 cluster_set: ClusterSet, 
                                 structure_indices,
@@ -328,26 +345,22 @@ class Yaml:
             print('  supercell_id:  ', s_id, file=f)
             print('  labeling_id:   ', l_id, file=f)
             print('  correlations:    ', end='', file=f)
-            self._write_list_no_space(correlations, f)
+            self._write_list_no_space(c, f)
             print('', file=f)
 
         f.close()
 
-
-    def parse_count_clusters_yaml(self, filename='count_clusters.yaml'):
+    def parse_correlations_yaml(self, filename='correlations.yaml'):
 
         data = yaml.safe_load(open(filename))
-        cluster_set = self._parse_clusters(data,tag='nonequiv_element_configs')
+        cluster_set = self._parse_clusters(data,tag='nonequiv_clusters')
 
-        orbit_sizes, structure_indices, n_clusters = dict(), [], []
-        for d in data['orbit_sizes']:
-            ids = (d['n_cell'], d['supercell_id'])
-            orbit_sizes[ids] = np.array(d['orbit_sizes'])
-
-        for d in data['number_of_clusters']:
+        structure_indices, correlations = [], []
+        for d in data['correlation_functions']:
             st_id = (d['n_cell'], d['supercell_id'], d['labeling_id'])
             structure_indices.append(st_id)
-            n_clusters.append(d['n_clusters'])
+            n_clusters.append(d['correlations'])
 
-        return cluster_set, orbit_sizes, structure_indices, np.array(n_clusters)
+        return cluster_set, structure_indices, np.array(correlations)
+
 
