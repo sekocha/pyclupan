@@ -21,14 +21,6 @@ from pyclupan.features.features_common import sample_from_ds
 from pyclupan.features.features_common import compute_orbits
 from pyclupan.features.features_common import Features
 
-#def count_orbit_components(orbit, labelings: np.array):
-#    sites, ele = orbit
-#    if len(sites) > 0:
-#        count = np.count_nonzero\
-#            (np.all(labelings[:,sites] == ele, axis=2), axis=1)
-#        return count
-#    return np.zeros(labelings.shape[0], dtype=int)
-#
 #def function1(orbits, lbls):
 #    n_all = [count_orbit_components(orb, lbls) for orb in orbits]
 #    return n_all
@@ -67,7 +59,24 @@ def set_spins(element_orbit):
 
     return spins, normal
 
+def compute_binary(features_array, spins):
 
+    for f in features_array:
+        labelings = f.labelings
+        for ele, s in spins.items():
+            condition = f.labelings == ele
+            labelings[condition] = s
+
+        correlation = []
+        for sites in f.orbits:
+           spin_cl = labelings[:,sites]
+           ave = np.average(np.prod(spin_cl, axis=2), axis=1)
+           correlation.append(ave)
+        correlation = np.array(correlation).T
+        f.set_features(correlation)
+
+    return features_array, correlation
+ 
 if __name__ == '__main__':
 
     # Examples:
@@ -129,35 +138,20 @@ if __name__ == '__main__':
     n_total = sum([f.labelings.shape[0] for f in features_array])
     print('   - total number of structures =', n_total)
 
+
     if normal == True:
         t1 = time.time()
-        for f in features_array:
-            labelings = f.labelings
-            for ele, s in spins.items():
-                condition = f.labelings == ele
-                labelings[condition] = s
-
-            correlation = []
-            for sites in f.orbits:
-               spin_cl = labelings[:,sites]
-               ave = np.average(np.prod(spin_cl, axis=2), axis=1)
-               correlation.append(ave)
-            correlation = np.array(correlation).T
-            f.set_features(correlation)
+        features_array, correlation = compute_binary(features_array, spins)
         t2 = time.time()
+    else: # must be implemented
+        pass
                     
-#    t1 = time.time()
-#    n_all = Parallel(n_jobs=n_jobs)(delayed(function1)
-#                        (f.orbits, f.labelings) for f in features_array)
-#    t2 = time.time()
-#
-#
     correlation_all = np.vstack([f.features for f in features_array])
     target_ids = [(f.n_cell, f.s_id, l_id) 
                   for f in features_array for l_id in f.labeling_ids]
 
-    print('  - elapsed time (counting) =', f'{t2-t1:.2f}', '(s)')
-    print('  - (n_structures, n_clusters) =', correlation_all.shape)
+    print('   - (n_structures, n_clusters) =', correlation_all.shape)
+    print('   - elapsed time               =', f'{t2-t1:.2f}', '(s)')
     
     # output
     print(' generating output files ...')
@@ -195,4 +189,7 @@ if __name__ == '__main__':
 #        n_jobs = 3 
 #    else:
 #        n_jobs = 1
-#
+##    n_all = Parallel(n_jobs=n_jobs)(delayed(function1)
+#                        (f.orbits, f.labelings) for f in features_array)
+
+
