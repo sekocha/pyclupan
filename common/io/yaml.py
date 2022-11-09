@@ -311,6 +311,29 @@ class Yaml:
 
         f.close()
 
+    def write_correlations_yaml(self, 
+                                cluster_set: ClusterSet, 
+                                structure_indices,
+                                correlations: np.array,
+                                filename='correlations.yaml'):
+
+        f = open(filename, 'w')
+        print('nonequiv_clusters:', file=f)
+        self._write_clusters(cluster_set, f)
+
+        print('correlation_functions:', file=f)
+        for indices, c in zip(structure_indices, correlations):
+            n_cell, s_id, l_id = indices
+            print('- n_cell:        ', n_cell, file=f)
+            print('  supercell_id:  ', s_id, file=f)
+            print('  labeling_id:   ', l_id, file=f)
+            print('  correlations:    ', end='', file=f)
+            self._write_list_no_space(correlations, f)
+            print('', file=f)
+
+        f.close()
+
+
     def parse_count_clusters_yaml(self, filename='count_clusters.yaml'):
 
         data = yaml.safe_load(open(filename))
