@@ -4,6 +4,7 @@ import argparse
 import joblib
 from joblib import Parallel,delayed
 import time
+import math
 
 from mlptools.common.structure import Structure
 
@@ -20,6 +21,7 @@ from pyclupan.derivative.derivative import DSSample
 from pyclupan.features.features_common import sample_from_ds
 from pyclupan.features.features_common import compute_orbits
 from pyclupan.features.features_common import Features
+from pyclupan.features.spin_polynomial import gram_schmidt
 
 #def function1(orbits, lbls):
 #    n_all = [count_orbit_components(orb, lbls) for orb in orbits]
@@ -27,37 +29,45 @@ from pyclupan.features.features_common import Features
 
 def set_spins(element_orbit):
 
-    spins = dict()
     n_lattice = 0
     binary = True
+    spins, cons = dict(), dict()
+    eliminate_basis_id = set()
     for ele in element_orbit:
         if len(ele) == 1:
-            spins[ele[0]] = -1000
+            spin_array = [-1000]
+            #cons[ele[0]] = [0.0]
         elif len(ele) == 2:
-            spins[ele[0]] = 1
-            spins[ele[1]] = -1
-            n_lattice += 1
+            spin_array = [1,-1]
         elif len(ele) == 3:
-            spins[ele[0]] = 1
-            spins[ele[1]] = 0
-            spins[ele[2]] = -1
-            n_lattice += 1
-            binary = False
+            spin_array = [1,0,-1]
         elif len(ele) == 4:
-            n_lattice += 1
-            binary = False
-            pass
+            spin_array = [2,1,0,-1]
         elif len(ele) == 5:
+            spin_array = [2,1,0,-1,2]
+
+        for i, s in enumerate(spin_array):
+            spins[ele[i]] = s
+
+        if len(ele) > 1:
             n_lattice += 1
+            for i, basis in enumerate(gram_schmidt(spin_array)):
+                basis_id = ele[i]
+                if np.allclose(basis[:-1], np.zeros(basis.shape[0]-1)) \
+                    and math.isclose(basis[-1], 1.0):
+                    eliminate_basis_id.add(basis_id)
+                else:
+                    cons[ele[i]] = basis
+
+        if len(ele) > 2:
             binary = False
-            pass
 
     if n_lattice == 1 and binary == True:
         normal = True
     else:
         normal = False
 
-    return spins, normal
+    return spins, normal, cons, eliminate_basis_id
 
 def compute_binary(features_array, spins):
 
@@ -111,7 +121,7 @@ if __name__ == '__main__':
 
     # common part in computing other features
     print(' parsing clusters.yaml ...')
-    clusters, _ = parse_clusters_yaml(args.clusters_yaml)
+    clusters, clusters_ele = parse_clusters_yaml(args.clusters_yaml)
 
     print(' parsing derivative-all.pkl ...')
     ds_samp = parse_derivatives(args.derivative)
@@ -124,28 +134,59 @@ if __name__ == '__main__':
     # common part (end)
 
     # setting spins and cluster functions
-    spins, normal = set_spins(ds_samp.element_orbit)
+    spins, normal, cons, eliminate_basis_id = set_spins(ds_samp.element_orbit)
+    print(cons)
+    print(eliminate_basis_id)
 
-    print(' computing cluster orbits (in prim. cell) ...')
-    clusters.find_orbits_primitive(distinguish_element=False)
-    print(' computing cluster orbits (in supercells) ...')
-    for f in features_array:
-        orbits = compute_orbits(ds_samp, f.n_cell, f.s_id, clusters)
-        orbits = np.array([sites for sites, _ in orbits])
-        f.set_orbits(orbits)
-
-    print(' computing correlation functions in structures (labelings) ...')
-    n_total = sum([f.labelings.shape[0] for f in features_array])
-    print('   - total number of structures =', n_total)
-
+    # temporarily
+    normal = False
 
     if normal == True:
+        print(' computing cluster orbits (in prim. cell) ...')
+        clusters.find_orbits_primitive(distinguish_element=False)
+        print(' computing cluster orbits (in supercells) ...')
+        for f in features_array:
+            orbits = compute_orbits(ds_samp, f.n_cell, f.s_id, clusters)
+            orbits = np.array([sites for sites, _ in orbits])
+            f.set_orbits(orbits)
+
+        print(' computing correlation functions in structures (labelings) ...')
+        n_total = sum([f.labelings.shape[0] for f in features_array])
+        print('   - total number of structures =', n_total)
+
         t1 = time.time()
         features_array, correlation = compute_binary(features_array, spins)
         t2 = time.time()
-    else: # must be implemented
-        pass
-                    
+
+    else: 
+        print(clusters_ele.get_num_clusters())
+        active = []
+        for cl in clusters_ele.clusters:
+            if not 1 in cl.ele_indices:
+                active.append(cl)
+        clusters_ele = ClusterSet(active)
+        print(clusters_ele.get_num_clusters())
+
+        print(' computing cluster orbits (in prim. cell) ...')
+        clusters.apply_sym_operations()
+        clusters_ele.find_orbits_primitive(noncolored_cluster_set=clusters,
+                                           distinguish_element=True)
+        print(' computing cluster orbits (in supercells) ...')
+        for f in features_array:
+            orbits = compute_orbits(ds_samp, f.n_cell, f.s_id, clusters_ele)
+            f.set_orbits(orbits)
+
+        print(' computing correlation functions in structures (labelings) ...')
+        n_total = sum([f.labelings.shape[0] for f in features_array])
+        print('   - total number of structures =', n_total)
+
+        t1 = time.time()
+        #features_array, correlation = compute_n_ary(features_array, 
+        #                                             spins, 
+        #                                             cons)
+        t2 = time.time()
+
+                   
     correlation_all = np.vstack([f.features for f in features_array])
     target_ids = [(f.n_cell, f.s_id, l_id) 
                   for f in features_array for l_id in f.labeling_ids]
@@ -155,12 +196,20 @@ if __name__ == '__main__':
     
     # output
     print(' generating output files ...')
-    joblib.dump((clusters, target_ids, correlation_all), 
-                'correlations.pkl', compress=3)
-
-    if args.yaml:
-        yaml = Yaml()
-        yaml.write_correlations_yaml(clusters, target_ids, correlation_all)
+    if normal == True:
+        joblib.dump((clusters, target_ids, correlation_all), 
+                    'correlations.pkl', compress=3)
+        if args.yaml:
+            yaml = Yaml()
+            yaml.write_correlations_yaml(clusters, target_ids, correlation_all)
+    else:
+        joblib.dump((clusters_ele, target_ids, correlation_all), 
+                    'correlations.pkl', compress=3)
+        if args.yaml:
+            yaml = Yaml()
+            #yaml.write_cluster_functions_yaml(clusters_ele, 
+            #                                   target_ids, 
+            #                                   correlation_all)
 
 
 # computing correlation functions (slow but correct)
