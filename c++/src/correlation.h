@@ -1,6 +1,6 @@
 /****************************************************************************
 
-        Copyright (C) 2021 Atsuto Seko
+        Copyright (C) 2022 Atsuto Seko
                 seko@cms.mtl.kyoto-u.ac.jp
 
         This program is free software; you can redistribute it and/or
@@ -21,12 +21,31 @@
 
 ****************************************************************************/
 
-#ifndef __PYBIND11_PYCLUPAN
-#define __PYBIND11_PYCLUPAN
+#ifndef __COMPUTE_CLUSTER_FUNCTION
+#define __COMPUTE_CLUSTER_FUNCTION
 
-#include "pyclupan.h"
-#include "nonequiv_labelings.h"
-#include "correlation.h"
+#include <mutex>
+#include <thread>
+#include <Eigen/Core>
+
+#include <pyclupan.h>
+
+class ComputeClusterFunction{
+
+    double value;
+    Eigen::VectorXd values;
+    double eval_poly(const vector1d& coeff, const int spin);
+
+    public: 
+
+    ComputeClusterFunction(const vector3d& cons_cl,
+                           const vector2i& spin_cl);
+   
+    ~ComputeClusterFunction();
+
+    double& get_value();
+    Eigen::VectorXd& get_values();
+
+};
 
 #endif
-

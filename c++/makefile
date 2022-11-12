@@ -14,7 +14,7 @@ libomp = -lgomp
 libs = $(libomp)
 
 VPATH = ./src
-source = nonequiv_labelings.o pybind11_pyclupan.o
+source = nonequiv_labelings.o correlation.o pybind11_pyclupan.o
 
 all: mkdir $(addprefix lib/,$(source))
 

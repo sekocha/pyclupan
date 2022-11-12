@@ -39,6 +39,13 @@ PYBIND11_MODULE(pyclupancpp, m) {
                 py::return_value_policy::reference_internal)
         ;
 
+    py::class_<ComputeClusterFunction>(m, "ComputeCF")
+        .def(py::init<const vector3d&,
+                      const vector2i&>())
+        .def("get_value", &ComputeClusterFunction::get_value, 
+                py::return_value_policy::reference_internal)
+        ;
+
 //    py::class_<Pauling>(m, "Pauling")
 //        .def(py::init<const py::array_t<short>&, 
 //                      const vector1i&,
