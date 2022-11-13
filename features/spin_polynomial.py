@@ -9,11 +9,6 @@ def eval_basis(coeff, spin):
 def eval_basis_prod(coeffs_cl, spin_cl):
     return np.prod([eval_basis(c, s) for c, s in zip(coeffs_cl, spin_cl)])
 
-def eval_basis_prod_average(coeffs_cl_array, spin_cl_array):
-    vals = [eval_basis_prod(c,s) 
-            for c, s in zip(coeffs_cl_array, spin_cl_array)]
-    return np.mean(vals)
-
 def inner_prod(coeff1, coeff2, spins):
     return np.mean(np.polyval(coeff1, spins) * np.polyval(coeff2, spins))
 

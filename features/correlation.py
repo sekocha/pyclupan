@@ -3,7 +3,6 @@ import numpy as np
 import sys, os
 import argparse
 import joblib
-from joblib import Parallel,delayed
 import time
 import math
 
@@ -23,15 +22,9 @@ from pyclupan.features.features_common import sample_from_ds
 from pyclupan.features.features_common import compute_orbits
 from pyclupan.features.features_common import Features
 from pyclupan.features.spin_polynomial import gram_schmidt
-from pyclupan.features.spin_polynomial import eval_basis_prod
-from pyclupan.features.spin_polynomial import eval_basis_prod_average
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../c++/lib')
 import pyclupancpp
-
-#def function1(orbits, lbls):
-#    n_all = [count_orbit_components(orb, lbls) for orb in orbits]
-#    return n_all
 
 def set_spins(element_orbit):
 
@@ -104,14 +97,11 @@ def compute_n_ary(features_array, spins, cons_list):
         site_cls = [sites_cl for sites_cl, _ in f.orbits]
         cons_id_cls = [cons_id_cl for _, cons_id_cl in f.orbits]
 
-        t3 = time.time()
         cfobj = pyclupancpp.ComputeCF(labelings, 
                                       site_cls, 
                                       cons_id_cls, 
                                       cons_list)
         correlations = cfobj.get_values()
-        t4 = time.time()
-        print(t4-t3)
         f.set_features(correlations)
 
     return features_array
@@ -220,78 +210,61 @@ if __name__ == '__main__':
     print('   - (n_structures, n_clusters) =', correlation_all.shape)
     print('   - elapsed time               =', f'{t2-t1:.2f}', '(s)')
     
-    # output
     print(' generating output files ...')
-    joblib.dump((clusters, target_ids, correlation_all), 
-                    'correlations.pkl', compress=3)
+    if normal == True:
+        clusters_out = clusters
+        cons_out = None
+    else:
+        clusters_out = clusters_ele
+        cons_out = cons
+
+    joblib.dump((clusters_out, target_ids, correlation_all), 
+                'correlations.pkl', compress=3)
     if args.yaml:
         yaml = Yaml()
-        yaml.write_correlations_yaml(clusters, target_ids, correlation_all)
+        yaml.write_correlations_yaml(clusters_out, 
+                                     target_ids, 
+                                     correlation_all,
+                                     cons=cons_out)
  
-    #if normal == True:
-    #    joblib.dump((clusters, target_ids, correlation_all), 
-    #                'correlations.pkl', compress=3)
-    #    if args.yaml:
-    #        yaml = Yaml()
-    #        yaml.write_correlations_yaml(clusters, target_ids, correlation_all)
-    #else:
-    #    joblib.dump((clusters_ele, target_ids, correlation_all), 
-    #                'correlations.pkl', compress=3)
-    #    if args.yaml:
-    #        yaml = Yaml()
-    #        #yaml.write_cluster_functions_yaml(clusters_ele, 
-    #        #                                   target_ids, 
-    #        #                                   correlation_all)
-
 
 # computing correlation functions (slow but correct)
 
-#        normal = True
-        #for i, f in enumerate(features_array):
-        #    labelings = f.labelings
-        #    for ele, s in spins.items():
-        #        condition = f.labelings == ele
-        #        labelings[condition] = s
+#normal = True
+#for i, f in enumerate(features_array):
+#    labelings = f.labelings
+#    for ele, s in spins.items():
+#        condition = f.labelings == ele
+#        labelings[condition] = s
 
-        #    print('id =', i)
-        #    for l in labelings:
-        #        correlations = []
-        #        for sites in f.orbits:
-        #            spin_cl = l[sites]
-        #            corr = np.average(np.prod(spin_cl, axis=1))
-        #            correlations.append(corr)
-        #        print(correlations)
+#    print('id =', i)
+#    for l in labelings:
+#        correlations = []
+#        for sites in f.orbits:
+#            spin_cl = l[sites]
+#            corr = np.average(np.prod(spin_cl, axis=1))
+#            correlations.append(corr)
+#        print(correlations)
 
-#        normal = False
-#        # expected to be correct, but slow
-#        for i, f in enumerate(features_array):
-#            labelings = f.labelings
-#            for ele, s in spins.items():
-#                condition = f.labelings == ele
-#                labelings[condition] = s
-#            print('id =', i)
-#            correlations = []
-#            for l in labelings:
-#                correlations_l = []
-#                for sites_cl, cons_cl in f.orbits:
-#                    spin_cl = l[sites_cl]
-#                    #cons_cl = np.array([i1 for i1 in basis_ids])
-#                    corr = 0.0
-#                    for c, s in zip(cons_cl, spin_cl):
-#                        coeffs = [cons[id1] for id1 in c]
-#                        corr += eval_basis_prod(coeffs, s)
-#                    corr /= spin_cl.shape[0]
-#                    correlations_l.append(corr)
-#                correlations.append(correlations_l)
+#normal = False
+#for i, f in enumerate(features_array):
+#    labelings = f.labelings
+#    for ele, s in spins.items():
+#        condition = f.labelings == ele
+#        labelings[condition] = s
+#    print('id =', i)
+#    correlations = []
+#    for l in labelings:
+#        correlations_l = []
+#        for sites_cl, cons_cl in f.orbits:
+#            spin_cl = l[sites_cl]
+#            #cons_cl = np.array([i1 for i1 in basis_ids])
+#            corr = 0.0
+#            for c, s in zip(cons_cl, spin_cl):
+#                coeffs = [cons[id1] for id1 in c]
+#                corr += eval_basis_prod(coeffs, s)
+#            corr /= spin_cl.shape[0]
+#            correlations_l.append(corr)
+#        correlations.append(correlations_l)
 # 
-
-##    if n_total > 100000:
-#        n_jobs = 8
-#    elif n_total > 20000:
-#        n_jobs = 3 
-#    else:
-#        n_jobs = 1
-##    n_all = Parallel(n_jobs=n_jobs)(delayed(function1)
-#                        (f.orbits, f.labelings) for f in features_array)
-
 

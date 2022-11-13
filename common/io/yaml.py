@@ -228,7 +228,7 @@ class Yaml:
 
         return Structure(axis, positions, n_atoms)
 
-    def _write_clusters(self, set_obj, stream):
+    def _write_clusters(self, set_obj, stream, element_tag='element'):
 
         for i, cl in enumerate(set_obj.clusters):
             print('- serial_id: ', i, file=stream)
@@ -245,7 +245,7 @@ class Yaml:
                                            cl.ele_indices):
                     print('  - site:    ', site, file=stream)
                     print('    cell:    ', list(cell), file=stream)
-                    print('    element: ', ele, file=stream)
+                    print('    '+element_tag+': ', ele, file=stream)
                     print('', file=stream)
 
     def _parse_clusters(self, data, prim=None, tag='nonequiv_clusters'):
@@ -332,11 +332,19 @@ class Yaml:
                                 cluster_set: ClusterSet, 
                                 structure_indices,
                                 correlations: np.array,
+                                cons=None,
                                 filename='correlations.yaml'):
 
         f = open(filename, 'w')
+        if cons is not None:
+            print('cluster_functions:', file=f)
+            for i, coeffs in sorted(cons.items()):
+                print('- id:      ', i, file=f)
+                print('  coeffs:  ', coeffs, file=f)
+                print('', file=f)
+
         print('nonequiv_clusters:', file=f)
-        self._write_clusters(cluster_set, f)
+        self._write_clusters(cluster_set, f, element_tag='cluster_function')
 
         print('correlation_functions:', file=f)
         for indices, c in zip(structure_indices, correlations):
