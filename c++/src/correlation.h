@@ -33,18 +33,22 @@
 class ComputeClusterFunction{
 
     double value;
-    Eigen::VectorXd values;
+    Eigen::MatrixXd values;
     double eval_poly(const vector1d& coeff, const int spin);
 
     public: 
 
+    ComputeClusterFunction(const py::array_t<short>& labeling_spinrep,
+                           const vector3i& site_cls,
+                           const vector3i& cons_id_cls,
+                           const vector2d& cons);
     ComputeClusterFunction(const vector3d& cons_cl,
                            const vector2i& spin_cl);
    
     ~ComputeClusterFunction();
 
     double& get_value();
-    Eigen::VectorXd& get_values();
+    Eigen::MatrixXd& get_values();
 
 };
 

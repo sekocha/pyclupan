@@ -91,8 +91,32 @@ def compute_binary(features_array, spins):
         correlation = np.array(correlation).T
         f.set_features(correlation)
 
-    return features_array, correlation
- 
+    return features_array
+
+def compute_n_ary(features_array, spins, cons_list):
+
+    for i, f in enumerate(features_array):
+        labelings = f.labelings
+        for ele, s in spins.items():
+            condition = f.labelings == ele
+            labelings[condition] = s
+
+        site_cls = [sites_cl for sites_cl, _ in f.orbits]
+        cons_id_cls = [cons_id_cl for _, cons_id_cl in f.orbits]
+
+        t3 = time.time()
+        cfobj = pyclupancpp.ComputeCF(labelings, 
+                                      site_cls, 
+                                      cons_id_cls, 
+                                      cons_list)
+        correlations = cfobj.get_values()
+        t4 = time.time()
+        print(t4-t3)
+        f.set_features(correlations)
+
+    return features_array
+
+
 if __name__ == '__main__':
 
     # Examples:
@@ -141,6 +165,9 @@ if __name__ == '__main__':
 
     # setting spins and cluster functions
     spins, normal, cons, eliminate_basis_id = set_spins(ds_samp.element_orbit)
+    cons_list = [[] for i in range(max(cons.keys())+1)]
+    for k, v in cons.items():
+        cons_list[k] = v
 
     # temporarily
     normal = False
@@ -159,7 +186,7 @@ if __name__ == '__main__':
         print('   - total number of structures =', n_total)
 
         t1 = time.time()
-        features_array, correlation = compute_binary(features_array, spins)
+        features_array = compute_binary(features_array, spins)
         t2 = time.time()
 
     else: 
@@ -183,44 +210,8 @@ if __name__ == '__main__':
         print('   - total number of structures =', n_total)
 
         t1 = time.time()
-        #features_array, correlation = compute_n_ary(features_array, 
-        #                                             spins, 
-        #                                             cons)
-
-        # expected to be correct, but slow
-        for i, f in enumerate(features_array):
-            labelings = f.labelings
-            for ele, s in spins.items():
-                condition = f.labelings == ele
-                labelings[condition] = s
-            print('id =', i)
-            correlations = []
-            for l in labelings:
-                correlations_l = []
-                for sites_cl, cons_id_cl in f.orbits:
-                    t5 = time.time()
-                    spin_cl = l[sites_cl]
-                    t6 = time.time()
-                    cons_cl = [[cons[i] for i in c] for c in cons_id_cl]
-                    t7 = time.time()
-#                    corr = 0.0
-#                    for c, s in zip(cons_cl, spin_cl):
-#                        corr += eval_basis_prod(c, s)
-#                    corr /= spin_cl.shape[0]
-
-                    # 1.12s
-                    cfobj = pyclupancpp.ComputeCF(cons_cl, spin_cl)
-                    corr = cfobj.get_value()
-
-                    t8 = time.time()
-                    correlations_l.append(corr)
-                    t9 = time.time()
-#                    print(t6-t5, t7-t6, t8-t7, t9-t8)
-                correlations.append(correlations_l)
-            f.set_features(correlations)
- 
+        features_array = compute_n_ary(features_array, spins, cons_list)
         t2 = time.time()
-
                    
     correlation_all = np.vstack([f.features for f in features_array])
     target_ids = [(f.n_cell, f.s_id, l_id) 

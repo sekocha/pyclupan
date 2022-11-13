@@ -23,10 +23,43 @@
 
 #include "correlation.h"
 
+ComputeClusterFunction::ComputeClusterFunction
+(const py::array_t<short>& labeling_spinrep,
+ const vector3i& site_cls,
+ const vector3i& cons_id_cls,
+ const vector2d& cons){
+
+    const auto &buff_info = labeling_spinrep.request();
+    const auto &shape = buff_info.shape;
+
+    const int n_features = site_cls.size();
+    values = Eigen::MatrixXd(shape[0], n_features);
+
+//    #ifdef _OPENMP
+//    #pragma omp parallel for schedule(guided,1) if(shape[0] >= 10000)
+//    #endif
+    for (int i = 0; i < shape[0]; ++i){
+        for (int j = 0; j < n_features; ++j){
+            const auto& site_cl = site_cls[j];
+            const auto& cons_id_cl = cons_id_cls[j];
+            double value1 = 0.0;
+            for (int k = 0; k < site_cl.size(); ++k){
+                double prod = 1.0;
+                for (int l = 0; l < site_cl[k].size(); ++l){
+                    const auto& coeffs = cons[cons_id_cl[k][l]];
+                    const short spin = *labeling_spinrep.data(i, site_cl[k][l]);
+                    prod *= eval_poly(coeffs, spin);
+                }
+                value1 += prod;
+            }
+            values(i,j) = value1 / double(site_cl.size());
+        }
+    }
+}
+
 ComputeClusterFunction::ComputeClusterFunction(const vector3d& cons_cl,
                                                const vector2i& spin_cl){
 
-//    values = Eigen::VectorXd(spin_cl.size());
     value = 0.0;
     for (int i = 0; i < spin_cl.size(); ++i){
         double prod(1.0);
@@ -38,10 +71,6 @@ ComputeClusterFunction::ComputeClusterFunction(const vector3d& cons_cl,
         value += prod;
     }
     value /= double(spin_cl.size());
-
-//    #ifdef _OPENMP
-//    #pragma omp parallel for schedule(guided,1) if(shape[0] >= 10000)
-//    #endif
 }
 
 ComputeClusterFunction::~ComputeClusterFunction(){}
@@ -56,6 +85,6 @@ double ComputeClusterFunction::eval_poly(const vector1d& coeffs,
 }
 
 double& ComputeClusterFunction::get_value(){ return value; }
-Eigen::VectorXd& ComputeClusterFunction::get_values(){ return values; }
+Eigen::MatrixXd& ComputeClusterFunction::get_values(){ return values; }
 
 
