@@ -159,7 +159,7 @@ if __name__ == '__main__':
                 order, n_atoms = st_attr[j]
                 n_cell, g_id, s_id, l_id = indices[j]
 
-                fname = dir2 + 'POSCAR-' + str(n_cell) + '-' \
+                fname = dir2 + 'poscar-' + str(n_cell) + '-' \
                              + str(s_id) + '-' + str(l_id)
                 cell = ds_set_all[g_id].get_supercell_from_id(s_id)
                 print_poscar_tofile(cell, 

@@ -125,6 +125,12 @@ if __name__ == '__main__':
                     action='append',
                     default=None,
                     help='Upper bound of composition (n_elements / n_sites)')
+    ps.add_argument('--charge',
+                    type=float, 
+                    nargs='*', 
+                    default=None,
+                    help='Charges for elements')
+ 
     ps.add_argument('--hnf',
                     type=int, 
                     nargs=9, 
@@ -165,6 +171,12 @@ if __name__ == '__main__':
     if args.n_expand is None and args.hnf is None:
         raise KeyError(' n_expand or hnf is required.')
 
+    print(' charge =', args.charge)
+    if args.charge is not None:
+        one_of_k_rep=True
+    else:
+        one_of_k_rep=False
+
     if args.hnf is not None:
         hnf_all = [args.hnf]
     else:
@@ -174,7 +186,7 @@ if __name__ == '__main__':
     dd_handler = DDNodeHandler(n_sites=n_sites,
                                occupation=args.occupation,
                                elements_lattice=args.elements,
-                               one_of_k_rep=False)
+                               one_of_k_rep=one_of_k_rep)
 
     ds_set_all = []
     for idx, H in enumerate(hnf_all):
@@ -184,13 +196,20 @@ if __name__ == '__main__':
         site_perm, site_perm_lt = get_permutation(st_sup, 
                                                   superperiodic=True, 
                                                   hnf=H)
+
+
         dd_const = DDConstructor(dd_handler)
         gs = dd_const.enumerate_nonequiv_configs(site_permutations=site_perm,
                                                  comp=comp,
                                                  comp_lb=comp_lb,
                                                  comp_ub=comp_ub)
-        gs &= dd_const.no_endmembers()
-        print(' number of structures (end members eliminated) =', gs.len())
+        if args.endmember == False:
+            gs &= dd_const.no_endmembers()
+            print(' number of structures (end members eliminated) =', gs.len())
+
+        if args.charge is not None:
+            gs = dd_const.charge_balance(args.charge, gs=gs)
+            print(' number of structures (charge_balance) =', gs.len())
 
         t1 = time.time()
         res = dd_handler.convert_graphs_to_labelings(gs)

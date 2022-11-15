@@ -220,7 +220,73 @@ class DDConstructor:
 
         return gs
 
-    # a test is required
+    def charge_balance(self, charge, gs=None, eps=1e-5):
+
+        if gs is None:
+            gs = self.one_of_k()
+
+        charge_sum = 0.0
+        inactive_nodes = self.handler.get_nodes(inactive=True,edge_rep=False)
+        for node_idx in inactive_nodes:
+            ele = self.handler.get_element(node_idx)
+            charge_sum -= charge[ele]
+
+        weight = []
+        nodes_weight = sorted(self.nodes)
+        for node_idx, _ in nodes_weight:
+            ele = self.handler.get_element(node_idx)
+            weight.append((node_idx,node_idx,charge[ele]))
+        lconst = [(weight, (charge_sum-eps, charge_sum+eps))]
+
+        gs = gs.graphs(linear_constraints=lconst)
+
+        return gs
+ 
+#    # bak
+#    def charge_balance(self, charge, comp=None, eps=1e-5):
+#
+#        gs = self.empty()
+#
+#        charge_sum = 0.0
+#        inactive_nodes = self.handler.get_nodes(inactive=True,edge_rep=False)
+#        for n_idx in inactive_nodes:
+#            ele = self.handler.get_element(n_idx)
+#            charge_sum -= charge[ele]
+#
+#        nodes_noweight = []
+#        if comp is not None:
+#            for ele in self.elements_dd:
+#                if comp[ele] is not None:
+#                    tnodes = self.handler.get_nodes(element=ele, active=True)
+#                    sites = [self.handler.get_site(n_idx) 
+#                                for n_idx, _ in tnodes]
+#                    if len(sites) == len(set(sites)):
+#                        charge_sum -= charge[ele] * len(sites) * comp[ele]
+#                        nodes_noweight.extend([n for n in tnodes])
+#
+#                        gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
+#                        val = len(tnodes) * comp[ele]
+#                        if abs(round(val) - val) < 1e-10:
+#                            n_edges = round(val)
+#                        else:
+#                            n_edges = 100000
+#                        gs1 = gs1.graphs(num_edges=n_edges)
+#                        gs = gs.join(gs1)
+# 
+#        weight = []
+#        nodes_weight = sorted(set(self.nodes) - set(nodes_noweight))
+#        for n_idx, _ in nodes_weight:
+#            ele = self.handler.get_element(n_idx)
+#            weight.append((n_idx,n_idx,charge[ele]))
+#        lconst = [(weight, (charge_sum-eps, charge_sum+eps))]
+#
+#        gs1 = GraphSet({'exclude':nodes_noweight})
+#        gs1 = gs1.graphs(linear_constraints=lconst)
+#        gs = gs.join(gs1)
+#
+#        return gs
+
+#    # a test is required
     # slow ?
     def num_clusters_smaller(self, gs, cluster_nodes, n_clusters=1):
 
@@ -257,47 +323,4 @@ class DDConstructor:
 
         return gs
 
-    # a test is required
-    def charge_balance(self, charge, comp=None, eps=1e-5):
-
-        gs = self.empty()
-
-        charge_sum = 0.0
-        inactive_nodes = self.handler.get_nodes(inactive=True,edge_rep=False)
-        for n_idx in inactive_nodes:
-            ele = self.handler.get_element(n_idx)
-            charge_sum -= charge[ele]
-
-        nodes_noweight = []
-        if comp is not None:
-            for ele in self.elements_dd:
-                if comp[ele] is not None:
-                    tnodes = self.handler.get_nodes(element=ele, active=True)
-                    sites = [self.handler.get_site(n_idx) 
-                                for n_idx, _ in tnodes]
-                    if len(sites) == len(set(sites)):
-                        charge_sum -= charge[ele] * len(sites) * comp[ele]
-                        nodes_noweight.extend([n for n in tnodes])
-
-                        gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
-                        val = len(tnodes) * comp[ele]
-                        if abs(round(val) - val) < 1e-10:
-                            n_edges = round(val)
-                        else:
-                            n_edges = 100000
-                        gs1 = gs1.graphs(num_edges=n_edges)
-                        gs = gs.join(gs1)
- 
-        weight = []
-        nodes_weight = sorted(set(self.nodes) - set(nodes_noweight))
-        for n_idx, _ in nodes_weight:
-            ele = self.handler.get_element(n_idx)
-            weight.append((n_idx,n_idx,charge[ele]))
-        lconst = [(weight, (charge_sum-eps, charge_sum+eps))]
-
-        gs1 = GraphSet({'exclude':nodes_noweight})
-        gs1 = gs1.graphs(linear_constraints=lconst)
-        gs = gs.join(gs1)
-
-        return gs
  

@@ -159,9 +159,6 @@ if __name__ == '__main__':
     for k, v in cons.items():
         cons_list[k] = v
 
-    # temporarily
-    normal = False
-
     if normal == True:
         print(' computing cluster orbits (in prim. cell) ...')
         clusters.find_orbits_primitive(distinguish_element=False)
@@ -195,7 +192,8 @@ if __name__ == '__main__':
             orbits = compute_orbits(ds_samp, f.n_cell, f.s_id, clusters_ele)
             f.set_orbits(orbits)
 
-        print(' computing correlation functions in structures (labelings) ...')
+        print(' computing products of cluster functions',
+              'in structures (labelings) ...')
         n_total = sum([f.labelings.shape[0] for f in features_array])
         print('   - total number of structures =', n_total)
 
