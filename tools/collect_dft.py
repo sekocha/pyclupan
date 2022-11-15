@@ -4,6 +4,11 @@ import argparse
 import glob
 
 from mlptools.common.readvasp import Vasprun
+from pyclupan.common.composition import Composition
+
+
+#    ~/git/pyclupan/tools/collect_dft.py --end finished/1-0-0/vasprun.xml_to_mlip 2.0 0 2 --end finished/1-0-3/vasprun.xml_to_mlip 2.0 1 3 --vaspruns finished/*/vasprun.xml_to_mlip
+
 
 def get_info(vasprun_xml):
 
@@ -58,13 +63,14 @@ if __name__ == '__main__':
             data = (f, comp, 0.0)
             dft_data.append(data)
 
-        n_atoms_end_rec = np.linalg.pinv(n_atoms_end)
+        comp_obj = Composition(n_atoms_end, e_end=e_ends)
+
         for f in args.vaspruns:
             e, n_atoms = get_info(f)
-            if len(n_atoms) == n_atoms_end_rec.shape[1]:
-                ratio = np.dot(n_atoms_end_rec, n_atoms)
-                comp = ratio / sum(ratio)
-                e_form = (e - np.dot(e_ends, ratio)) / sum(ratio)
+            if len(n_atoms) == n_type:
+                comp, partition = comp_obj.get_comp(n_atoms)
+                e_form = comp_obj.compute_formation_energy(e, partition)
+
                 data = (f, comp, e_form)
                 dft_data.append(data)
 

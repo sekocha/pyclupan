@@ -7,6 +7,12 @@ from sklearn.linear_model import Lasso
 from sklearn.linear_model import LassoCV
 from sklearn.linear_model import Ridge
 
+from pyclupan.common.io.yaml import Yaml
+
+"""
+~/git/pyclupan/regression/regression.py -x ../4-correlation/correlations.pkl -y ../2-dft/summary_dft.dat --upper_bound 0.5
+"""
+
 if __name__ == '__main__':
 
     ps = argparse.ArgumentParser()
@@ -27,7 +33,7 @@ if __name__ == '__main__':
  
     args = ps.parse_args()
 
-    _, target_ids, correlations = joblib.load(args.x)
+    cluster_set, target_ids, correlations = joblib.load(args.x)
     correlations_dict = dict()
     for st_id, corr in zip(target_ids, correlations):
         correlations_dict[st_id] = corr
@@ -73,18 +79,19 @@ if __name__ == '__main__':
     elif method == 'ridge':
         clf = Ridge(alpha=1e-8, fit_intercept=True)
         clf.fit(X, y)
-        #print(clf.coef_)
+        coeffs = clf.coef_
+        intercept = clf.intercept_
         y_pred = clf.predict(X)
 
-    print(' rmse =', np.sqrt(np.mean(np.square(y - y_pred))))
-#    y_data = np.vstack([y, y_pred]).T
+    rmse = np.sqrt(np.mean(np.square(y - y_pred)))
 
     f = open('prediction.dat', 'w')
     for id1, yt1, yp1 in zip(st_ids, y, y_pred):
         print(id1, '{:.15f}'.format(yt1),'{:.15f}'.format(yp1), file=f)
     f.close()
 
-#    np.savetxt('prediction.dat', y_data, fmt='%.15f')
+    yaml = Yaml()
+    yaml.write_regression_yaml(cluster_set, coeffs, intercept, rmse)
     
 
 

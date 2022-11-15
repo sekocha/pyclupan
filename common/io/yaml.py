@@ -371,4 +371,40 @@ class Yaml:
 
         return cluster_set, structure_indices, np.array(correlations)
 
+    def write_regression_yaml(self, 
+                              cluster_set,
+                              coeffs,
+                              intercept,
+                              rmse,
+                              filename='regression.yaml'):
+
+        f = open(filename, 'w')
+        print('model_accuracy:', file=f)
+        print('- rmse:     ', rmse * 1000, '(meV)', file=f)
+        print('', file=f)
+
+        print('regression_intercept:', file=f)
+        print('- intercept:     ', intercept, file=f)
+        print('', file=f)
+
+        print('regression_coeffs:', file=f)
+        for i, c in enumerate(coeffs):
+            print('- id:             ', i, file=f)
+            print('  coefficient:    ', c, file=f)
+            print('', file=f)
+
+        print('nonequiv_clusters:', file=f)
+        self._write_clusters(cluster_set, f, element_tag='cluster_function')
+
+        f.close()
+
+    def parse_regression_yaml(self, filename='regression.yaml'):
+
+        data = yaml.safe_load(open(filename))
+        coeffs = [d['coefficient'] for d in data['regression_coeffs']]
+        print(data['regression_intercept'])
+        intercept = data['regression_intercept'][0]['intercept']
+
+        return np.array(coeffs), intercept
+
 
