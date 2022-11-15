@@ -3,6 +3,7 @@ import numpy as np
 import sys, os
 import argparse
 import joblib
+import copy
 import time
 import math
 
@@ -89,15 +90,15 @@ def compute_binary(features_array, spins):
 def compute_n_ary(features_array, spins, cons_list):
 
     for i, f in enumerate(features_array):
-        labelings = f.labelings
+        labelings_spin = copy.deepcopy(f.labelings)
         for ele, s in spins.items():
             condition = f.labelings == ele
-            labelings[condition] = s
+            labelings_spin[condition] = s
 
         site_cls = [sites_cl for sites_cl, _ in f.orbits]
         cons_id_cls = [cons_id_cl for _, cons_id_cl in f.orbits]
 
-        cfobj = pyclupancpp.ComputeCF(labelings, 
+        cfobj = pyclupancpp.ComputeCF(labelings_spin, 
                                       site_cls, 
                                       cons_id_cls, 
                                       cons_list)

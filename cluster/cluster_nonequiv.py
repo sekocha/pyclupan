@@ -79,24 +79,25 @@ class NonequivalentClusters:
         if n_body_ub > 1:
             for n_body in range(2,n_body_ub+1):
                 print("  searching for "+str(n_body)+"-body clusters ...")
-                cut = cutoff[n_body-2]
-                clusters_cutoff = []
+
+                cl_rep = set()
                 for cl, s in itertools.product(clusters_small, sites):
                     if not s in cl:
                         cl_trial = sorted(list(cl) + [s])
-                        is_cutoff, _ = self.check_cluster_cutoff(cl_trial, 
-                                                                 axis_s, 
-                                                                 positions_s,
-                                                                 cut)
-                        if is_cutoff:
-                            clusters_cutoff.append(cl_trial)
+                        cl_perm = perm[:,np.array(cl_trial)]
+                        cl_min = min([tuple(sorted(p)) for p in cl_perm])
+                        cl_rep.add(cl_min)
 
-                cl_rep = set()
-                for cl in clusters_cutoff:
-                    cl_perm = perm[:,np.array(cl)]
-                    cl_rep.add(min([tuple(sorted(p)) for p in cl_perm]))
-
-                clusters_small = sorted(cl_rep)
+                cut = cutoff[n_body-2]
+                clusters_cutoff = []
+                for cl_trial in sorted(cl_rep):
+                    is_cutoff, _ = self.check_cluster_cutoff(cl_trial, 
+                                                             axis_s, 
+                                                             positions_s,
+                                                             cut)
+                    if is_cutoff:
+                        clusters_cutoff.append(cl_trial)
+                clusters_small = sorted(clusters_cutoff)
                 clusters.extend(clusters_small)
                 print("  ", len(clusters_small), 
                       str(n_body)+"-body clusters are found.")
@@ -127,7 +128,8 @@ class NonequivalentClusters:
             site_indices, cell_indices = [], []
             for pos in positions_cl.T:
                 pos_t = np.dot(T, pos)
-                cell = np.floor(pos_t).astype(int)
+                cell = np.floor(pos_t + np.ones(pos_t.shape[0]) * 1e-13)\
+                       .astype(int)
                 pos_prim = pos_t - cell
                 for j, pos2 in enumerate(self.st.positions.T):
                     if np.all(np.isclose(pos_prim, pos2)):

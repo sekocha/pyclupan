@@ -76,7 +76,4 @@ if __name__ == '__main__':
                 print('{:.15f}'.format(c), end=' ', file=g)
             print('{:.15f}'.format(d[2]), file=g)
         g.close()
-
-            
-        print(dft_data)
-   
+  
