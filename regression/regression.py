@@ -9,9 +9,7 @@ from sklearn.linear_model import Ridge
 
 from pyclupan.common.io.yaml import Yaml
 
-"""
-~/git/pyclupan/regression/regression.py -x ../4-correlation/correlations.pkl -y ../2-dft/summary_dft.dat --upper_bound 0.5
-"""
+#~/git/pyclupan/regression/regression.py -x ../4-correlation/correlations.pkl -y ../2-dft/summary_dft.dat --upper_bound 0.5
 
 if __name__ == '__main__':
 
@@ -33,15 +31,16 @@ if __name__ == '__main__':
  
     args = ps.parse_args()
 
-    cluster_set, target_ids, correlations = joblib.load(args.x)
+    cluster_set, target_ids, correlations, _ = joblib.load(args.x)
     correlations_dict = dict()
     for st_id, corr in zip(target_ids, correlations):
         correlations_dict[st_id] = corr
 
-    dft = np.loadtxt(args.y, dtype=str)
-    ids = np.where(dft[:,-1].astype(float) < args.upper_bound)[0]
-    fname = dft[ids,0]
-    y = dft[ids,-1].astype(float)
+    yaml = Yaml()
+    comp, y, fname, comp_obj = yaml.parse_dft_yaml(args.y)
+
+    ids = np.where(y < args.upper_bound)[0]
+    fname, y = fname[ids], y[ids]
 
     X, st_ids = [], []
     for f in fname:
@@ -90,8 +89,7 @@ if __name__ == '__main__':
         print(id1, '{:.15f}'.format(yt1),'{:.15f}'.format(yp1), file=f)
     f.close()
 
-    yaml = Yaml()
-    yaml.write_regression_yaml(cluster_set, coeffs, intercept, rmse)
+    yaml.write_regression_yaml(cluster_set, coeffs, intercept, rmse, 
+                               comp_obj=comp_obj)
     
-
 

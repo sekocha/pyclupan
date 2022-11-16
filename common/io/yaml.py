@@ -3,6 +3,7 @@ import numpy as np
 import yaml
 
 from mlptools.common.structure import Structure
+from pyclupan.common.composition import Composition
 from pyclupan.cluster.cluster import Cluster, ClusterSet
 from pyclupan.derivative.derivative import DSSet
 
@@ -332,6 +333,7 @@ class Yaml:
                                 cluster_set: ClusterSet, 
                                 structure_indices,
                                 correlations: np.array,
+                                n_atoms_all,
                                 cons=None,
                                 filename='correlations.yaml'):
 
@@ -347,12 +349,16 @@ class Yaml:
         self._write_clusters(cluster_set, f, element_tag='cluster_function')
 
         print('correlation_functions:', file=f)
-        for indices, c in zip(structure_indices, correlations):
+        for indices, c, n_atoms in zip(structure_indices,
+                                       correlations,
+                                       n_atoms_all):
             n_cell, s_id, l_id = indices
             print('- n_cell:        ', n_cell, file=f)
             print('  supercell_id:  ', s_id, file=f)
             print('  labeling_id:   ', l_id, file=f)
-            print('  correlations:    ', end='', file=f)
+            print('  n_atoms:       ', end='', file=f)
+            self._write_list_no_space(n_atoms, f)
+            print('  correlations:  ', end='', file=f)
             self._write_list_no_space(c, f)
             print('', file=f)
 
@@ -363,19 +369,22 @@ class Yaml:
         data = yaml.safe_load(open(filename))
         cluster_set = self._parse_clusters(data,tag='nonequiv_clusters')
 
-        structure_indices, correlations = [], []
+        structure_indices, correlations, n_atoms_all = [], [], []
         for d in data['correlation_functions']:
             st_id = (d['n_cell'], d['supercell_id'], d['labeling_id'])
             structure_indices.append(st_id)
-            n_clusters.append(d['correlations'])
+            correlations.append(d['correlations'])
+            n_atoms_all.append(d['n_atoms'])
 
-        return cluster_set, structure_indices, np.array(correlations)
+        return cluster_set, structure_indices, \
+               np.array(correlations), np.array(n_atoms_all)
 
     def write_regression_yaml(self, 
                               cluster_set,
                               coeffs,
                               intercept,
                               rmse,
+                              comp_obj=None,
                               filename='regression.yaml'):
 
         f = open(filename, 'w')
@@ -393,6 +402,9 @@ class Yaml:
             print('  coefficient:    ', c, file=f)
             print('', file=f)
 
+        if comp_obj is not None:
+            self.write_end_members(comp_obj, f)
+
         print('nonequiv_clusters:', file=f)
         self._write_clusters(cluster_set, f, element_tag='cluster_function')
 
@@ -402,9 +414,70 @@ class Yaml:
 
         data = yaml.safe_load(open(filename))
         coeffs = [d['coefficient'] for d in data['regression_coeffs']]
-        print(data['regression_intercept'])
         intercept = data['regression_intercept'][0]['intercept']
 
-        return np.array(coeffs), intercept
+        if 'end_members' in data:
+            comp_obj = self.parse_end_members(data=data)
+        else:
+            comp_obj = None
 
+        return np.array(coeffs), intercept, comp_obj
+
+    def write_dft_yaml(self, 
+                       dft_data,
+                       comp_obj=None,
+                       filename='summary_dft.yaml'):
+
+        f = open(filename, 'w')
+
+        if comp_obj is not None:
+            self.write_end_members(comp_obj, f)
+
+        print('dft_derivatives:', file=f)
+        for path, comp, e_form in dft_data:
+            path_dir = '/'.join(path.split('/')[:-1])
+            print('- path:          ', path_dir, file=f)
+            print('  composition:   ', list(comp), file=f)
+            print('  energy:        ', e_form, file=f)
+            print('', file=f)
+
+        f.close()
+
+    def parse_dft_yaml(self, filename='summary_dft.yaml'):
+
+        data = yaml.safe_load(open(filename))
+        comp_obj = self.parse_end_members(data=data)
+
+        path = [d['path'] for d in data['dft_derivatives']]
+        composition = [d['composition'] for d in data['dft_derivatives']]
+        energy = [d['energy'] for d in data['dft_derivatives']]
+
+        return np.array(composition),np.array(energy),np.array(path),comp_obj
+
+    def write_end_members(self, comp_obj, stream):
+
+        print('end_members:', file=stream)
+        e_end = comp_obj.e_end
+        n_atoms_end = comp_obj.n_atoms_end.T
+        path_end = comp_obj.path_end
+        for i, (n_atoms, e, path) in enumerate(zip(n_atoms_end, 
+                                                   e_end, 
+                                                   path_end)):
+            print('- id:       ', i, file=stream)
+            print('  n_atoms:  ', list(n_atoms), file=stream)
+            print('  energy:   ', e, file=stream)
+            path_dir = '/'.join(path.split('/')[:-1])
+            print('  path:     ', path_dir, file=stream)
+            print('', file=stream)
+
+    def parse_end_members(self, filename='summary_dft.yaml', data=None):
+
+        if data is None:
+            data = yaml.safe_load(open(filename))
+
+        n_atoms_end = np.array([d['n_atoms'] for d in data['end_members']]).T
+        e_end = np.array([d['energy'] for d in data['end_members']])
+        path_end = np.array([d['path'] for d in data['end_members']])
+        comp_obj = Composition(n_atoms_end, e_end=e_end, path_end=path_end)
+        return comp_obj
 

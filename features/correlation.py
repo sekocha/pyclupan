@@ -107,6 +107,17 @@ def compute_n_ary(features_array, spins, cons_list):
 
     return features_array
 
+def get_n_atoms(features_array, n_type):
+    
+    n_atoms_all = []
+    for f in features_array:
+        n_atoms_f = [np.count_nonzero(f.labelings == e, axis=1) 
+                    for e in range(n_type)]
+        n_atoms_all.append(np.array(n_atoms_f).T)
+    n_atoms_all = np.vstack(n_atoms_all)
+
+    return n_atoms_all
+
 
 if __name__ == '__main__':
 
@@ -209,6 +220,11 @@ if __name__ == '__main__':
     print('   - (n_structures, n_clusters) =', correlation_all.shape)
     print('   - elapsed time               =', f'{t2-t1:.2f}', '(s)')
     
+    # to output number of atoms 
+    n_type = max([e2 for e1 in ds_samp.element_orbit for e2 in e1]) + 1
+
+    n_atoms_all = get_n_atoms(features_array, n_type)
+
     print(' generating output files ...')
     if normal == True:
         clusters_out = clusters
@@ -217,13 +233,14 @@ if __name__ == '__main__':
         clusters_out = clusters_ele
         cons_out = cons
 
-    joblib.dump((clusters_out, target_ids, correlation_all), 
+    joblib.dump((clusters_out, target_ids, correlation_all, n_atoms_all), 
                 'correlations.pkl', compress=3)
     if args.yaml:
         yaml = Yaml()
         yaml.write_correlations_yaml(clusters_out, 
                                      target_ids, 
                                      correlation_all,
+                                     n_atoms_all,
                                      cons=cons_out)
  
 

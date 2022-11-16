@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import numpy as np
+import os
 import argparse
-import glob
 
 from mlptools.common.readvasp import Vasprun
 from pyclupan.common.composition import Composition
-
+from pyclupan.common.io.yaml import Yaml
 
 #    ~/git/pyclupan/tools/collect_dft.py --end finished/1-0-0/vasprun.xml_to_mlip 2.0 0 2 --end finished/1-0-3/vasprun.xml_to_mlip 2.0 1 3 --vaspruns finished/*/vasprun.xml_to_mlip
 
@@ -63,23 +63,17 @@ if __name__ == '__main__':
             data = (f, comp, 0.0)
             dft_data.append(data)
 
-        comp_obj = Composition(n_atoms_end, e_end=e_ends)
+        abspath = [os.path.abspath(end[0]) for end in args.end]
+        comp_obj = Composition(n_atoms_end, e_end=e_ends, path_end=abspath)
 
         for f in args.vaspruns:
             e, n_atoms = get_info(f)
             if len(n_atoms) == n_type:
                 comp, partition = comp_obj.get_comp(n_atoms)
                 e_form = comp_obj.compute_formation_energy(e, partition)
-
                 data = (f, comp, e_form)
                 dft_data.append(data)
 
-        g = open('summary_dft.dat', 'w')
-        print('# filename, compositions, e_formation', file=g)
-        for d in dft_data:
-            print(d[0], end=' ', file=g)
-            for c in d[1]:
-                print('{:.15f}'.format(c), end=' ', file=g)
-            print('{:.15f}'.format(d[2]), file=g)
-        g.close()
+        Yaml().write_dft_yaml(dft_data, comp_obj=comp_obj)
+
   

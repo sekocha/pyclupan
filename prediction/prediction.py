@@ -28,14 +28,20 @@ if __name__ == '__main__':
 
     args = ps.parse_args()
 
-    cluster_set, target_ids, correlations = joblib.load(args.x)
+    cluster_set, target_ids, correlations, n_atoms_all = joblib.load(args.x)
 
     yaml = Yaml()
-    coeffs, intercept = yaml.parse_regression_yaml(args.coeffs)
+    coeffs, intercept, comp_obj = yaml.parse_regression_yaml(args.coeffs)
     y_pred = np.dot(correlations, coeffs) + intercept
-    
+
+    comp_all, partition = comp_obj.get_comp_multiple(n_atoms_all)
+
     f = open('prediction.dat', 'w')
-    for st_id, yp1 in zip(target_ids, y_pred):
-        print(st_id, '{:.15f}'.format(yp1), file=f)
+    print(' # st_id, compositions, ..., energy', file=f)
+    for st_id, yp1, comp in zip(target_ids, y_pred, comp_all):
+        print(st_id, end=' ', file=f)
+        for c in comp:
+            print('{:.8f}'.format(c), end=' ', file=f)
+        print('{:.15f}'.format(yp1), file=f)
     f.close()
 
