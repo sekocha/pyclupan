@@ -72,14 +72,14 @@ def set_spins(element_orbit):
 def compute_binary(features_array, spins):
 
     for f in features_array:
-        labelings = f.labelings
+        labelings_spin = copy.deepcopy(f.labelings)
         for ele, s in spins.items():
             condition = f.labelings == ele
-            labelings[condition] = s
+            labelings_spin[condition] = s
 
         correlation = []
         for sites in f.orbits:
-           spin_cl = labelings[:,sites]
+           spin_cl = labelings_spin[:,sites]
            ave = np.average(np.prod(spin_cl, axis=2), axis=1)
            correlation.append(ave)
         correlation = np.array(correlation).T

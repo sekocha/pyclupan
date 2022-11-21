@@ -46,17 +46,23 @@ class NonequivalentClusters:
         print(' number of nonequivalent sites =', len(nonequiv_sites))
 
     def find_nonequivalent_clusters(self, 
-                                    n_body_ub=2, 
+                                    n_bodies=[1,2],
                                     cutoff=[1.0],
-                                    elements_lattice=None):
+                                    cutoff_cell=None,
+                                    elements_lattice=None,
+                                    begin_cluster_id=0):
+
+        if cutoff_cell is None:
+            cutoff_cell = max(cutoff)
+
+        n_body_ub = max(n_bodies)
 
         niggli = NiggliReduced(self.st.axis)
         niggli_axis, niggli_tmat = niggli.niggli_axis, niggli.tmat
         niggli_positions = niggli.transform_fr_coords(self.st.positions)
 
-        maxcut = max(cutoff) 
         niggli_norm = np.linalg.norm(niggli_axis, axis=0)
-        H = np.diag(np.ceil(np.ones(3)*maxcut*2 / niggli_norm))
+        H = np.diag(np.ceil(np.ones(3)*cutoff_cell*2 / niggli_norm))
 
         sup = Supercell(axis=niggli_axis,
                         positions=niggli_positions,
@@ -74,7 +80,11 @@ class NonequivalentClusters:
         print(' number of nonequivalent sites =', len(nonequiv_sites))
 
         self.distance_dict = dict()
-        clusters_small = clusters = [tuple([s]) for s in nonequiv_sites]
+        clusters = []
+        clusters_small = [tuple([s]) for s in nonequiv_sites]
+
+        if 1 in n_bodies:
+            clusters.extend(clusters_small)
 
         if n_body_ub > 1:
             for n_body in range(2,n_body_ub+1):
@@ -98,9 +108,15 @@ class NonequivalentClusters:
                     if is_cutoff:
                         clusters_cutoff.append(cl_trial)
                 clusters_small = sorted(clusters_cutoff)
-                clusters.extend(clusters_small)
-                print("  ", len(clusters_small), 
-                      str(n_body)+"-body clusters are found.")
+
+                if n_body in n_bodies:
+                    clusters.extend(clusters_small)
+                    print("  ", len(clusters_small), 
+                        str(n_body)+"-body clusters are found.")
+                else:
+                    print("  ", len(clusters_small), 
+                          str(n_body)+"-body clusters are "\
+                          + "found (but eliminated).")
 
         print(' number of nonequivalent clusters (< cutoff) =', len(clusters))
 
@@ -138,7 +154,7 @@ class NonequivalentClusters:
                 site_indices.append(idx)
                 cell_indices.append(cell)
 
-            cl_attr = Cluster(cl_idx, 
+            cl_attr = Cluster(cl_idx + begin_cluster_id, 
                               len(site_indices), 
                               site_indices, 
                               cell_indices)
@@ -282,11 +298,53 @@ if __name__ == '__main__':
                               if len(e) > 1]
             print(' lattice =', args.lattice)
 
-    clobj = NonequivalentClusters(prim, lattice=args.lattice)
-    cl, cl_ele = clobj.find_nonequivalent_clusters\
-                                     (n_body_ub=args.n_body, 
-                                      cutoff=args.cutoff,
-                                      elements_lattice=args.elements)
+    threshold = pow(np.linalg.det(prim.axis), 0.333333333333) / 3.0
+    if max(args.cutoff) - min(args.cutoff) < threshold: 
+        clobj = NonequivalentClusters(prim, lattice=args.lattice)
+        cl, cl_ele = clobj.find_nonequivalent_clusters\
+                                          (n_bodies=range(1,args.n_body+1),
+                                          cutoff=args.cutoff,
+                                          cutoff_cell=None,
+                                          elements_lattice=args.elements)
+    else:
+        cutoff_group = []
+        for i, cut in enumerate(args.cutoff):
+            n_body = i + 2
+            if n_body == 2:
+                cutoff_group.append([2])
+            else:
+                cutoff_diff = cut - args.cutoff[i-1]
+                if cutoff_diff < 1e-10 and cutoff_diff > - threshold:
+                    cutoff_group[-1].append(n_body)
+                else:
+                    cutoff_group.append([n_body])
+
+        clusters, clusters_ele = [], []
+        begin = 0
+        for i, n_bodies in enumerate(cutoff_group):
+            cutoff_cell = max([args.cutoff[n-2] for n in n_bodies])
+            cutoff = copy.deepcopy(args.cutoff)
+            for j, c in enumerate(cutoff):
+                if not j + 2 in n_bodies:
+                    cutoff[j] = cutoff_cell
+
+            if i == 0:
+                n_bodies = [1] + n_bodies
+
+            print(' n_body =', n_bodies)
+            clobj = NonequivalentClusters(prim, lattice=args.lattice)
+            cl, cl_ele = clobj.find_nonequivalent_clusters\
+                                         (n_bodies=n_bodies, 
+                                          cutoff=cutoff,
+                                          cutoff_cell=cutoff_cell,
+                                          elements_lattice=args.elements,
+                                          begin_cluster_id=begin)
+            begin += len(cl.clusters)
+            clusters.extend(cl.clusters)
+            clusters_ele.extend(cl_ele.clusters)
+
+        cl = ClusterSet(clusters)
+        cl_ele = ClusterSet(clusters_ele)
 
     yaml = Yaml()
     yaml.write_clusters_yaml(prim, args.cutoff, cl, args.elements, cl_ele)

@@ -198,7 +198,7 @@ class DSSet:
         return self.hnf_set[idx]
 
     def sample(self, supercell_id, labeling_id, return_labeling=False):
-        labelings = self.all_labelings[labeling_id]
+        labeling = self.all_labelings[labeling_id]
         if return_labeling == True:
             return self.get_supercell_from_id(supercell_id), labeling
 

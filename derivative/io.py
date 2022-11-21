@@ -122,7 +122,6 @@ if __name__ == '__main__':
     n_st = sum([ds_set.n_labelings for ds_set in ds_set_all])
     print(' total number of structures =', n_st)
 
-    #joblib.dump(ds_samp, 'derivative-all.pkl', compress=3)
     joblib.dump(ds_set_all, 'derivative-all.pkl', compress=3)
     ds_samp = DSSample(ds_set_all)
 
