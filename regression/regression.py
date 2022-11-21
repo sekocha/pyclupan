@@ -76,8 +76,22 @@ if __name__ == '__main__':
             print(y_true, y_pred)
 
     elif method == 'ridge':
-        clf = Ridge(alpha=1e-8, fit_intercept=True)
-        clf.fit(X, y)
+        #for alpha in [1e-8,1e-6,1e-4,1e-2]:
+        #    clf = Ridge(alpha=alph, fit_intercept=True)
+        #    clf.fit(X, y)
+        #    coeffs = clf.coef_
+        #    intercept = clf.intercept_
+        #    y_pred = clf.predict(X)
+        from sklearn.linear_model import RidgeCV
+        clf = RidgeCV(alphas=[1e-8,1e-6,1e-4,1e-2], 
+                      store_cv_values=True).fit(X, y)
+        print(clf.score(X, y))
+        print(clf.get_params())
+        print(clf.cv_values_)
+        print(clf.cv_values_.shape)
+        print(clf.best_score_)
+        print(clf.alpha_)
+
         coeffs = clf.coef_
         intercept = clf.intercept_
         y_pred = clf.predict(X)
