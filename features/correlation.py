@@ -177,7 +177,7 @@ if __name__ == '__main__':
         print(' computing cluster orbits (in supercells) ...')
         for f in features_array:
             orbits = compute_orbits(ds_samp, f.n_cell, f.s_id, clusters)
-            orbits = np.array([sites for sites, _ in orbits])
+            orbits = [sites for sites, _ in orbits]
             f.set_orbits(orbits)
 
         print(' computing correlation functions in structures (labelings) ...')

@@ -3,10 +3,6 @@ import numpy as np
 import argparse
 import joblib
 
-from sklearn.linear_model import Lasso
-from sklearn.linear_model import LassoCV
-from sklearn.linear_model import Ridge
-
 from pyclupan.common.io.yaml import Yaml
 
 """
@@ -31,8 +27,10 @@ if __name__ == '__main__':
     cluster_set, target_ids, correlations, n_atoms_all = joblib.load(args.x)
 
     yaml = Yaml()
-    coeffs, intercept, comp_obj = yaml.parse_regression_yaml(args.coeffs)
-    y_pred = np.dot(correlations, coeffs) + intercept
+    coeffs, cluster_ids, intercept, comp_obj \
+                    = yaml.parse_regression_yaml(args.coeffs)
+
+    y_pred = np.dot(correlations[:,cluster_ids], coeffs) + intercept
 
     comp_all, partition = comp_obj.get_comp_multiple(n_atoms_all)
 

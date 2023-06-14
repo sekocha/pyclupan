@@ -150,6 +150,9 @@ if __name__ == '__main__':
     ps.add_argument('--nodump',
                     action='store_true',
                     help='No dump file of DSSet object')
+    ps.add_argument('--no_labelings',
+                    action='store_true',
+                    help='Only counting number of structures')
     args = ps.parse_args()
 
     if args.occupation is None and args.elements is None:
@@ -182,12 +185,15 @@ if __name__ == '__main__':
     else:
         hnf_all = get_nonequivalent_hnf(args.n_expand, st_prim)
 
+    print(' number of HNFs =', len(hnf_all))
+
     n_sites = list(np.array(st_prim.n_atoms) * args.n_expand)
     dd_handler = DDNodeHandler(n_sites=n_sites,
                                occupation=args.occupation,
                                elements_lattice=args.elements,
                                one_of_k_rep=one_of_k_rep)
 
+    n_total = 0
     ds_set_all = []
     for idx, H in enumerate(hnf_all):
         sup = Supercell(st_prim=st_prim, hnf=H)
@@ -211,42 +217,51 @@ if __name__ == '__main__':
             gs = dd_const.charge_balance(args.charge, gs=gs)
             print(' number of structures (charge_balance) =', gs.len())
 
-        t1 = time.time()
-        res = dd_handler.convert_graphs_to_labelings(gs)
-        t2 = time.time()
-        print(' elapsed time (labeling)    =', t2-t1)
-
-        ds_set = DSSet(labelings_info=res,
-                       primitive_cell=st_prim,
-                       n_expand=args.n_expand,
-                       elements=dd_handler.elements,
-                       element_orbit=dd_handler.get_element_orbit(),
-                       comp=comp,
-                       comp_lb=comp_lb,
-                       comp_ub=comp_ub,
-                       hnf=H,
-                       supercell=st_sup,
-                       supercell_id=idx)
-
-        if args.superperiodic == False:
+        if args.no_labelings == False:
+            t1 = time.time()
+            res = dd_handler.convert_graphs_to_labelings(gs)
             t2 = time.time()
-            obj = pyclupancpp.NonequivLBLSuperPeriodic(ds_set.all_labelings, 
-                                                       site_perm_lt)
-            all_labelings = obj.get_labelings()
-            ds_set.replace_labelings(all_labelings)
-            t3 = time.time()
+            print(' elapsed time (labeling)    =', t2-t1)
 
-            print(' number of structures (superperiodic eliminated) =', 
-                    all_labelings.shape[0])
-            print(' elapsed time (superperiodic)    =', t3-t2)
+            ds_set = DSSet(labelings_info=res,
+                           primitive_cell=st_prim,
+                           n_expand=args.n_expand,
+                           elements=dd_handler.elements,
+                           element_orbit=dd_handler.get_element_orbit(),
+                           comp=comp,
+                           comp_lb=comp_lb,
+                           comp_ub=comp_ub,
+                           hnf=H,
+                           supercell=st_sup,
+                           supercell_id=idx)
 
-        ds_set_all.append(ds_set)
+            if args.superperiodic == False:
+                t2 = time.time()
+                obj = pyclupancpp.NonequivLBLSuperPeriodic(ds_set.all_labelings, 
+                                                           site_perm_lt)
+                all_labelings = obj.get_labelings()
+                ds_set.replace_labelings(all_labelings)
+                t3 = time.time()
 
-    prefix = 'derivative-'+str(args.n_expand)
-    yaml = Yaml()
-    yaml.write_derivative_yaml(st_prim, ds_set_all, filename=prefix+'.yaml')
+                print(' number of structures (superperiodic eliminated) =', 
+                        all_labelings.shape[0])
+                print(' elapsed time (superperiodic)    =', t3-t2)
 
-    if args.nodump == False:
-        joblib.dump(ds_set_all, prefix+'.pkl', compress=3)
+            ds_set_all.append(ds_set)
+            n_total += ds_set.all_labelings.shape[0]
+        else:
+            n_total += gs.len()
+
+    if args.no_labelings == False:
+        prefix = 'derivative-'+str(args.n_expand)
+        yaml = Yaml()
+        yaml.write_derivative_yaml(st_prim, ds_set_all, filename=prefix+'.yaml')
+
+        if args.nodump == False:
+            joblib.dump(ds_set_all, prefix+'.pkl', compress=3)
+
+    print(' -- summary --')
+    print(' number of HNFs =', len(hnf_all))
+    print(' number of total structures =', n_total)
 
 

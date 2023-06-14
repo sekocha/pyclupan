@@ -6,6 +6,7 @@ import joblib
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import LassoCV
 from sklearn.linear_model import Ridge
+from sklearn.linear_model import RidgeCV
 
 from pyclupan.common.io.yaml import Yaml
 
@@ -23,6 +24,12 @@ if __name__ == '__main__':
                     type=str,
                     default='summary_dft.dat',
                     help='location of dft data')
+
+    ps.add_argument('-m', '--method',
+                    type=str,
+                    choices=['lasso','ridge'],
+                    default='lasso',
+                    help='regression method (lasso or ridge')
 
     ps.add_argument('--upper_bound',
                     type=float,
@@ -58,43 +65,26 @@ if __name__ == '__main__':
         st_ids.append(st_id)
     X = np.array(X)
 
-    #method = 'lasso'
-    method = 'ridge'
-    if method == 'lasso':
-        #alpha_array = [1e-2,1e-3,1e-4,1e-5,1e-6]
-        #alpha_array = [1e-5]
-        #for alpha in alpha_array:
-        #    clf = Lasso(alpha=alpha)
-        #    clf.fit(X, y)
-
-        #    print(clf.coef_)
-        #    print(clf.intercept_)
-
-        reg = LassoCV(cv=5, random_state=0, max_iter=10000).fit(X, y)
-        print(reg.score(X, y))
-        for y_pred, y_true in zip(reg.predict(X), y):
-            print(y_true, y_pred)
-
-    elif method == 'ridge':
-        #for alpha in [1e-8,1e-6,1e-4,1e-2]:
-        #    clf = Ridge(alpha=alph, fit_intercept=True)
-        #    clf.fit(X, y)
-        #    coeffs = clf.coef_
-        #    intercept = clf.intercept_
-        #    y_pred = clf.predict(X)
-        from sklearn.linear_model import RidgeCV
-        clf = RidgeCV(alphas=[1e-8,1e-6,1e-4,1e-2], 
-                      store_cv_values=True).fit(X, y)
-        print(clf.score(X, y))
-        print(clf.get_params())
-        print(clf.cv_values_)
-        print(clf.cv_values_.shape)
-        print(clf.best_score_)
-        print(clf.alpha_)
-
+    print(' reg. method  =', args.method)
+    if args.method == 'lasso':
+        clf = LassoCV().fit(X, y)
         coeffs = clf.coef_
         intercept = clf.intercept_
         y_pred = clf.predict(X)
+
+        print(' best alpha   =', clf.alpha_)
+        print(' score        =', clf.score(X, y))
+
+    elif args.method == 'ridge':
+        clf = RidgeCV(alphas=[1e-8,1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1e0], 
+                      store_cv_values=True)
+        clf.fit(X, y)
+        coeffs = clf.coef_
+        intercept = clf.intercept_
+        y_pred = clf.predict(X)
+
+        print(' best alpha   =', clf.alpha_)
+        print(' score        =', clf.score(X, y))
 
     rmse = np.sqrt(np.mean(np.square(y - y_pred)))
 

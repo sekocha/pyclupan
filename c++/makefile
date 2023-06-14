@@ -3,9 +3,9 @@ cpp = g++
 cflags = -O3 -fPIC -DNDEBUG -Wno-deprecated -mtune=native -march=native -std=c++11 -fpermissive
 ompflags = -fopenmp
 
-include_common = -I./src -I/home/seko/usr/local/anaconda3/include/python3.6m
-include_pybind11 = -I/home/seko/usr/local/anaconda3/include
-include_eigen3 = -I/usr/include/eigen3
+include_common = -I./src 
+include_pybind11 = `python3 -m pybind11 --includes`
+include_eigen3 = -I${CONDA_PREFIX}/include/eigen3
 INCLUDE = $(include_common) $(include_eigen3) $(include_pybind11)
 
 loader = $(cpp)

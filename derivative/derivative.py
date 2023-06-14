@@ -24,6 +24,14 @@ class DSSample:
             for sup_id in ds_set.supercell_idset:
                 self.map_to_gid[(n_cell, sup_id)] = g_id
 
+    def sample_single(self, g_id, s_id, l_id):
+
+        n_cell = self.n_cell_all[g_id]
+        attr = self.ds_set_all[g_id].sample(s_id, l_id)
+        st_attr_all = [attr]
+        id_all = [(n_cell, g_id, s_id, l_id)]
+        return st_attr_all, id_all
+
     def sample_random(self, k=5, element_symbols=None):
 
         st_attr_all, id_all = [], []

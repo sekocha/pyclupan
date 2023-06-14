@@ -10,17 +10,17 @@ from pyclupan.common.symmetry import get_rotations
 import argparse
 from mlptools.common.readvasp import Poscar
 
-def snf_sage(mat):
-    
-    import sage.all
-    from sage.matrix.constructor import Matrix
-
-    ## S = U * matrix * V
-    ## matrix = U^(-1) * S * V^(-1)
-    #mat1 = sage.matrix.constructor.Matrix(mat)
-    mat1 = Matrix(mat)
-    S, U, V = mat1.smith_form()
-    return np.array(S), np.array(U), np.array(V)
+#def snf_sage(mat):
+#    
+#    import sage.all
+#    from sage.matrix.constructor import Matrix
+#
+#    ## S = U * matrix * V
+#    ## matrix = U^(-1) * S * V^(-1)
+#    #mat1 = sage.matrix.constructor.Matrix(mat)
+#    mat1 = Matrix(mat)
+#    S, U, V = mat1.smith_form()
+#    return np.array(S), np.array(U), np.array(V)
 
 from smithnormalform import matrix, snfproblem, z
 def snf(mat):

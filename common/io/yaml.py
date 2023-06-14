@@ -398,9 +398,10 @@ class Yaml:
 
         print('regression_coeffs:', file=f)
         for i, c in enumerate(coeffs):
-            print('- id:             ', i, file=f)
-            print('  coefficient:    ', c, file=f)
-            print('', file=f)
+            if abs(c) > 1e-100:
+                print('- id:             ', i, file=f)
+                print('  coefficient:    ', c, file=f)
+                print('', file=f)
 
         if comp_obj is not None:
             self.write_end_members(comp_obj, f)
@@ -413,6 +414,7 @@ class Yaml:
     def parse_regression_yaml(self, filename='regression.yaml'):
 
         data = yaml.safe_load(open(filename))
+        ids = [d['id'] for d in data['regression_coeffs']]
         coeffs = [d['coefficient'] for d in data['regression_coeffs']]
         intercept = data['regression_intercept'][0]['intercept']
 
@@ -421,7 +423,7 @@ class Yaml:
         else:
             comp_obj = None
 
-        return np.array(coeffs), intercept, comp_obj
+        return np.array(coeffs), ids, intercept, comp_obj
 
     def write_dft_yaml(self, 
                        dft_data,

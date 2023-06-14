@@ -35,9 +35,9 @@ ComputeClusterFunction::ComputeClusterFunction
     const int n_features = site_cls.size();
     values = Eigen::MatrixXd(shape[0], n_features);
 
-//    #ifdef _OPENMP
-//    #pragma omp parallel for schedule(guided,1) if(shape[0] >= 10000)
-//    #endif
+    #ifdef _OPENMP
+    #pragma omp parallel for schedule(guided,1) if(shape[0] >= 50000)
+    #endif
     for (int i = 0; i < shape[0]; ++i){
         for (int j = 0; j < n_features; ++j){
             const auto& site_cl = site_cls[j];

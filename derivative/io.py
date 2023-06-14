@@ -89,7 +89,6 @@ if __name__ == '__main__':
                     action='store_true',
                     help='Only derivative-all.pkl is generated.\
                           No poscar files are generated.')
- 
     args = ps.parse_args()
 
     if args.dump is None and args.yaml is None:
