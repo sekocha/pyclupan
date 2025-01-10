@@ -2,7 +2,7 @@
 
 import itertools
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 
@@ -270,15 +270,20 @@ class ZddLattice:
         return (node_idx, node_idx)
 
     def get_nodes(
-        self, edge_rep=True, active=False, inactive=False, element=None, site=None
+        self,
+        edge_rep: bool = True,
+        active: bool = False,
+        inactive: bool = False,
+        element: Optional[Union[list, int]] = None,
+        site: Optional[Union[list, int]] = None,
     ):
-
+        """Return node IDs."""
         if active:
-            nodes_match = self.active_nodes
+            nodes_match = self._site_set.active_nodes
         elif inactive:
-            nodes_match = self.inactive_nodes
+            nodes_match = self._site_set.inactive_nodes
         else:
-            nodes_match = self.nodes
+            nodes_match = self._site_set.nodes
 
         if element is not None:
             if isinstance(element, list):
@@ -286,7 +291,7 @@ class ZddLattice:
             elif isinstance(element, int):
                 nodes_match = [i for i in nodes_match if self.get_element(i) == element]
             else:
-                raise ValueError("type(element) is not int or list")
+                raise RuntimeError("element must be int or list")
 
         if site is not None:
             if isinstance(site, list):
@@ -294,9 +299,9 @@ class ZddLattice:
             elif isinstance(site, int):
                 nodes_match = [i for i in nodes_match if self.get_site(i) == site]
             else:
-                raise ValueError("type(site) is not int or list")
+                raise RuntimeError("site must be int or list")
 
-        if edge_rep == True:
+        if edge_rep:
             return [(i, i) for i in nodes_match]
         return nodes_match
 
