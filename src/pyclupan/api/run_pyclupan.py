@@ -79,8 +79,7 @@ def run():
     args = parser.parse_args()
 
     np.set_printoptions(legacy="1.21")
-    verbose = True
-    clupan = Pyclupan(verbose=verbose)
+    clupan = Pyclupan(verbose=True)
     clupan.load_poscar(args.poscar)
     clupan.set_derivative_params(
         occupation=args.occupation,
@@ -88,6 +87,8 @@ def run():
         comp=args.comp,
         comp_lb=args.comp_lb,
         comp_ub=args.comp_ub,
+    )
+    clupan.run(
         supercell_size=args.supercell_size,
         hnf=args.hnf,
     )

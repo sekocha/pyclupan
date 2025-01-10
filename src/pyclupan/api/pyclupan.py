@@ -11,6 +11,7 @@ from pyclupan.derivative.derivative_utils import (
     set_compositions,
     set_elements_on_sublattices,
 )
+from pyclupan.derivative.run_derivative import enum_derivatives
 from pyclupan.zdd.zdd_base import ZddLattice
 
 
@@ -75,7 +76,26 @@ class Pyclupan:
             comp_lb=comp_lb,
             comp_ub=comp_ub,
         )
+        self._zdd = ZddLattice(
+            n_sites=n_sites,
+            elements_lattice=elements_lattice,
+            one_of_k_rep=one_of_k_rep,
+            verbose=self._verbose,
+        )
 
+    def run(
+        self,
+        supercell_size: Optional[int] = None,
+        hnf: Optional[np.ndarray] = None,
+    ):
+        """Enumerate derivative structures.
+
+        Parameters
+        ----------
+        supercell_size: Determinant of supercell matrices.
+                        Derivative structures for all nonequivalent HNFs are enumerated.
+        hnf: Supercell matrix in Hermite normal form.
+        """
         if supercell_size is None and hnf is None:
             raise RuntimeError("supercell_size or hnf required.")
 
@@ -83,11 +103,12 @@ class Pyclupan:
             hnf_all = get_nonequivalent_hnf(supercell_size, self._unitcell)
         else:
             hnf_all = [hnf]
-        self._hnf_all = hnf_all
 
-        self._zdd = ZddLattice(
-            n_sites=n_sites,
-            elements_lattice=elements_lattice,
-            one_of_k_rep=one_of_k_rep,
-            verbose=self._verbose,
-        )
+        if self._verbose:
+            print(
+                "Supercell size       :", round(np.linalg.det(hnf_all[0])), flush=True
+            )
+            print("Number of unique HNFs:", len(hnf_all), flush=True)
+
+        for hnf in hnf_all:
+            enum_derivatives(unitcell=self._unitcell, hnf=hnf)
