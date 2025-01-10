@@ -2,12 +2,12 @@
 requires = [
     "scikit-build-core",
     "setuptools_scm[toml]>=6.0",
-    "cmake",
-    "pybind11",
-    "pybind11-global",
-    "eigen",
+#    "cmake",
+#    "pybind11",
+#    "pybind11-global",
+#    "eigen",
 ]
-build-backend = "scikit_build_core.build"
+# build-backend = "scikit_build_core.build"
 
 [project]
 name = "pyclupan"
@@ -37,12 +37,12 @@ Homepage = "https://github.com/sekocha/pyclupan"
 Repository = "https://github.com/sekocha/pyclupan"
 
 [project.scripts]
-pyclupan = "pyclupan.api.run_clupan:run"
+pyclupan = "pyclupan.api.run_pyclupan:run"
 
-[tool.scikit-build]
-cmake.verbose = true
-logging.level = "INFO"
-cmake.source-dir = "./src/pyclupan/cxx"
+# [tool.scikit-build]
+# cmake.verbose = true
+# logging.level = "INFO"
+# cmake.source-dir = "./src/pyclupan/cxx"
 
 # sdist.exclude = [
 #     "conda-recipes",
@@ -56,12 +56,12 @@ cmake.source-dir = "./src/pyclupan/cxx"
 #     "*__pycache__*",
 # ]
 
-metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
-
-[tool.setuptools_scm]
-write_to = "_version.py"
-version_scheme = "post-release"
-local_scheme = "no-local-version"
+# metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
+#
+# [tool.setuptools_scm]
+# write_to = "_version.py"
+# version_scheme = "post-release"
+# local_scheme = "no-local-version"
 
 [tool.flake8]
 max-line-length = 88
