@@ -1,5 +1,6 @@
 """Class and functions for enumerating derivative structures."""
 
+import time
 from typing import Optional
 
 import numpy as np
@@ -12,7 +13,7 @@ from pyclupan.derivative.derivative_utils import (
     set_compositions,
     set_elements_on_sublattices,
 )
-from pyclupan.zdd.zdd import Zdd
+from pyclupan.zdd.zdd import ZddCore
 from pyclupan.zdd.zdd_base import ZddLattice
 
 
@@ -81,8 +82,18 @@ def run_derivatives(
         one_of_k_rep=one_of_k_rep,
         verbose=verbose,
     )
+
+    if verbose:
+        print("Constructing ZDD for derivative structures", flush=True)
+
+    n_derivs = 0
     for hnf in hnf_all:
-        enum_derivatives(
+        if verbose:
+            print("HNF:", hnf[0], flush=True)
+            print("    ", hnf[1], flush=True)
+            print("    ", hnf[2], flush=True)
+
+        gs = enum_derivatives(
             zdd_lattice=zdd_lattice,
             unitcell=unitcell,
             hnf=hnf,
@@ -91,6 +102,10 @@ def run_derivatives(
             comp_ub=comp_ub,
             verbose=verbose,
         )
+        n_derivs += gs.len()
+
+    if verbose:
+        print("Number of derivative structures:", n_derivs, flush=True)
 
 
 def enum_derivatives(
@@ -105,8 +120,58 @@ def enum_derivatives(
     """Enumerate derivative structures for given HNF."""
     sup = supercell(unitcell, hnf)
     site_perm, site_perm_lt = get_permutation(sup, superperiodic=True, hnf=hnf)
-    zdd = Zdd(zdd_lattice, verbose=verbose)
-
-    _ = zdd.enumerate_nonequiv_configs(
-        site_permutations=site_perm, comp=comp, comp_lb=comp_lb, comp_ub=comp_ub
+    zdd = ZddCore(zdd_lattice, verbose=verbose)
+    gs = enumerate_nonequiv_configs(
+        zdd=zdd,
+        site_permutations=site_perm,
+        comp=comp,
+        comp_lb=comp_lb,
+        comp_ub=comp_ub,
+        verbose=verbose,
     )
+    return gs
+
+
+def enumerate_nonequiv_configs(
+    zdd: ZddCore,
+    site_permutations: np.ndarray,
+    comp: tuple = (None),
+    comp_lb: tuple = (None),
+    comp_ub: tuple = (None),
+    verbose: bool = False,
+):
+    """Return ZDD of non-equivalent configurations."""
+    gs = zdd.one_of_k()
+    if verbose:
+        print("n_str (one-of-k)           :", gs.len(), flush=True)
+
+    if comp.count(None) != len(comp):
+        gs &= zdd.composition(comp)
+        if verbose:
+            print("Composition:                ", comp, flush=True)
+            print("n_str (composition)        :", gs.len(), flush=True)
+
+    if comp_lb.count(None) != len(comp_lb) or comp_ub.count(None) != len(comp_ub):
+        gs &= zdd.composition_range(comp_lb, comp_ub)
+        if verbose:
+            print("n_str (composition lb & ub):", gs.len(), flush=True)
+
+    if site_permutations is not None:
+        t1 = time.time()
+        try:
+            gs = zdd.nonequivalent_permutations(site_permutations, gs=gs)
+        except:
+            # TODO: Case of no automorphism option in graphillion.
+            pass
+        t2 = time.time()
+
+        if verbose:
+            print("n_str (non-equivalent)     :", gs.len(), flush=True)
+            print(
+                "Elapsed_time (non-equiv.)  :",
+                np.round(t2 - t1, 3),
+                "(s)",
+                flush=True,
+            )
+    # gs &= zdd.no_endmembers()
+    return gs

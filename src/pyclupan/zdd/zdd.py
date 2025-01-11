@@ -1,8 +1,7 @@
 """Class for constructing ZDD satisfying various constraints."""
 
 # import collections
-import time
-from math import ceil, floor
+from typing import Optional
 
 import numpy as np
 from graphillion import GraphSet
@@ -12,7 +11,7 @@ from pyclupan.zdd.zdd_base import ZddLattice
 # from pyclupan.dd.dd_combinations import DDCombinations
 
 
-class Zdd:
+class ZddCore:
     """Class for constructing ZDD satisfying various constraints."""
 
     def __init__(self, zdd_lattice: ZddLattice, verbose: bool = False):
@@ -57,7 +56,7 @@ class Zdd:
             gs = gs.join(gs1)
         return gs
 
-    def composition(self, comp: list, tol: float = 1e-3):
+    def composition(self, comp: tuple, tol: float = 1e-3):
         """Apply composition."""
         gs = self.empty()
         for ele in self._elements_dd:
@@ -68,47 +67,48 @@ class Zdd:
                 if abs(round(val) - val) < tol:
                     n_edges = round(val)
                 else:
-                    n_edges = np.inf
+                    n_edges = 10**7
                 gs1 = gs1.graphs(num_edges=n_edges)
             else:
                 gs1 = gs1.graphs()
             gs = gs.join(gs1)
         return gs
 
-    # a test is required
-    def composition_range(self, comp_lb, comp_ub):
-
-        print(
-            " Warning: composition_range in dd.constructor.py"
-            + " is being developed. Results must be carefully examined."
-        )
+    def composition_range(self, comp_lb: tuple, comp_ub: tuple):
+        """Apply composition lower and upper bounds."""
+        # TODO: a test is required
+        if self._verbose:
+            print(
+                "Warning: composition_range in dd.constructor.py",
+                "is being developed. Results must be carefully examined.",
+                flush=True,
+            )
 
         gs = self.empty()
-        for ele in self.elements_dd:
-            tnodes = self.handler.get_nodes(element=ele, active=True)
-            gs1 = GraphSet({"exclude": set(self.nodes) - set(tnodes)}).graphs()
+        for ele in self._elements_dd:
+            tnodes = self._zdd_lattice.get_nodes(element=ele, active=True)
+            gs1 = GraphSet({"exclude": set(self._nodes) - set(tnodes)}).graphs()
             if comp_lb[ele] is not None:
-                lb = ceil(len(tnodes) * comp_lb[ele])
+                lb = np.ceil(len(tnodes) * comp_lb[ele])
                 gs1 = gs1.larger(lb - 1)
             if comp_ub[ele] is not None:
-                ub = floor(len(tnodes) * comp_ub[ele])
+                ub = np.floor(len(tnodes) * comp_ub[ele])
                 gs1 = gs1.smaller(ub + 1)
             gs = gs.join(gs1)
-
         return gs
 
-    def no_endmembers(self, verbose=1):
-
-        if verbose > 0:
-            print(" element orbit used for eliminating end members")
-            print("  =", self.element_orbit)
+    def no_endmembers(self):
+        """Eliminate endmember structures."""
+        if self._verbose:
+            print("Orbits of elements used for eliminating end members:", flush=True)
+            print(self._element_orbit)
 
         gs = self.empty()
-        for ele, ele_dd in self.element_orbit:
-            gs1_all = GraphSet({"exclude": set(self.nodes)})
+        for ele, ele_dd in self._element_orbit:
+            gs1_all = GraphSet({"exclude": set(self._nodes)})
             for e in ele_dd:
-                tnodes = self.handler.get_nodes(element=e, active=True)
-                gs1 = GraphSet({"exclude": set(self.nodes) - set(tnodes)})
+                tnodes = self._zdd_lattice.get_nodes(element=e, active=True)
+                gs1 = GraphSet({"exclude": set(self._nodes) - set(tnodes)})
                 gs1 = gs1.larger(0)
                 gs1 = gs1.smaller(len(tnodes))
                 gs1_all = gs1_all.join(gs1)
@@ -117,24 +117,28 @@ class Zdd:
             if n_hidden_ele > 0:
                 sites = set()
                 for e in ele_dd:
-                    tnodes = self.handler.get_nodes(element=e, active=True)
+                    tnodes = self._zdd_lattice.get_nodes(element=e, active=True)
                     for n in tnodes:
-                        sites.add(self.handler.get_site(n[0]))
+                        sites.add(self._zdd_lattice.decompose_node_to_site(n[0]))
                 n_sites = len(sites)
                 gs1_all = gs1_all.smaller(n_sites + 1 - n_hidden_ele)
 
             gs = gs.join(gs1_all)
-
         return gs
 
-    def nonequivalent_permutations(self, site_permutations, num_edges=None, gs=None):
-
+    def nonequivalent_permutations(
+        self,
+        site_permutations: np.ndarray,
+        num_edges: Optional[int] = None,
+        gs: Optional[GraphSet] = None,
+    ):
+        """Return ZDD of non-equivalent configurations."""
         automorphism = []
         for p in site_permutations:
             auto1 = []
-            for n_idx, _ in self.nodes:
-                s_idx, e_idx = self.handler.decompose_node(n_idx)
-                n_idx_perm = self.handler.compose_node(p[s_idx], e_idx)
+            for n_idx, _ in self._nodes:
+                s_idx, e_idx = self._zdd_lattice.decompose_node(n_idx)
+                n_idx_perm = self._zdd_lattice.compose_node(p[s_idx], e_idx)
                 auto1.append(((n_idx, n_idx), (n_idx_perm, n_idx_perm)))
             automorphism.append(auto1)
 
@@ -142,33 +146,6 @@ class Zdd:
             gs = GraphSet.graphs(permutations=automorphism, num_edges=num_edges)
         else:
             gs = gs.graphs(permutations=automorphism, num_edges=num_edges)
-
-        return gs
-
-    def enumerate_nonequiv_configs(
-        self, site_permutations=None, comp=[None], comp_lb=[None], comp_ub=[None]
-    ):
-        """Return ZDD of non-equivalent configurations."""
-        gs = self.one_of_k()
-        if self._verbose:
-            print("n_str (one-of-k)    :", gs.len(), flush=True)
-
-        if comp.count(None) != len(comp):
-            gs &= self.composition(comp)
-            if self._verbose:
-                print("Composition:", comp, flush=True)
-                print("n_str (composition) :", gs.len(), flush=True)
-
-        if comp_lb.count(None) != len(comp_lb) or comp_ub.count(None) != len(comp_ub):
-            gs &= self.composition_range(comp_lb, comp_ub)
-            print(" number of structures (composition) =", gs.len())
-
-        if site_permutations is not None:
-            t1 = time.time()
-            gs = self.nonequivalent_permutations(site_permutations, gs=gs)
-            t2 = time.time()
-            print(" number of structures (nonequiv.)   =", gs.len())
-            print(" elapsed time (nonequiv.)   =", t2 - t1)
 
         return gs
 
@@ -185,13 +162,14 @@ class Zdd:
         ]
         return (ids, f_include)
 
-    def including(self, node_idx):
+    def including(self, node_idx: int):
+        """Return graph including a node."""
         gs = self.all()
         gs = gs.including(node_idx)
         return gs
 
-    def including_single_cluster(self, nodes, gs=None):
-
+    def including_single_cluster(self, nodes: list, gs: Optional[GraphSet] = None):
+        """Return graph including a single cluster with nodes."""
         if gs is None:
             gs = self.one_of_k()
 
@@ -205,44 +183,44 @@ class Zdd:
                     gs = gs.excluding(i)
         return gs
 
-    def excluding_single_cluster(self, nodes, gs=None):
-
+    def excluding_single_cluster(self, nodes: list, gs: Optional[GraphSet] = None):
+        """Return graph excluding a single cluster with nodes."""
         if gs is None:
             gs = self.one_of_k()
-
         gs -= self.including_single_cluster(nodes, gs=self.all())
         return gs
 
-    def excluding_clusters(self, nodes_list, gs=None):
-
+    def excluding_clusters(self, nodes_list: list, gs: Optional[GraphSet] = None):
+        """Return graph excluding clusters with node lists."""
         if gs is None:
             gs = self.one_of_k()
 
         for nodes in nodes_list:
             gs &= self.excluding_single_cluster(nodes, gs=self.all())
-
         return gs
 
-    def charge_balance(self, charge, gs=None, eps=1e-5):
-
+    def charge_balance(
+        self, charge: list, gs: Optional[GraphSet] = None, eps: float = 1e-5
+    ):
+        """Return graph for charge-balanced strucures."""
+        # TODO: Test is needed.
         if gs is None:
             gs = self.one_of_k()
 
         charge_sum = 0.0
-        inactive_nodes = self.handler.get_nodes(inactive=True, edge_rep=False)
+        inactive_nodes = self._zdd_lattice.get_nodes(inactive=True, edge_rep=False)
         for node_idx in inactive_nodes:
-            ele = self.handler.get_element(node_idx)
+            ele = self._zdd_lattice.decompose_node_to_element(node_idx)
             charge_sum -= charge[ele]
 
         weight = []
-        nodes_weight = sorted(self.nodes)
+        nodes_weight = sorted(self._nodes)
         for node_idx, _ in nodes_weight:
-            ele = self.handler.get_element(node_idx)
+            ele = self._zdd_lattice.decompose_node_to_element(node_idx)
             weight.append((node_idx, node_idx, charge[ele]))
         lconst = [(weight, (charge_sum - eps, charge_sum + eps))]
 
         gs = gs.graphs(linear_constraints=lconst)
-
         return gs
 
     #    # bak

@@ -375,6 +375,22 @@ class ZddLattice:
             orbit_node_rep.append(tuple(sorted(nodes)))
         return orbit_node_rep
 
+    def compose_node(self, site_idx: int, element_idx: int):
+        """Return node ID from site and element IDs."""
+        return _compose_node(site_idx, element_idx)
+
+    def decompose_node(self, node_idx: int):
+        """Return site and element IDs from node ID."""
+        return _decompose_node(node_idx)
+
+    def decompose_node_to_site(self, node_idx: int):
+        """Return site ID from node ID."""
+        return _decompose_node_to_site(node_idx)
+
+    def decompose_node_to_element(self, node_idx: int):
+        """Return element ID from node ID."""
+        return _decompose_node_to_element(node_idx)
+
     @property
     def site_attrs(self):
         """Return site attributes of lattice."""
