@@ -1,11 +1,13 @@
 """Utility functions for spglib."""
 
+from typing import Optional
+
 import numpy as np
 import spglib
 from pypolymlp.core.data_format import PolymlpStructure
+from symfc.utils.utils import compute_sg_permutations
 
 # from scipy.spatial import distance
-# from pyclupan.common.function import round_frac
 
 
 def _structure_to_cell(st: PolymlpStructure):
@@ -21,57 +23,53 @@ def get_rotations(st: PolymlpStructure, symprec: float = 1e-5):
     return symmetry["rotations"]
 
 
-# TODO: From here.
-# def get_symmetry(st: Structure, symprec=1e-5, superperiodic=False, hnf=None):
-#
-#     cell = structure_to_cell(st)
-#     symmetry = spglib.get_symmetry(cell, symprec=symprec)
-#     if superperiodic == False:
-#         return symmetry["rotations"], symmetry["translations"]
-#     else:
-#         if hnf is None:
-#             raise ValueError(" hnf is required in ddtools.symmetry.get_symmetry")
-#         rotations_lt, translations_lt = _get_lattice_translation(symmetry, hnf)
-#         return (
-#             symmetry["rotations"],
-#             symmetry["translations"],
-#             rotations_lt,
-#             translations_lt,
-#         )
-#
-#
-# def get_permutation(st: Structure, symprec=1e-5, superperiodic=False, hnf=None):
-#
-#     positions = st.get_positions()
-#     if superperiodic == False:
-#         rotations, translations = get_symmetry(st, symprec=symprec)
-#     else:
-#         rotations, translations, rotations_lt, translations_lt = get_symmetry(
-#             st, symprec=symprec, superperiodic=True, hnf=hnf
-#         )
-#
-#     permutation = _symmetry_to_permutation(rotations, translations, positions)
-#     if superperiodic == False:
-#         return permutation
-#     else:
-#         permutation_lt = _symmetry_to_permutation(
-#             rotations_lt, translations_lt, positions
-#         )
-#         return permutation, permutation_lt
-#
-#
-# def _get_lattice_translation(symmetry, hnf):
-#
-#     rotations, translations = [], []
-#     for r, t in zip(symmetry["rotations"], symmetry["translations"]):
-#         if np.all(np.abs(r - np.eye(3)) < 1e-10):
-#             vec = np.dot(hnf, t)
-#             if np.all(np.abs(vec - np.round(vec)) < 1e-10):
-#                 rotations.append(r)
-#                 translations.append(t)
-#     return rotations, translations
-#
-#
+def get_symmetry(st: PolymlpStructure, symprec: float = 1e-5):
+    """Calculate symmetry operations."""
+    cell = _structure_to_cell(st)
+    symmetry = spglib.get_symmetry(cell, symprec=symprec)
+    return symmetry["rotations"], symmetry["translations"]
+
+
+def get_permutation(
+    st: PolymlpStructure,
+    superperiodic: bool = False,
+    hnf: Optional[np.ndarray] = None,
+    symprec: float = 1e-5,
+):
+    """Calculate atomic permutations by symmetry operations."""
+    rotations, translations = get_symmetry(st, symprec=symprec)
+    permutation = compute_sg_permutations(
+        st.positions.T,
+        rotations,
+        translations,
+        st.axis.T,
+        symprec=symprec,
+    )
+    if not superperiodic:
+        return permutation
+
+    if superperiodic:
+        if hnf is None:
+            raise RuntimeError("HNF required.")
+        lt_ids = _get_lattice_translations(rotations, translations, hnf)
+        return permutation, permutation[lt_ids]
+
+
+def _get_lattice_translations(
+    rotations: np.ndarray,
+    translations: np.ndarray,
+    hnf: np.ndarray,
+):
+    """Calculate operations of lattice translation for HNF."""
+    lattice_translations_ids = []
+    for i, (r, t) in enumerate(zip(rotations, translations)):
+        if np.allclose(r, np.eye(3)):
+            vec = hnf @ t
+            if np.allclose(vec, np.round(vec)):
+                lattice_translations_ids.append(i)
+    return np.array(lattice_translations_ids)
+
+
 # def _symmetry_to_permutation(rotations, translations, positions, tol=1e-10):
 #
 #     # permutation (slice notation)

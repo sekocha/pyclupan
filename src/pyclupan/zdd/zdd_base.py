@@ -70,7 +70,9 @@ class ZDDSiteSet:
     elements_lattice: list
     one_of_k_rep: bool = False
     inactive_elements: Optional[list] = None
+
     site_attrs: Optional[list[ZDDSite]] = None
+    active_site_attrs: Optional[list[ZDDSite]] = None
 
     nodes: Optional[list] = None
     active_nodes: Optional[list] = None
@@ -133,6 +135,7 @@ class ZDDSiteSet:
 
     def _set_propeties(self):
         """Initialize active nodes, sites, and elements."""
+        self.active_site_attrs = [s for s in self.site_attrs if s.active]
         self.active_nodes = sorted(
             [_compose_node(s.site_idx, e) for s in self.site_attrs for e in s.ele_dd]
         )
@@ -287,17 +290,25 @@ class ZddLattice:
 
         if element is not None:
             if isinstance(element, list):
-                nodes_match = [i for i in nodes_match if self.get_element(i) in element]
+                nodes_match = [
+                    i for i in nodes_match if _decompose_node_to_element(i) in element
+                ]
             elif isinstance(element, int):
-                nodes_match = [i for i in nodes_match if self.get_element(i) == element]
+                nodes_match = [
+                    i for i in nodes_match if _decompose_node_to_element(i) == element
+                ]
             else:
                 raise RuntimeError("element must be int or list")
 
         if site is not None:
             if isinstance(site, list):
-                nodes_match = [i for i in nodes_match if self.get_site(i) in site]
+                nodes_match = [
+                    i for i in nodes_match if _decompose_node_to_site(i) in site
+                ]
             elif isinstance(site, int):
-                nodes_match = [i for i in nodes_match if self.get_site(i) == site]
+                nodes_match = [
+                    i for i in nodes_match if _decompose_node_to_site(i) == site
+                ]
             else:
                 raise RuntimeError("site must be int or list")
 
@@ -363,3 +374,13 @@ class ZddLattice:
             nodes = [self.compose_node(s2, e2) for s2, e2 in zip(s1, e1)]
             orbit_node_rep.append(tuple(sorted(nodes)))
         return orbit_node_rep
+
+    @property
+    def site_attrs(self):
+        """Return site attributes of lattice."""
+        return self._site_set.site_attrs
+
+    @property
+    def active_site_attrs(self):
+        """Return active site attributes of lattice."""
+        return self._site_set.active_site_attrs

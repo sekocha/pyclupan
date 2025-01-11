@@ -3,6 +3,8 @@
 from fractions import Fraction
 from typing import Optional
 
+import numpy as np
+
 
 def set_elements_on_sublattices(
     n_sites: list,
@@ -54,13 +56,13 @@ def set_compositions(
     comp_ub: Upper bounds of compositions for sublattices.
     """
     n_elements = max([e2 for e1 in elements_lattice for e2 in e1]) + 1
-    comp = normalize_compositions(comp, n_elements)
-    comp_lb = normalize_compositions(comp_lb, n_elements)
-    comp_ub = normalize_compositions(comp_ub, n_elements)
+    comp = normalize_compositions(comp, n_elements, elements_lattice)
+    comp_lb = normalize_compositions(comp_lb, n_elements, elements_lattice)
+    comp_ub = normalize_compositions(comp_ub, n_elements, elements_lattice)
     return (comp, comp_lb, comp_ub)
 
 
-def normalize_compositions(comp_in: list, n_elements: int):
+def normalize_compositions(comp_in: list, n_elements: int, elements_lattice: list):
     """Normalize compositions."""
     if comp_in is None:
         comp = [None for i in range(n_elements)]
@@ -76,4 +78,14 @@ def normalize_compositions(comp_in: list, n_elements: int):
     for ele, c in comp_in:
         ele, c = int(ele), float(Fraction(c))
         comp[ele] = c
-    return comp
+
+    comp = np.array(comp)
+    for elements in elements_lattice:
+        target_comp = comp[elements]
+        if list(target_comp).count(None) != len(target_comp):
+            for c, ele in zip(target_comp, elements):
+                if c is None:
+                    raise RuntimeError("Composition not found for element", ele)
+            total = sum(target_comp)
+            comp[elements] = target_comp / total
+    return list(comp)

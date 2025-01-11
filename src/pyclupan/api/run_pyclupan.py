@@ -81,14 +81,12 @@ def run():
     np.set_printoptions(legacy="1.21")
     clupan = Pyclupan(verbose=True)
     clupan.load_poscar(args.poscar)
-    clupan.set_derivative_params(
+    clupan.run(
         occupation=args.occupation,
         elements=args.elements,
         comp=args.comp,
         comp_lb=args.comp_lb,
         comp_ub=args.comp_ub,
-    )
-    clupan.run(
         supercell_size=args.supercell_size,
         hnf=args.hnf,
     )
