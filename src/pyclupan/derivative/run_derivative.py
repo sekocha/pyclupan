@@ -5,16 +5,13 @@ from typing import Optional
 
 import numpy as np
 from pypolymlp.core.data_format import PolymlpStructure
-from pypolymlp.utils.structure_utils import supercell
 
 from pyclupan.core.normal_form import get_nonequivalent_hnf
-from pyclupan.core.spglib_utils import get_permutation
 from pyclupan.derivative.derivative_utils import (
     set_compositions,
     set_elements_on_sublattices,
 )
-from pyclupan.zdd.zdd import ZddCore
-from pyclupan.zdd.zdd_base import ZddLattice
+from pyclupan.zdd.pyclupan_zdd import PyclupanZdd
 
 
 def run_derivatives(
@@ -66,36 +63,31 @@ def run_derivatives(
 
     if hnf is None:
         hnf_all = get_nonequivalent_hnf(supercell_size, unitcell)
-        n_sites = np.array(unitcell.n_atoms) * supercell_size
     else:
         hnf_all = [hnf]
-        n_sites = np.array(unitcell.n_atoms) * round(np.linalg.det(hnf))
-
+    supercell_size = round(np.linalg.det(hnf_all[0]))
     if verbose:
-        size = round(np.linalg.det(hnf_all[0]))
-        print("Supercell size       :", size, flush=True)
+        print("Supercell size       :", supercell_size, flush=True)
         print("Number of unique HNFs:", len(hnf_all), flush=True)
 
-    zdd_lattice = ZddLattice(
-        n_sites=n_sites,
+    zdd = PyclupanZdd(verbose=verbose)
+    zdd.unitcell = unitcell
+    zdd.initialize_zdd(
+        supercell_size=supercell_size,
         elements_lattice=elements_lattice,
         one_of_k_rep=one_of_k_rep,
-        verbose=verbose,
     )
 
     if verbose:
         print("Constructing ZDD for derivative structures", flush=True)
-
     n_derivs = 0
     for hnf in hnf_all:
         if verbose:
             print("HNF:", hnf[0], flush=True)
             print("    ", hnf[1], flush=True)
             print("    ", hnf[2], flush=True)
-
         gs = enum_derivatives(
-            zdd_lattice=zdd_lattice,
-            unitcell=unitcell,
+            zdd=zdd,
             hnf=hnf,
             comp=comp,
             comp_lb=comp_lb,
@@ -109,38 +101,27 @@ def run_derivatives(
 
 
 def enum_derivatives(
-    zdd_lattice: ZddLattice,
-    unitcell: PolymlpStructure,
+    zdd: PyclupanZdd,
     hnf: np.array,
-    comp: Optional[list] = None,
-    comp_lb: Optional[list] = None,
-    comp_ub: Optional[list] = None,
-    verbose: bool = False,
-):
-    """Enumerate derivative structures for given HNF."""
-    sup = supercell(unitcell, hnf)
-    site_perm, site_perm_lt = get_permutation(sup, superperiodic=True, hnf=hnf)
-    zdd = ZddCore(zdd_lattice, verbose=verbose)
-    gs = enumerate_nonequiv_configs(
-        zdd=zdd,
-        site_permutations=site_perm,
-        comp=comp,
-        comp_lb=comp_lb,
-        comp_ub=comp_ub,
-        verbose=verbose,
-    )
-    return gs
-
-
-def enumerate_nonequiv_configs(
-    zdd: ZddCore,
-    site_permutations: np.ndarray,
     comp: tuple = (None),
     comp_lb: tuple = (None),
     comp_ub: tuple = (None),
     verbose: bool = False,
 ):
-    """Return ZDD of non-equivalent configurations."""
+    """Return ZDD of non-equivalent configurations.
+    zdd: Initialized PyclupanZdd instance.
+    hnf: Supercell matrix in Hermite normal form.
+    comp: Compositions for sublattices (n_elements / n_sites).
+          Compositions are not needed to be normalized.
+          Format: [(element ID, composition), (element ID, compositions),...]
+    comp_lb: Lower bounds of compositions for sublattices.
+          Format: [(element ID, composition), (element ID, compositions),...]
+    comp_ub: Upper bounds of compositions for sublattices.
+          Format: [(element ID, composition), (element ID, compositions),...]
+    """
+    zdd.reset_zdd()
+    zdd.set_permutations(hnf)
+
     gs = zdd.one_of_k()
     if verbose:
         print("n_str (one-of-k)           :", gs.len(), flush=True)
@@ -156,22 +137,21 @@ def enumerate_nonequiv_configs(
         if verbose:
             print("n_str (composition lb & ub):", gs.len(), flush=True)
 
-    if site_permutations is not None:
-        t1 = time.time()
-        try:
-            gs = zdd.nonequivalent_permutations(site_permutations, gs=gs)
-        except:
-            # TODO: Case of no automorphism option in graphillion.
-            pass
-        t2 = time.time()
+    t1 = time.time()
+    try:
+        gs = zdd.nonequivalent_permutations(gs=gs)
+    except:
+        # TODO: Case of no automorphism option in graphillion.
+        pass
+    t2 = time.time()
 
-        if verbose:
-            print("n_str (non-equivalent)     :", gs.len(), flush=True)
-            print(
-                "Elapsed_time (non-equiv.)  :",
-                np.round(t2 - t1, 3),
-                "(s)",
-                flush=True,
-            )
-    # gs &= zdd.no_endmembers()
+    if verbose:
+        print("n_str (non-equivalent)     :", gs.len(), flush=True)
+        print(
+            "Elapsed_time (non-equiv.)  :",
+            np.round(t2 - t1, 3),
+            "(s)",
+            flush=True,
+        )
+    gs &= zdd.no_endmembers()
     return gs

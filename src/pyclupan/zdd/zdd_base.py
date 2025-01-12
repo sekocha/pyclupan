@@ -194,6 +194,7 @@ class ZddLattice:
         TODO: other parameters
         """
         self._verbose = verbose
+        self._n_sites = n_sites
         self._n_total_sites = sum(n_sites)
 
         self._min_n_elements = min_n_elements
@@ -400,3 +401,8 @@ class ZddLattice:
     def active_site_attrs(self):
         """Return active site attributes of lattice."""
         return self._site_set.active_site_attrs
+
+    @property
+    def n_sites(self):
+        """Return number of sites on lattice."""
+        return self._n_sites
