@@ -36,7 +36,7 @@ class ComputeClusterFunction{
     Eigen::MatrixXd values;
     double eval_poly(const vector1d& coeff, const int spin);
 
-    public: 
+    public:
 
     ComputeClusterFunction(const py::array_t<short>& labeling_spinrep,
                            const vector3i& site_cls,
@@ -44,7 +44,7 @@ class ComputeClusterFunction{
                            const vector2d& cons);
     ComputeClusterFunction(const vector3d& cons_cl,
                            const vector2i& spin_cl);
-   
+
     ~ComputeClusterFunction();
 
     double& get_value();

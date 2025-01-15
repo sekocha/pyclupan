@@ -21,37 +21,35 @@
 
 ****************************************************************************/
 
-#ifndef __FUNCTION
-#define __FUNCTION
+#ifndef __NONEQUIV_LABELINGS
+#define __NONEQUIV_LABELINGS
 
-#include "ddcpp.h"
+#include "pyclupan.h"
 
-#include <mutex>
-#include <thread>
-#include <Eigen/Core>
+class NoneqLBL{
 
-class Pauling{
+    Eigen::MatrixXi labelings_output;
 
-    Eigen::VectorXd scores;
+    public:
 
-    double compute_std(const vector1d& data);
+    NoneqLBL(const py::array_t<short>& labeling,
+             const py::array_t<short>& permutation);
 
-    public: 
+    ~NoneqLBL();
+    const Eigen::MatrixXi& get_labelings() const;
 
-    Pauling
-        (const py::array_t<short>& labeling_v,
-         const vector1i& n_atoms,
-         const vector2i& neighbors_AB,
-         const vector2i& neighbors_O,
-         const py::dict& valence_dict,
-         const int center_label,
-         const int begin_O,
-         const int min_ZA,
-         const int min_ZB);
-    
-    ~Pauling();
+};
 
-    Eigen::VectorXd& get_scores();
+class NoneqLBLSPeriodic{
+
+    Eigen::MatrixXi labelings_output;
+
+    public:
+
+    NoneqLBLSPeriodic(const py::array_t<short>& labeling,
+                      const py::array_t<short>& permutation);
+    ~NoneqLBLSPeriodic();
+    const Eigen::MatrixXi& get_labelings() const;
 
 };
 

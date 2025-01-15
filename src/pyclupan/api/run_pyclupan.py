@@ -82,12 +82,21 @@ def run():
         default=None,
         help="Charges of elements",
     )
+
     parser.add_argument(
         "--yaml",
         type=str,
         default="derivatives.yaml",
         help="Yaml file.",
     )
+    parser.add_argument(
+        "--element_strings",
+        nargs="*",
+        type=str,
+        default=None,
+        help="Element strings for structure files.",
+    )
+
     args = parser.parse_args()
 
     np.set_printoptions(legacy="1.21")
@@ -107,4 +116,8 @@ def run():
         clupan.save_derivatives(filename="derivatives.yaml")
     elif args.yaml:
         clupan.load_derivatives(args.yaml)
-        clupan.sample_derivatives(method="uniform", n_samples=30)
+        clupan.sample_derivatives(
+            method="uniform",
+            n_samples=20,
+            elements=args.element_strings,
+        )

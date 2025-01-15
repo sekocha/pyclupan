@@ -1,16 +1,18 @@
 #!/usr/bin/env python
-import numpy as np
-import time
 import collections
+import time
 from math import *
 
-from pyclupan.dd.dd_node import DDNodeHandler
-from pyclupan.dd.dd_combinations import DDCombinations
+import numpy as np
 from graphillion import GraphSet
+
+from pyclupan.dd.dd_combinations import DDCombinations
+from pyclupan.dd.dd_node import DDNodeHandler
+
 
 class DDConstructor:
 
-    def __init__(self, handler:DDNodeHandler):
+    def __init__(self, handler: DDNodeHandler):
 
         self.handler = handler
 
@@ -25,7 +27,7 @@ class DDConstructor:
         self.site_attr_dict = dict()
         for attr in self.site_attr:
             self.site_attr_dict[attr.idx] = attr
- 
+
         GraphSet.set_universe(self.nodes)
 
     def all(self):
@@ -33,7 +35,7 @@ class DDConstructor:
         return gs
 
     def empty(self):
-        gs = GraphSet({'exclude': set(self.nodes)})
+        gs = GraphSet({"exclude": set(self.nodes)})
         return gs
 
     def one_of_k(self):
@@ -41,7 +43,7 @@ class DDConstructor:
         gs = self.empty()
         for site in self.site_attr:
             tnodes = self.handler.get_nodes(site=site.idx, active=True)
-            gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
+            gs1 = GraphSet({"exclude": set(self.nodes) - set(tnodes)})
             if site.one_of_k == True:
                 gs1 = gs1.graphs(num_edges=1)
             else:
@@ -55,7 +57,7 @@ class DDConstructor:
         gs = self.empty()
         for ele in self.elements_dd:
             tnodes = self.handler.get_nodes(element=ele, active=True)
-            gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
+            gs1 = GraphSet({"exclude": set(self.nodes) - set(tnodes)})
             if comp[ele] is not None:
                 val = len(tnodes) * comp[ele]
                 if abs(round(val) - val) < tol:
@@ -66,41 +68,43 @@ class DDConstructor:
             else:
                 gs1 = gs1.graphs()
             gs = gs.join(gs1)
-    
+
         return gs
-    
+
     # a test is required
     def composition_range(self, comp_lb, comp_ub):
-    
-        print(' Warning: composition_range in dd.constructor.py' \
-            + ' is being developed. Results must be carefully examined.')
+
+        print(
+            " Warning: composition_range in dd.constructor.py"
+            + " is being developed. Results must be carefully examined."
+        )
 
         gs = self.empty()
         for ele in self.elements_dd:
             tnodes = self.handler.get_nodes(element=ele, active=True)
-            gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)}).graphs()
+            gs1 = GraphSet({"exclude": set(self.nodes) - set(tnodes)}).graphs()
             if comp_lb[ele] is not None:
                 lb = ceil(len(tnodes) * comp_lb[ele])
-                gs1 = gs1.larger(lb-1)
+                gs1 = gs1.larger(lb - 1)
             if comp_ub[ele] is not None:
                 ub = floor(len(tnodes) * comp_ub[ele])
-                gs1 = gs1.smaller(ub+1)
+                gs1 = gs1.smaller(ub + 1)
             gs = gs.join(gs1)
-    
+
         return gs
 
     def no_endmembers(self, verbose=1):
 
         if verbose > 0:
-            print(' element orbit used for eliminating end members')
-            print('  =', self.element_orbit)
+            print(" element orbit used for eliminating end members")
+            print("  =", self.element_orbit)
 
         gs = self.empty()
         for ele, ele_dd in self.element_orbit:
-            gs1_all = GraphSet({'exclude': set(self.nodes)})
+            gs1_all = GraphSet({"exclude": set(self.nodes)})
             for e in ele_dd:
                 tnodes = self.handler.get_nodes(element=e, active=True)
-                gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
+                gs1 = GraphSet({"exclude": set(self.nodes) - set(tnodes)})
                 gs1 = gs1.larger(0)
                 gs1 = gs1.smaller(len(tnodes))
                 gs1_all = gs1_all.join(gs1)
@@ -119,54 +123,45 @@ class DDConstructor:
 
         return gs
 
+    def nonequivalent_permutations(self, site_permutations, num_edges=None, gs=None):
 
-    def nonequivalent_permutations(self, 
-                                   site_permutations,
-                                   num_edges=None,
-                                   gs=None):
-        
         automorphism = []
         for p in site_permutations:
-            auto1 = []    
+            auto1 = []
             for n_idx, _ in self.nodes:
                 s_idx, e_idx = self.handler.decompose_node(n_idx)
-                n_idx_perm = self.handler.compose_node(p[s_idx], e_idx) 
+                n_idx_perm = self.handler.compose_node(p[s_idx], e_idx)
                 auto1.append(((n_idx, n_idx), (n_idx_perm, n_idx_perm)))
             automorphism.append(auto1)
 
         if gs is None:
-            gs = GraphSet.graphs(permutations=automorphism, 
-                                 num_edges=num_edges)
+            gs = GraphSet.graphs(permutations=automorphism, num_edges=num_edges)
         else:
-            gs = gs.graphs(permutations=automorphism,
-                           num_edges=num_edges)
+            gs = gs.graphs(permutations=automorphism, num_edges=num_edges)
 
         return gs
 
-    def enumerate_nonequiv_configs(self, 
-                                   site_permutations=None,
-                                   comp=[None], 
-                                   comp_lb=[None], 
-                                   comp_ub=[None]):
+    def enumerate_nonequiv_configs(
+        self, site_permutations=None, comp=[None], comp_lb=[None], comp_ub=[None]
+    ):
 
         gs = self.one_of_k()
-        print(' number of structures (one-of-k)    =', gs.len())
+        print(" number of structures (one-of-k)    =", gs.len())
 
         if comp.count(None) != len(comp):
             gs &= self.composition(comp)
-            print(' number of structures (composition) =', gs.len())
+            print(" number of structures (composition) =", gs.len())
 
-        if comp_lb.count(None) != len(comp_lb) \
-            or comp_ub.count(None) != len(comp_ub):
+        if comp_lb.count(None) != len(comp_lb) or comp_ub.count(None) != len(comp_ub):
             gs &= self.composition_range(comp_lb, comp_ub)
-            print(' number of structures (composition) =', gs.len())
+            print(" number of structures (composition) =", gs.len())
 
         if site_permutations is not None:
             t1 = time.time()
             gs = self.nonequivalent_permutations(site_permutations, gs=gs)
             t2 = time.time()
-            print(' number of structures (nonequiv.)   =', gs.len())
-            print(' elapsed time (nonequiv.)   =', t2-t1)
+            print(" number of structures (nonequiv.)   =", gs.len())
+            print(" elapsed time (nonequiv.)   =", t2 - t1)
 
         return gs
 
@@ -178,8 +173,9 @@ class DDConstructor:
 
         f_include = False
         site = self.handler.get_site(node_idx)
-        ids = [self.handler.compose_node(site, e) 
-               for e in self.site_attr_dict[site].ele_dd]
+        ids = [
+            self.handler.compose_node(site, e) for e in self.site_attr_dict[site].ele_dd
+        ]
         return (ids, f_include)
 
     def including(self, node_idx):
@@ -226,7 +222,7 @@ class DDConstructor:
             gs = self.one_of_k()
 
         charge_sum = 0.0
-        inactive_nodes = self.handler.get_nodes(inactive=True,edge_rep=False)
+        inactive_nodes = self.handler.get_nodes(inactive=True, edge_rep=False)
         for node_idx in inactive_nodes:
             ele = self.handler.get_element(node_idx)
             charge_sum -= charge[ele]
@@ -235,63 +231,63 @@ class DDConstructor:
         nodes_weight = sorted(self.nodes)
         for node_idx, _ in nodes_weight:
             ele = self.handler.get_element(node_idx)
-            weight.append((node_idx,node_idx,charge[ele]))
-        lconst = [(weight, (charge_sum-eps, charge_sum+eps))]
+            weight.append((node_idx, node_idx, charge[ele]))
+        lconst = [(weight, (charge_sum - eps, charge_sum + eps))]
 
         gs = gs.graphs(linear_constraints=lconst)
 
         return gs
- 
-#    # bak
-#    def charge_balance(self, charge, comp=None, eps=1e-5):
-#
-#        gs = self.empty()
-#
-#        charge_sum = 0.0
-#        inactive_nodes = self.handler.get_nodes(inactive=True,edge_rep=False)
-#        for n_idx in inactive_nodes:
-#            ele = self.handler.get_element(n_idx)
-#            charge_sum -= charge[ele]
-#
-#        nodes_noweight = []
-#        if comp is not None:
-#            for ele in self.elements_dd:
-#                if comp[ele] is not None:
-#                    tnodes = self.handler.get_nodes(element=ele, active=True)
-#                    sites = [self.handler.get_site(n_idx) 
-#                                for n_idx, _ in tnodes]
-#                    if len(sites) == len(set(sites)):
-#                        charge_sum -= charge[ele] * len(sites) * comp[ele]
-#                        nodes_noweight.extend([n for n in tnodes])
-#
-#                        gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
-#                        val = len(tnodes) * comp[ele]
-#                        if abs(round(val) - val) < 1e-10:
-#                            n_edges = round(val)
-#                        else:
-#                            n_edges = 100000
-#                        gs1 = gs1.graphs(num_edges=n_edges)
-#                        gs = gs.join(gs1)
-# 
-#        weight = []
-#        nodes_weight = sorted(set(self.nodes) - set(nodes_noweight))
-#        for n_idx, _ in nodes_weight:
-#            ele = self.handler.get_element(n_idx)
-#            weight.append((n_idx,n_idx,charge[ele]))
-#        lconst = [(weight, (charge_sum-eps, charge_sum+eps))]
-#
-#        gs1 = GraphSet({'exclude':nodes_noweight})
-#        gs1 = gs1.graphs(linear_constraints=lconst)
-#        gs = gs.join(gs1)
-#
-#        return gs
 
-#    # a test is required
+    #    # bak
+    #    def charge_balance(self, charge, comp=None, eps=1e-5):
+    #
+    #        gs = self.empty()
+    #
+    #        charge_sum = 0.0
+    #        inactive_nodes = self.handler.get_nodes(inactive=True,edge_rep=False)
+    #        for n_idx in inactive_nodes:
+    #            ele = self.handler.get_element(n_idx)
+    #            charge_sum -= charge[ele]
+    #
+    #        nodes_noweight = []
+    #        if comp is not None:
+    #            for ele in self.elements_dd:
+    #                if comp[ele] is not None:
+    #                    tnodes = self.handler.get_nodes(element=ele, active=True)
+    #                    sites = [self.handler.get_site(n_idx)
+    #                                for n_idx, _ in tnodes]
+    #                    if len(sites) == len(set(sites)):
+    #                        charge_sum -= charge[ele] * len(sites) * comp[ele]
+    #                        nodes_noweight.extend([n for n in tnodes])
+    #
+    #                        gs1 = GraphSet({'exclude':set(self.nodes)-set(tnodes)})
+    #                        val = len(tnodes) * comp[ele]
+    #                        if abs(round(val) - val) < 1e-10:
+    #                            n_edges = round(val)
+    #                        else:
+    #                            n_edges = 100000
+    #                        gs1 = gs1.graphs(num_edges=n_edges)
+    #                        gs = gs.join(gs1)
+    #
+    #        weight = []
+    #        nodes_weight = sorted(set(self.nodes) - set(nodes_noweight))
+    #        for n_idx, _ in nodes_weight:
+    #            ele = self.handler.get_element(n_idx)
+    #            weight.append((n_idx,n_idx,charge[ele]))
+    #        lconst = [(weight, (charge_sum-eps, charge_sum+eps))]
+    #
+    #        gs1 = GraphSet({'exclude':nodes_noweight})
+    #        gs1 = gs1.graphs(linear_constraints=lconst)
+    #        gs = gs.join(gs1)
+    #
+    #        return gs
+
+    #    # a test is required
     # slow ?
     def num_clusters_smaller(self, gs, cluster_nodes, n_clusters=1):
 
         if n_clusters < 1:
-            gs = GraphSet().graphs() # empty graphs
+            gs = GraphSet().graphs()  # empty graphs
         elif n_clusters == 1:
             gs = self.excluding_cluster(gs, cluster_nodes)
         else:
@@ -305,7 +301,7 @@ class DDConstructor:
 
             components = list(range(len(nodes)))
             comb_obj = DDCombinations(components, weight=weight)
-            lb = n_total_clusters-n_clusters + 1
+            lb = n_total_clusters - n_clusters + 1
             combs = comb_obj.sum_weight(lb=lb)
 
             gs_array = []
@@ -322,5 +318,3 @@ class DDConstructor:
             gs = gs0
 
         return gs
-
- 

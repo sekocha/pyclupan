@@ -26,16 +26,16 @@
 PYBIND11_MODULE(pyclupancpp, m) {
 
     py::class_<NoneqLBL>(m, "NonequivLBL")
-        .def(py::init<const py::array_t<short>&, 
+        .def(py::init<const py::array_t<short>&,
                       const py::array_t<short>&>())
-        .def("get_labelings", &NoneqLBL::get_labelings, 
+        .def("get_labelings", &NoneqLBL::get_labelings,
                 py::return_value_policy::reference_internal)
         ;
 
     py::class_<NoneqLBLSPeriodic>(m, "NonequivLBLSuperPeriodic")
-        .def(py::init<const py::array_t<short>&, 
+        .def(py::init<const py::array_t<short>&,
                       const py::array_t<short>&>())
-        .def("get_labelings", &NoneqLBLSPeriodic::get_labelings, 
+        .def("get_labelings", &NoneqLBLSPeriodic::get_labelings,
                 py::return_value_policy::reference_internal)
         ;
 
@@ -44,14 +44,14 @@ PYBIND11_MODULE(pyclupancpp, m) {
                       const vector3i&,
                       const vector3i&,
                       const vector2d&>())
-        .def("get_values", &ComputeClusterFunction::get_values, 
+        .def("get_values", &ComputeClusterFunction::get_values,
                 py::return_value_policy::reference_internal)
         ;
-        
+
 
 
 //    py::class_<Pauling>(m, "Pauling")
-//        .def(py::init<const py::array_t<short>&, 
+//        .def(py::init<const py::array_t<short>&,
 //                      const vector1i&,
 //                      const vector2i&,
 //                      const vector2i&,
@@ -60,7 +60,7 @@ PYBIND11_MODULE(pyclupancpp, m) {
 //                      const int,
 //                      const int,
 //                      const int>())
-//        .def("get_scores", &Pauling::get_scores, 
+//        .def("get_scores", &Pauling::get_scores,
 //                py::return_value_policy::reference_internal)
 //        ;
 //

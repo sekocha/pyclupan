@@ -75,7 +75,7 @@ ComputeClusterFunction::ComputeClusterFunction(const vector3d& cons_cl,
 
 ComputeClusterFunction::~ComputeClusterFunction(){}
 
-double ComputeClusterFunction::eval_poly(const vector1d& coeffs, 
+double ComputeClusterFunction::eval_poly(const vector1d& coeffs,
                                          const int spin){
 
     const int n = coeffs.size() - 1;
@@ -86,5 +86,3 @@ double ComputeClusterFunction::eval_poly(const vector1d& coeffs,
 
 double& ComputeClusterFunction::get_value(){ return value; }
 Eigen::MatrixXd& ComputeClusterFunction::get_values(){ return values; }
-
-

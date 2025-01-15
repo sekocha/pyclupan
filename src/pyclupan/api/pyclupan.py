@@ -96,7 +96,7 @@ class Pyclupan:
 
         Returns
         -------
-        ***
+        TODO: ***
         """
         self._derivs_set = load_derivative_yaml(filename=filename)
         return self
@@ -105,10 +105,19 @@ class Pyclupan:
         self,
         method: Literal["all", "uniform", "random"] = "uniform",
         n_samples: int = 100,
+        path: str = "poscars",
+        elements: tuple = ("Al", "Cu"),
     ):
+        """Parse derivatives.yaml.
+
+        Returns
+        -------
+        TODO: ***
+        """
         if method == "all":
             self._derivs_set.all()
         elif method == "uniform":
             self._derivs_set.uniform(n_samples=n_samples)
         elif method == "random":
             self._derivs_set.random(n_samples=n_samples)
+        self._derivs_set.save(path=path, elements=elements)

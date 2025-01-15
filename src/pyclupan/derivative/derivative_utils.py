@@ -1,11 +1,14 @@
 """Utility functions for pyclupan."""
 
+import copy
+import os
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Optional
 
 import numpy as np
 from pypolymlp.core.data_format import PolymlpStructure
+from pypolymlp.utils.vasp_utils import write_poscar_file
 
 from pyclupan.zdd.zdd_base import ZddLattice
 
@@ -95,6 +98,27 @@ def normalize_compositions(comp_in: list, n_elements: int, elements_lattice: lis
     return list(comp)
 
 
+def reorder_positions(st: PolymlpStructure):
+    """Reorder positions, types, and elements."""
+
+    map_elements = dict()
+    for t, e in zip(st.types, st.elements):
+        map_elements[t] = e
+
+    n_atoms, positions_reorder, types_reorder = [], [], []
+    for i in sorted(set(st.types)):
+        ids = np.array(st.types) == i
+        n_atoms.append(np.count_nonzero(ids))
+        positions_reorder.extend(st.positions.T[ids])
+        types_reorder.extend(np.array(st.types)[ids])
+
+    st.positions = np.array(positions_reorder).T
+    st.n_atoms = n_atoms
+    st.types = types_reorder
+    st.elements = [map_elements[t] for t in types_reorder]
+    return st
+
+
 @dataclass
 class Derivatives:
     """Dataclass for derivative structures.
@@ -133,6 +157,8 @@ class Derivatives:
 
         self.n_labelings = self.active_labelings.shape[0]
         self.supercell_size = round(np.linalg.det(self.hnf))
+
+        self._samples = None
 
     @property
     def supercell(self):
@@ -173,6 +199,27 @@ class Derivatives:
         """Sample derivative structures randomly."""
         candidates = np.arange(self.n_labelings, dtype=int)
         self._samples = np.random.choice(candidates, size=n_samples, replace=False)
+        return self
+
+    def save(self, path: str = "poscars", elements: tuple = ("Al", "Cu")):
+        """Save derivative structures sampled."""
+        if self._samples is None:
+            raise RuntimeError("Sampled structures are not found.")
+
+        if len(self.elements) != len(elements):
+            raise RuntimeError("Number of element strings is not compatible.")
+
+        os.makedirs(path, exist_ok=True)
+        sup = self.supercell
+        prefix = "POSCAR-" + str(self.supercell_size) + "-" + str(self.supercell_id + 1)
+        elements = np.array(elements)
+        for i, sample_id in enumerate(self._samples):
+            filename = prefix + "-" + str(i + 1).zfill(5)
+            sup_copy = copy.deepcopy(sup)
+            sup_copy.types = self.get_complete_labeling(sample_id)
+            sup_copy.elements = elements[sup_copy.types]
+            sup_copy = reorder_positions(sup_copy)
+            write_poscar_file(sup_copy, filename=path + "/" + filename)
         return self
 
 
@@ -237,3 +284,10 @@ class DerivativesSet:
         for n, derivs in zip(n_samples_cell, self.derivatives_set):
             derivs.random(n_samples=n)
         return self
+
+    def save(self, path: str = "poscars", elements: tuple = ("Al", "Cu")):
+        """Save derivative structures sampled."""
+        os.makedirs(path, exist_ok=True)
+        for derivs in self.derivatives_set:
+            if derivs._samples is not None:
+                derivs.save(path=path, elements=elements)

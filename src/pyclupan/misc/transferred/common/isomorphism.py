@@ -1,21 +1,23 @@
 #!/usr/bin/env python
 import numpy as np
-from sympy.combinatorics.permutations import Permutation
 import pynauty
+from sympy.combinatorics.permutations import Permutation
+
 
 def construct_graph(perm):
 
     n_sites = perm.shape[1]
-   
+
     # must be modified using the cyclic feature of permutation
     g = pynauty.Graph(n_sites)
     for j in range(n_sites):
-        #connect_vertex = sorted(set(perm[:,j]))
-        connect_vertex = list(perm[:,j])
+        # connect_vertex = sorted(set(perm[:,j]))
+        connect_vertex = list(perm[:, j])
         print(connect_vertex)
         if connect_vertex[0] != -1:
             g.connect_vertex(j, connect_vertex)
     return g
+
 
 def permutation_isomorphism(perm1, perm2):
 
@@ -30,7 +32,8 @@ def permutation_isomorphism(perm1, perm2):
         print(pynauty.canon_label(g1))
         print(pynauty.canon_label(g2))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 
     a1 = Permutation([0, 1, 2, 3])
     a2 = Permutation([1, 2, 3, 0])
@@ -61,4 +64,3 @@ if __name__ == '__main__':
 #            g.connect_vertex(j, connect_vertex)
 #
 #
-        

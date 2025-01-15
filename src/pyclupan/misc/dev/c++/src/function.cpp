@@ -56,7 +56,7 @@ Pauling::Pauling
         vector1i Z, ZA, ZB;
         for (const auto& n1: neighbors_AB){
             vector1i l_nn;
-            for (const auto& n2: n1){ 
+            for (const auto& n2: n1){
                 auto v = *labeling_v.data(i, n2);
                 l_nn.emplace_back(v);
             }
@@ -110,5 +110,3 @@ double Pauling::compute_std(const vector1d& data){
 }
 
 Eigen::VectorXd& Pauling::get_scores(){ return scores; }
-
-

@@ -44,11 +44,11 @@ NoneqLBL::NoneqLBL(const py::array_t<short>& labeling,
                 orbit[j][k] = *labeling.data(i,p);
             }
         }
-        nonequiv_labelings_vec[i] = *std::min_element(orbit.begin(), 
+        nonequiv_labelings_vec[i] = *std::min_element(orbit.begin(),
                                                       orbit.end());
     }
 
-    std::set<vector1s> nonequiv_labelings(nonequiv_labelings_vec.begin(), 
+    std::set<vector1s> nonequiv_labelings(nonequiv_labelings_vec.begin(),
                                           nonequiv_labelings_vec.end());
 
     labelings_output = Eigen::MatrixXi(nonequiv_labelings.size(), shape[1]);
@@ -61,8 +61,8 @@ NoneqLBL::NoneqLBL(const py::array_t<short>& labeling,
 
 NoneqLBL::~NoneqLBL(){}
 
-const Eigen::MatrixXi& NoneqLBL::get_labelings() const{ 
-    return labelings_output; 
+const Eigen::MatrixXi& NoneqLBL::get_labelings() const{
+    return labelings_output;
 }
 
 NoneqLBLSPeriodic::NoneqLBLSPeriodic(const py::array_t<short>& labeling,
@@ -99,7 +99,7 @@ NoneqLBLSPeriodic::NoneqLBLSPeriodic(const py::array_t<short>& labeling,
     int count = 0;
     for (int i = 0; i < shape[0]; ++i){
         if (superperiodic[i] == false){
-            for (int j = 0; j < shape[1]; ++j) 
+            for (int j = 0; j < shape[1]; ++j)
                 labelings_output(count,j) = *labeling.data(i,j);
             ++count;
         }
@@ -108,8 +108,6 @@ NoneqLBLSPeriodic::NoneqLBLSPeriodic(const py::array_t<short>& labeling,
 
 NoneqLBLSPeriodic::~NoneqLBLSPeriodic(){}
 
-const Eigen::MatrixXi& NoneqLBLSPeriodic::get_labelings() const{ 
-    return labelings_output; 
+const Eigen::MatrixXi& NoneqLBLSPeriodic::get_labelings() const{
+    return labelings_output;
 }
-
-
