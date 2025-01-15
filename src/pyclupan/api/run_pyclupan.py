@@ -75,6 +75,13 @@ def run():
         default=None,
         help="Determinant of Hermite normal form",
     )
+    parser.add_argument(
+        "--charges",
+        type=float,
+        nargs="*",
+        default=None,
+        help="Charges of elements",
+    )
 
     args = parser.parse_args()
 
@@ -89,4 +96,5 @@ def run():
         comp_ub=args.comp_ub,
         supercell_size=args.supercell_size,
         hnf=args.hnf,
+        charges=args.charges,
     )

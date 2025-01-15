@@ -16,7 +16,7 @@ class PyclupanZdd:
 
     def __init__(self, verbose: bool = False):
         """Init method."""
-
+        self._verbose = verbose
         self._unitcell = None
         self._elements_lattice = None
         self._one_of_k_rep = None
@@ -26,8 +26,6 @@ class PyclupanZdd:
 
         self._zdd_lattice = None
         self._zdd = None
-
-        self._verbose = verbose
 
     def load_poscar(self, poscar: str = "POSCAR") -> PolymlpStructure:
         """Parse POSCAR files.
@@ -96,6 +94,26 @@ class PyclupanZdd:
     def unitcell(self, cell):
         """Set unit cell."""
         self._unitcell = cell
+
+    @property
+    def zdd_lattice(self):
+        """Return ZddLattice instance."""
+        return self._zdd_lattice
+
+    @property
+    def site_attrs_set(self):
+        """Return list of site attributes."""
+        return self._zdd_lattice.site_attrs_set
+
+    @property
+    def site_permutations(self):
+        """Return permutations of lattice sites."""
+        return self._site_perm
+
+    @property
+    def site_permutations_lattice_translations(self):
+        """Return permutations of lattice sites."""
+        return self._site_perm_lt
 
     def all(self):
         """Return graph for all combinations."""
@@ -177,7 +195,15 @@ class PyclupanZdd:
         self, charge: list, gs: Optional[GraphSet] = None, eps: float = 1e-5
     ):
         """Return graph for charge-balanced strucures."""
-        # TODO: Test is needed.
         if self._zdd is None:
             raise RuntimeError("Initialize zdd in advance.")
         return self._zdd.charge_balance(charge, gs=gs, eps=eps)
+
+    def to_labelings(self, gs: GraphSet):
+        """Convert graph into labelings.
+
+        Returns
+        -------
+        TODO:
+        """
+        return self._zdd_lattice.to_labelings(gs)

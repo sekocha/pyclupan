@@ -149,16 +149,17 @@ class ZddCore:
 
         return gs
 
-    def define_functions(self, node_idx):
-
+    def define_functions(self, node_idx: int):
+        """Get function type of inclusion or exclusion for a given node ID."""
         if node_idx in self.nodes_single_rep:
             f_include = True
             return ([node_idx], f_include)
 
         f_include = False
-        site = self.handler.get_site(node_idx)
+        site = self._zdd_lattice.decompose_node_to_site(node_idx)
         ids = [
-            self.handler.compose_node(site, e) for e in self.site_attr_dict[site].ele_dd
+            self._zdd_lattice.compose_node(site, e)
+            for e in self._site_attrs_dict[site].ele_dd
         ]
         return (ids, f_include)
 
@@ -175,7 +176,7 @@ class ZddCore:
 
         for n in nodes:
             ids, f_include = self.define_functions(n)
-            if f_include == True:
+            if f_include:
                 for i in ids:
                     gs &= gs.including(i)
             else:
@@ -203,7 +204,6 @@ class ZddCore:
         self, charge: list, gs: Optional[GraphSet] = None, eps: float = 1e-5
     ):
         """Return graph for charge-balanced strucures."""
-        # TODO: Test is needed.
         if gs is None:
             gs = self.one_of_k()
 
@@ -222,6 +222,43 @@ class ZddCore:
 
         gs = gs.graphs(linear_constraints=lconst)
         return gs
+
+    # def num_clusters_smaller(self, gs, cluster_nodes, n_clusters=1):
+    #     """Retrun graph with number of clusters smaller than given threshold."""
+    #     # slow ?
+    #     # a test is required
+    #     if n_clusters < 1:
+    #         gs = GraphSet().graphs()  # empty graphs
+    #     elif n_clusters == 1:
+    #         gs = self.excluding_cluster(gs, cluster_nodes)
+    #     else:
+    #         count = collections.Counter([tuple(n) for n in cluster_nodes])
+
+    #         nodes, weight = [], []
+    #         for k, v in count.items():
+    #             nodes.append(k)
+    #             weight.append(v)
+    #         n_total_clusters = sum(weight)
+
+    #         components = list(range(len(nodes)))
+    #         comb_obj = DDCombinations(components, weight=weight)
+    #         lb = n_total_clusters - n_clusters + 1
+    #         combs = comb_obj.sum_weight(lb=lb)
+
+    #         gs_array = []
+    #         for k in count.keys():
+    #             edges = [self.handler.get_edge_rep(n) for n in k]
+    #             gs_array.append(gs.including(edges))
+
+    #         gs0 = GraphSet().graphs()
+    #         for comb in combs:
+    #             gs1 = gs_array[comb[0]].copy()
+    #             for c in comb[1:]:
+    #                 gs1 |= gs_array[c]
+    #             gs0 |= gs - gs1
+    #         gs = gs0
+
+    #     return gs
 
     #    # bak
     #    def charge_balance(self, charge, comp=None, eps=1e-5):
@@ -266,41 +303,3 @@ class ZddCore:
     #        gs = gs.join(gs1)
     #
     #        return gs
-
-
-#    #    # a test is required
-#    # slow ?
-#    def num_clusters_smaller(self, gs, cluster_nodes, n_clusters=1):
-#
-#        if n_clusters < 1:
-#            gs = GraphSet().graphs()  # empty graphs
-#        elif n_clusters == 1:
-#            gs = self.excluding_cluster(gs, cluster_nodes)
-#        else:
-#            count = collections.Counter([tuple(n) for n in cluster_nodes])
-#
-#            nodes, weight = [], []
-#            for k, v in count.items():
-#                nodes.append(k)
-#                weight.append(v)
-#            n_total_clusters = sum(weight)
-#
-#            components = list(range(len(nodes)))
-#            comb_obj = DDCombinations(components, weight=weight)
-#            lb = n_total_clusters - n_clusters + 1
-#            combs = comb_obj.sum_weight(lb=lb)
-#
-#            gs_array = []
-#            for k in count.keys():
-#                edges = [self.handler.get_edge_rep(n) for n in k]
-#                gs_array.append(gs.including(edges))
-#
-#            gs0 = GraphSet().graphs()
-#            for comb in combs:
-#                gs1 = gs_array[comb[0]].copy()
-#                for c in comb[1:]:
-#                    gs1 |= gs_array[c]
-#                gs0 |= gs - gs1
-#            gs = gs0
-#
-#        return gs

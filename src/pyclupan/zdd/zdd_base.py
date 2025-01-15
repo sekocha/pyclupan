@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Optional, Union
 
 import numpy as np
+from graphillion import GraphSet
 
 
 def _compose_node(site_idx: int, element_idx: int):
@@ -79,6 +80,7 @@ class ZDDSiteSet:
     inactive_nodes: Optional[list] = None
     sites: Optional[list] = None
     active_sites: Optional[list] = None
+    inactive_sites: Optional[list] = None
     elements: Optional[list] = None
     active_elements: Optional[list] = None
     active_elements_dd: Optional[list] = None
@@ -108,7 +110,7 @@ class ZDDSiteSet:
         if not self.one_of_k_rep:
             elements_dd_exclude = self._set_excluding_elements_dd(self.elements_lattice)
 
-        site_attr = []
+        site_attrs = []
         for s in range(self.n_total_sites):
             nodes = [i for i in self.nodes if _decompose_node_to_site(i) == s]
             ele = [_decompose_node_to_element(n) for n in nodes]
@@ -117,8 +119,9 @@ class ZDDSiteSet:
             if not self.one_of_k_rep:
                 ele_dd = sorted(set(ele) - set(elements_dd_exclude))
 
-            site_attr.append(ZDDSite(s, ele, ele_dd))
-        return site_attr
+            site_attrs.append(ZDDSite(s, ele, ele_dd))
+        site_attrs = sorted(site_attrs, key=lambda x: x.site_idx)
+        return site_attrs
 
     def _set_excluding_elements_dd(self, elements_lattice):
         """Exclude ids of unnecessary elements when one_of_k = False."""
@@ -135,14 +138,17 @@ class ZDDSiteSet:
 
     def _set_propeties(self):
         """Initialize active nodes, sites, and elements."""
-        self.active_site_attrs = [s for s in self.site_attrs if s.active]
+        self.active_site_attrs = sorted(
+            [s for s in self.site_attrs if s.active], key=lambda x: x.site_idx
+        )
         self.active_nodes = sorted(
             [_compose_node(s.site_idx, e) for s in self.site_attrs for e in s.ele_dd]
         )
         self.inactive_nodes = sorted(set(self.nodes) - set(self.active_nodes))
 
-        self.sites = [s.site_idx for s in self.site_attrs]
+        self.sites = sorted([s.site_idx for s in self.site_attrs])
         self.active_sites = sorted([s.site_idx for s in self.site_attrs if s.active])
+        self.inactive_sites = sorted(set(self.sites) - set(self.active_sites))
 
         self.elements = sorted(set([e for s in self.site_attrs for e in s.ele]))
         self.active_elements = [e for s in self.site_attrs if s.active for e in s.ele]
@@ -317,56 +323,63 @@ class ZddLattice:
             return [(i, i) for i in nodes_match]
         return nodes_match
 
-    def convert_graphs_to_entire_labelings(self, graphs):
+    def to_labelings(self, graphs: GraphSet):
+        """Convert graph into labelings.
 
-        labelings = np.zeros((len(graphs), self.n_total_sites), dtype=int)
-        for n_idx in self.inactive_nodes:
-            s_idx, e_idx = self.decompose_node(n_idx)
-            labelings[:, s_idx] = e_idx
+        Returns
+        -------
+        labelings: Elemental labelings transformed from graph.
+        inactive_labeling: Elemental labeling for inactive sites.
+        """
+        active_sites = self._site_set.active_sites
+        inactive_sites = self._site_set.inactive_sites
+        inactive_labeling = np.array(
+            [self.site_attrs[s].ele[0] for s in inactive_sites]
+        )
 
-        smap, emap = dict(), dict()
-        for n_idx in self.active_nodes:
-            smap[n_idx], emap[n_idx] = self.decompose_node(n_idx)
+        active_no_dd = []
+        for site in self.site_attrs:
+            if site.active and len(site.ele) != len(site.ele_dd):
+                e_idx = list(set(site.ele) - set(site.ele_dd))[0]
+                active_no_dd.append((site.site_idx, e_idx))
 
-        for i, graph in enumerate(graphs):
-            for n_idx, _ in graph:
-                labelings[i, smap[n_idx]] = emap[n_idx]
+        cols_site = dict()
+        for i, s_idx in enumerate(active_sites):
+            cols_site[s_idx] = i
 
-        return labelings
+        cols_node, emap = dict(), dict()
+        for n_idx in self._site_set.active_nodes:
+            s, emap[n_idx] = self.decompose_node(n_idx)
+            cols_node[n_idx] = cols_site[s]
 
-    def convert_graphs_to_labelings(self, graphs):
-
-        inactive, active, active_no_dd = [], [], []
-        inactive_labeling = []
-        for site in self.site_attr:
-            if len(site.ele) == 1:
-                inactive.append(site.idx)
-                inactive_labeling.append(site.ele[0])
-            else:
-                active.append(site.idx)
-                if len(site.ele) != len(site.ele_dd):
-                    e_idx = list(set(site.ele) - set(site.ele_dd))[0]
-                    active_no_dd.append((site.idx, e_idx))
-
-        smap, emap = dict(), dict()
-        for n_idx in self.active_nodes:
-            smap[n_idx], emap[n_idx] = self.decompose_node(n_idx)
-
-        map_active_sites = dict()
-        for i, s_idx in enumerate(active):
-            map_active_sites[s_idx] = i
-
-        labelings = np.zeros((len(graphs), len(active)), dtype=int)
+        labelings = np.zeros((len(graphs), len(active_sites)), dtype=np.uint8)
         for s_idx, e_idx in active_no_dd:
-            a_idx = map_active_sites[s_idx]
-            labelings[:, a_idx] = e_idx
+            col = cols_site[s_idx]
+            labelings[:, col] = e_idx
 
         for i, graph in enumerate(graphs):
             for n_idx, _ in graph:
-                a_idx = map_active_sites[smap[n_idx]]
-                labelings[i, a_idx] = emap[n_idx]
+                col = cols_node[n_idx]
+                labelings[i, col] = emap[n_idx]
 
-        return (labelings, inactive_labeling, active, inactive)
+        return labelings, inactive_labeling
+
+    #    def convert_graphs_to_entire_labelings(self, graphs):
+    #
+    #        labelings = np.zeros((len(graphs), self.n_total_sites), dtype=int)
+    #        for n_idx in self.inactive_nodes:
+    #            s_idx, e_idx = self.decompose_node(n_idx)
+    #            labelings[:, s_idx] = e_idx
+    #
+    #        smap, emap = dict(), dict()
+    #        for n_idx in self.active_nodes:
+    #            smap[n_idx], emap[n_idx] = self.decompose_node(n_idx)
+    #
+    #        for i, graph in enumerate(graphs):
+    #            for n_idx, _ in graph:
+    #                labelings[i, smap[n_idx]] = emap[n_idx]
+    #
+    #        return labelings
 
     def convert_to_orbit_dd(self, orbit):
         sites, ele = orbit
@@ -391,6 +404,11 @@ class ZddLattice:
     def decompose_node_to_element(self, node_idx: int):
         """Return element ID from node ID."""
         return _decompose_node_to_element(node_idx)
+
+    @property
+    def site_attrs_set(self):
+        """Return set of site attributes of lattice."""
+        return self._site_set
 
     @property
     def site_attrs(self):

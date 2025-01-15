@@ -37,6 +37,9 @@ class Pyclupan:
         supercell_size: Optional[int] = None,
         hnf: Optional[np.ndarray] = None,
         one_of_k_rep: bool = False,
+        superperiodic: bool = False,
+        end_members: bool = False,
+        charges: Optional[list] = None,
     ):
         """Enumerate derivative structures.
 
@@ -56,6 +59,9 @@ class Pyclupan:
         supercell_size: Determinant of supercell matrices.
                     Derivative structures for all nonequivalent HNFs are enumerated.
         hnf: Supercell matrix in Hermite normal form.
+        superperiodic: Include superperiodic derivative structures.
+        end_members: Include structures of end members.
+        charges: Charges of elements.
         """
         run_derivatives(
             self._unitcell,
@@ -67,5 +73,8 @@ class Pyclupan:
             supercell_size=supercell_size,
             hnf=hnf,
             one_of_k_rep=one_of_k_rep,
+            superperiodic=superperiodic,
+            end_members=end_members,
+            charges=charges,
             verbose=self._verbose,
         )
