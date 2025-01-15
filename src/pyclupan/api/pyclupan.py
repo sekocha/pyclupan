@@ -6,6 +6,7 @@ import numpy as np
 from pypolymlp.core.data_format import PolymlpStructure
 from pypolymlp.core.interface_vasp import Poscar
 
+from pyclupan.derivative.derivative_io import load_derivative_yaml
 from pyclupan.derivative.run_derivative import run_derivatives
 
 
@@ -78,3 +79,14 @@ class Pyclupan:
             charges=charges,
             verbose=self._verbose,
         )
+        return self
+
+    def load_derivatives(self, filename: str = "derivatives.yaml"):
+        """Parse derivatives.yaml.
+
+        Returns
+        -------
+        ***
+        """
+        derivs_all = load_derivative_yaml(filename=filename)
+        return derivs_all

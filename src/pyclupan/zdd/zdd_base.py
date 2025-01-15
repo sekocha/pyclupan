@@ -424,3 +424,8 @@ class ZddLattice:
     def n_sites(self):
         """Return number of sites on lattice."""
         return self._n_sites
+
+    @property
+    def one_of_k_rep(self):
+        """Return whether one_of_k representation is used."""
+        return self._one_of_k_rep

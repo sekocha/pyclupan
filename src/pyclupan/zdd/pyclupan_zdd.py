@@ -51,6 +51,7 @@ class PyclupanZdd:
         elements_lattice: Element IDs on lattices. Example: [[0],[1],[2, 3]].
         one_of_k_rep: Use one-of-k representation.
         """
+        self._supercell_size = supercell_size
         self._elements_lattice = elements_lattice
         self._one_of_k_rep = one_of_k_rep
 
@@ -94,6 +95,11 @@ class PyclupanZdd:
     def unitcell(self, cell):
         """Set unit cell."""
         self._unitcell = cell
+
+    @property
+    def supercell_size(self):
+        """Retrun supercell size."""
+        return self._supercell_size
 
     @property
     def zdd_lattice(self):

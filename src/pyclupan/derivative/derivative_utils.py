@@ -113,6 +113,7 @@ class Derivatives:
     comp_lb: Optional[tuple] = None
     comp_ub: Optional[tuple] = None
     supercell_id: int = 0
+
     active_sites: Optional[list] = None
     inactive_sites: Optional[list] = None
     elements: Optional[list] = None
