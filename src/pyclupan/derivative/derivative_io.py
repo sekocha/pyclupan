@@ -3,7 +3,7 @@
 import numpy as np
 import yaml
 
-from pyclupan.derivative.derivative_utils import Derivatives
+from pyclupan.derivative.derivative_utils import Derivatives, DerivativesSet
 from pyclupan.utils.yaml_utils import load_cell, save_cell
 from pyclupan.zdd.pyclupan_zdd import PyclupanZdd
 
@@ -15,10 +15,11 @@ def _write_list_no_space(a: list, file):
 
 
 def write_derivative_yaml(
-    derivs_all: list[Derivatives],
+    derivs_set: DerivativesSet,
     filename: str = "derivatives.yaml",
 ):
     """Save labelings of derivative structures to yaml file."""
+    derivs_all = derivs_set.derivatives_set
     with open(filename, "w") as f:
         derivs = derivs_all[0]
         save_cell(derivs.unitcell, tag="unitcell", file=f)
@@ -90,4 +91,4 @@ def load_derivative_yaml(filename: str = "derivative.yaml", verbose: bool = Fals
         )
         derivs_all.append(derivs)
 
-    return derivs_all
+    return DerivativesSet(derivs_all)

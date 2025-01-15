@@ -104,5 +104,7 @@ def run():
             hnf=args.hnf,
             charges=args.charges,
         )
+        clupan.save_derivatives(filename="derivatives.yaml")
     elif args.yaml:
         clupan.load_derivatives(args.yaml)
+        clupan.sample_derivatives(method="uniform", n_samples=30)

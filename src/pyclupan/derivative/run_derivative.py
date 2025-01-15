@@ -7,9 +7,9 @@ import numpy as np
 from pypolymlp.core.data_format import PolymlpStructure
 
 from pyclupan.core.normal_form import get_nonequivalent_hnf
-from pyclupan.derivative.derivative_io import write_derivative_yaml
 from pyclupan.derivative.derivative_utils import (
     Derivatives,
+    DerivativesSet,
     set_compositions,
     set_elements_on_sublattices,
 )
@@ -138,13 +138,13 @@ def run_derivatives(
                     derivs.active_labelings.shape[0],
                     flush=True,
                 )
-        n_derivs += labelings.shape[0]
+        n_derivs += derivs.active_labelings.shape[0]
         derivs_all.append(derivs)
 
     if verbose:
         print("Number of derivative structures:", n_derivs, flush=True)
 
-    write_derivative_yaml(derivs_all, filename=filename)
+    return DerivativesSet(derivs_all)
 
 
 def enum_derivatives(
