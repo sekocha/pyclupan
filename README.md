@@ -1,5 +1,7 @@
 # pyclupan: Cluster expansion tools for alloy and substitutional ionic systems
-`pyclupan` is a Python code 
+
+`pyclupan` is a Python package for developing substitutional cluster expansion models based on datasets obtained from density functional theory (DFT) calculations.
+The code also enables the enumeration of nonequivalent substitutional derivative structures, the calculation of correlation (cluster) functions, Monte Carlo simulations, and the evaluation of free energies for multicomponent substitutional systems.
 
 ## Citation of pyclupan
 
@@ -13,6 +15,7 @@
 - pyyaml
 - setuptools
 - spglib
+- pypolymlp
 - openmp (recommended)
 
 
@@ -40,4 +43,7 @@ conda install -c conda-forge numpy scipy spglib
 pip install . -vvv
 ```
 
+## How to use pyclupan
+
+- [Enumeration of derivative structures](docs/calc_derivative.md)
 
