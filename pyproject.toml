@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "scikit-build-core",
+#    "scikit-build-core",
     "setuptools_scm[toml]>=6.0",
 #    "cmake",
 #    "pybind11",
@@ -26,11 +26,8 @@ dependencies = [
 license = { file = "LICENSE" }
 
 [project.optional-dependencies]
-symfc = ["symfc"]
-phonopy = ["phonopy"]
-phono3py = ["phono3py"]
 spglib = ["spglib"]
-tools = ["symfc", "phonopy", "phono3py", "spglib"]
+tools = ["spglib"]
 
 [project.urls]
 Homepage = "https://github.com/sekocha/pyclupan"
@@ -62,6 +59,11 @@ pyclupan = "pyclupan.api.run_pyclupan:run"
 # write_to = "_version.py"
 # version_scheme = "post-release"
 # local_scheme = "no-local-version"
+
+[tool.setuptools_scm]
+write_to = "./src/pyclupan/_version.py"
+version_scheme = "post-release"
+local_scheme = "no-local-version"
 
 [tool.flake8]
 max-line-length = 88
