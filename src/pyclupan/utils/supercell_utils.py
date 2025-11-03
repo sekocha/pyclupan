@@ -3,10 +3,9 @@
 from typing import Literal
 
 import numpy as np
-
 from pypolymlp.core.data_format import PolymlpStructure
-from pypolymlp.utils.structure_utils import supercell
 from pypolymlp.utils.spglib_utils import ReducedCell
+from pypolymlp.utils.structure_utils import supercell
 
 
 def supercell_reduced(
@@ -15,6 +14,7 @@ def supercell_reduced(
     method: Literal["niggli", "delaunay"] = "delaunay",
 ):
     """Construct supercell for a given supercell matrix."""
+
     st_sup = supercell(st, supercell_matrix)
     reduced = ReducedCell(st_sup.axis, method=method)
     st_sup.axis = reduced.reduced_axis
