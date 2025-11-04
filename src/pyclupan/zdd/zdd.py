@@ -74,25 +74,19 @@ class ZddCore:
             gs = gs.join(gs1)
         return gs
 
-    def composition_range(self, comp_lb: tuple, comp_ub: tuple):
+    def composition_range(self, comp_lb: tuple, comp_ub: tuple, tol: float = 1e-6):
         """Apply composition lower and upper bounds."""
-        # TODO: a test is required
-        if self._verbose:
-            print(
-                "Warning: composition_range in dd.constructor.py",
-                "is being developed. Results must be carefully examined.",
-                flush=True,
-            )
-
         gs = self.empty()
         for ele in self._elements_dd:
             tnodes = self._zdd_lattice.get_nodes(element=ele, active=True)
             gs1 = GraphSet({"exclude": set(self._nodes) - set(tnodes)}).graphs()
             if comp_lb[ele] is not None:
-                lb = np.ceil(len(tnodes) * comp_lb[ele])
+                val = len(tnodes) * comp_lb[ele] - tol
+                lb = int(np.ceil(val))
                 gs1 = gs1.larger(lb - 1)
             if comp_ub[ele] is not None:
-                ub = np.floor(len(tnodes) * comp_ub[ele])
+                val = len(tnodes) * comp_ub[ele] + tol
+                ub = int(np.floor(val))
                 gs1 = gs1.smaller(ub + 1)
             gs = gs.join(gs1)
         return gs

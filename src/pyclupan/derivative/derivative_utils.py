@@ -64,12 +64,21 @@ def set_compositions(
     """
     n_elements = max([e2 for e1 in elements_lattice for e2 in e1]) + 1
     comp = normalize_compositions(comp, n_elements, elements_lattice)
-    comp_lb = normalize_compositions(comp_lb, n_elements, elements_lattice)
-    comp_ub = normalize_compositions(comp_ub, n_elements, elements_lattice)
+    comp_lb = normalize_compositions(
+        comp_lb, n_elements, elements_lattice, for_bound=True
+    )
+    comp_ub = normalize_compositions(
+        comp_ub, n_elements, elements_lattice, for_bound=True
+    )
     return (comp, comp_lb, comp_ub)
 
 
-def normalize_compositions(comp_in: list, n_elements: int, elements_lattice: list):
+def normalize_compositions(
+    comp_in: list,
+    n_elements: int,
+    elements_lattice: list,
+    for_bound: bool = False,
+):
     """Normalize compositions."""
     if comp_in is None:
         comp = [None for i in range(n_elements)]
@@ -85,6 +94,9 @@ def normalize_compositions(comp_in: list, n_elements: int, elements_lattice: lis
     for ele, c in comp_in:
         ele, c = int(ele), float(Fraction(c))
         comp[ele] = c
+
+    if for_bound:
+        return comp
 
     comp = np.array(comp)
     for elements in elements_lattice:

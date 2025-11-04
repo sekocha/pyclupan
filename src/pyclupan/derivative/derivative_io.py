@@ -20,6 +20,9 @@ def write_derivative_yaml(
 ):
     """Save labelings of derivative structures to yaml file."""
     derivs_all = derivs_set.derivatives_set
+    if len(derivs_all) == 0:
+        return None
+
     with open(filename, "w") as f:
         derivs = derivs_all[0]
         save_cell(derivs.unitcell, tag="unitcell", file=f)
@@ -60,6 +63,7 @@ def write_derivative_yaml(
                 print("  - ", end="", file=f)
                 _write_list_no_space(l, file=f)
             print("", file=f)
+    return filename
 
 
 def load_derivative_yaml(filename: str = "derivative.yaml", verbose: bool = False):

@@ -114,32 +114,33 @@ def run_derivatives(
             charges=charges,
             verbose=verbose,
         )
-        derivs = Derivatives(
-            zdd_lattice=zdd.zdd_lattice,
-            unitcell=unitcell,
-            hnf=hnf,
-            active_labelings=labelings,
-            inactive_labeling=inactive_labeling,
-            comp=comp,
-            comp_lb=comp_lb,
-            comp_ub=comp_ub,
-            supercell_id=supercell_id,
-        )
-        # Eliminate superperiodic labelings.
-        if not superperiodic:
-            site_perm_lt = zdd.site_permutations_lattice_translations
-            derivs.complete_labelings = eliminate_superperiodic_labelings(
-                derivs.complete_labelings,
-                site_perm_lt,
+        if labelings.shape[0] > 0:
+            derivs = Derivatives(
+                zdd_lattice=zdd.zdd_lattice,
+                unitcell=unitcell,
+                hnf=hnf,
+                active_labelings=labelings,
+                inactive_labeling=inactive_labeling,
+                comp=comp,
+                comp_lb=comp_lb,
+                comp_ub=comp_ub,
+                supercell_id=supercell_id,
             )
-            if verbose:
-                print(
-                    "n_str (superperiodic)      :",
-                    derivs.active_labelings.shape[0],
-                    flush=True,
+            # Eliminate superperiodic labelings.
+            if not superperiodic:
+                site_perm_lt = zdd.site_permutations_lattice_translations
+                derivs.complete_labelings = eliminate_superperiodic_labelings(
+                    derivs.complete_labelings,
+                    site_perm_lt,
                 )
-        n_derivs += derivs.active_labelings.shape[0]
-        derivs_all.append(derivs)
+                if verbose:
+                    print(
+                        "n_str (superperiodic)      :",
+                        derivs.active_labelings.shape[0],
+                        flush=True,
+                    )
+            n_derivs += derivs.active_labelings.shape[0]
+            derivs_all.append(derivs)
 
     if verbose:
         print("Number of derivative structures:", n_derivs, flush=True)

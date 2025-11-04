@@ -101,6 +101,9 @@ def run():
 
     np.set_printoptions(legacy="1.21")
     clupan = Pyclupan(verbose=True)
+
+    if args.hnf is not None:
+        args.hnf = np.array(args.hnf).reshape((3, 3))
     if args.poscar:
         clupan.load_poscar(args.poscar)
         clupan.run(

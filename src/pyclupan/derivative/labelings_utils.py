@@ -18,4 +18,6 @@ def eliminate_superperiodic_labelings(labelings: np.array, perms_lt: np.array):
         for i, l in enumerate(labelings_perm)
         if np.unique(l, axis=0).shape[0] == l.shape[0]
     ]
+    if len(uniq_ids) == 0:
+        return None
     return labelings[np.array(uniq_ids)]

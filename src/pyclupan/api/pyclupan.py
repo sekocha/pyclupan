@@ -88,7 +88,13 @@ class Pyclupan:
 
     def save_derivatives(self, filename: str = "derivatives.yaml"):
         """Save derivative structures."""
-        write_derivative_yaml(self._derivs_set, filename=filename)
+        fname_output = write_derivative_yaml(self._derivs_set, filename=filename)
+        if self._verbose:
+            if fname_output is None:
+                print("No result file is not generated.", flush=True)
+            else:
+                print(fname_output, "is generated.", flush=True)
+
         return self
 
     def load_derivatives(self, filename: str = "derivatives.yaml"):
