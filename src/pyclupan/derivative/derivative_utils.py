@@ -142,6 +142,11 @@ class Derivatives:
         """Return sample structures."""
         return self._samples
 
+    @property
+    def n_structures(self):
+        """Return number of derivative structures."""
+        return self.n_labelings
+
 
 @dataclass
 class DerivativesSet:
