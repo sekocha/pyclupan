@@ -96,6 +96,7 @@ class ZddCore:
 
     def no_endmembers(self):
         """Eliminate endmember structures."""
+        # TODO: Errors for charge balanced DD.
         if self._verbose:
             print("Orbits of elements used for eliminating end members:", flush=True)
             print(self._element_orbit)

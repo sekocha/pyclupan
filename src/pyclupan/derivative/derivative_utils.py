@@ -93,8 +93,9 @@ class Derivatives:
     @complete_labelings.setter
     def complete_labelings(self, labelings: np.array):
         """Set complete labelings for both active and inactive sites."""
-        self.active_labelings = labelings[:, self.active_sites]
-        self.n_labelings = self.active_labelings.shape[0]
+        if labelings is not None:
+            self.active_labelings = labelings[:, self.active_sites]
+            self.n_labelings = self.active_labelings.shape[0]
 
     def get_complete_labeling(self, idx: int):
         """Return a single complete labeling for given id."""

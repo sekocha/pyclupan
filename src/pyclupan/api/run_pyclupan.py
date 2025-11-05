@@ -40,7 +40,7 @@ def run():
     parser.add_argument(
         "-c",
         "--comp",
-        nargs="*",
+        nargs=2,
         type=str,
         action="append",
         default=None,
@@ -48,7 +48,7 @@ def run():
     )
     parser.add_argument(
         "--comp_lb",
-        nargs="*",
+        nargs=2,
         type=str,
         action="append",
         default=None,
@@ -56,7 +56,7 @@ def run():
     )
     parser.add_argument(
         "--comp_ub",
-        nargs="*",
+        nargs=2,
         type=str,
         action="append",
         default=None,
@@ -76,11 +76,12 @@ def run():
         help="Determinant of Hermite normal form",
     )
     parser.add_argument(
-        "--charges",
-        type=float,
-        nargs="*",
+        "--charge",
+        type=str,
+        nargs=2,
+        action="append",
         default=None,
-        help="Charges of elements",
+        help="Charge of element (element id, charge).",
     )
 
     parser.add_argument(
@@ -114,7 +115,7 @@ def run():
             comp_ub=args.comp_ub,
             supercell_size=args.supercell_size,
             hnf=args.hnf,
-            charges=args.charges,
+            charges=args.charge,
         )
         clupan.save_derivatives(filename="derivatives.yaml")
     elif args.yaml:

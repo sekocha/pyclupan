@@ -8,7 +8,11 @@ from pypolymlp.core.data_format import PolymlpStructure
 
 from pyclupan.core.normal_form import get_nonequivalent_hnf
 from pyclupan.derivative.derivative_utils import Derivatives, DerivativesSet
-from pyclupan.derivative.init_utils import set_compositions, set_elements_on_sublattices
+from pyclupan.derivative.init_utils import (
+    set_charges,
+    set_compositions,
+    set_elements_on_sublattices,
+)
 from pyclupan.derivative.labelings_utils import (
     eliminate_superperiodic_labelings,
     get_nonequivalent_labelings,
@@ -74,6 +78,10 @@ def run_derivatives(
         comp_lb=comp_lb,
         comp_ub=comp_ub,
     )
+
+    charges = set_charges(charges, elements_lattice)
+    if charges is not None:
+        one_of_k_rep = True
 
     if hnf is None:
         hnf_all = get_nonequivalent_hnf(supercell_size, unitcell)
@@ -160,6 +168,9 @@ def enum_derivatives(
     verbose: bool = False,
 ):
     """Return ZDD of non-equivalent configurations.
+
+    Parameters
+    ----------
     zdd: Initialized PyclupanZdd instance.
     hnf: Supercell matrix in Hermite normal form.
     comp: Compositions for sublattices (n_elements / n_sites).
@@ -169,6 +180,8 @@ def enum_derivatives(
           Format: [(element ID, composition), (element ID, compositions),...]
     comp_ub: Upper bounds of compositions for sublattices.
           Format: [(element ID, composition), (element ID, compositions),...]
+    charges: Charges for elements.
+          Format: ***
     """
     zdd.reset_zdd()
     zdd.set_permutations(hnf)
@@ -193,7 +206,7 @@ def enum_derivatives(
 
     # Apply charge balance rule
     if charges is not None:
-        gs = zdd.charge_balance(charges, gs=gs)
+        gs &= zdd.charge_balance(charges, gs=gs)
         if verbose:
             print("Charges:                    ", charges, flush=True)
             print("n_str (charge balanced):    ", gs.len(), flush=True)
@@ -206,8 +219,8 @@ def enum_derivatives(
         gs = zdd.nonequivalent_permutations(gs=gs)
         t2 = time.time()
         # Eliminate end members
-        if not end_members:
-            gs &= zdd.no_endmembers()
+        # if not end_members:
+        #     gs &= zdd.no_endmembers()
         labelings, inactive_labeling = zdd.to_labelings(gs)
     except:
         if verbose:

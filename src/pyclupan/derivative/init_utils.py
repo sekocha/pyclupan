@@ -152,3 +152,29 @@ def normalize_compositions(
             comp_sites[elements] = n_sites / n_cand_sites[elements]
 
     return list(comp_sites)
+
+
+def set_charges(charges_in: list, elements_lattice: list):
+    """Set charges."""
+    if charges_in is None:
+        return None
+
+    for charge_pair in charges_in:
+        if len(charge_pair) != 2:
+            raise RuntimeError(
+                "Charge must be given in the format (element ID, charge)."
+            )
+
+    n_elements = max([e2 for e1 in elements_lattice for e2 in e1]) + 1
+    charges = [None for i in range(n_elements)]
+    for ele, c in charges_in:
+        if int(ele) >= n_elements:
+            raise RuntimeError("Element type must satisfy 0 <= ID < n_element.")
+        ele, c = int(ele), float(Fraction(c))
+        charges[ele] = c
+
+    for i, c in enumerate(charges):
+        if c is None:
+            raise RuntimeError("Charge for element", i, "not found.")
+
+    return charges
