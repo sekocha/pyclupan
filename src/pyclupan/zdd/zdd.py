@@ -81,8 +81,11 @@ class ZddCore:
             tnodes = self._zdd_lattice.get_nodes(element=ele, active=True)
             gs1 = GraphSet({"exclude": set(self._nodes) - set(tnodes)}).graphs()
             if comp_lb[ele] is not None:
-                val = len(tnodes) * comp_lb[ele] - tol
-                lb = int(np.ceil(val))
+                if np.isclose(comp_lb[ele], 0.0):
+                    lb = 1
+                else:
+                    val = len(tnodes) * comp_lb[ele] - tol
+                    lb = int(np.ceil(val))
                 gs1 = gs1.larger(lb - 1)
             if comp_ub[ele] is not None:
                 val = len(tnodes) * comp_ub[ele] + tol

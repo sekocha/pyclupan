@@ -147,7 +147,6 @@ class PyclupanZdd:
 
     def composition_range(self, comp_lb: tuple, comp_ub: tuple):
         """Apply composition lower and upper bounds."""
-        # TODO: a test is required
         if self._zdd is None:
             raise RuntimeError("Initialize zdd in advance.")
         return self._zdd.composition_range(comp_lb, comp_ub)

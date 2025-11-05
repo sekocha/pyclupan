@@ -7,12 +7,8 @@ import numpy as np
 from pypolymlp.core.data_format import PolymlpStructure
 
 from pyclupan.core.normal_form import get_nonequivalent_hnf
-from pyclupan.derivative.derivative_utils import (
-    Derivatives,
-    DerivativesSet,
-    set_compositions,
-    set_elements_on_sublattices,
-)
+from pyclupan.derivative.derivative_utils import Derivatives, DerivativesSet
+from pyclupan.derivative.init_utils import set_compositions, set_elements_on_sublattices
 from pyclupan.derivative.labelings_utils import (
     eliminate_superperiodic_labelings,
     get_nonequivalent_labelings,
@@ -61,14 +57,19 @@ def run_derivatives(
     """
     if supercell_size is None and hnf is None:
         raise RuntimeError("supercell_size or hnf required.")
+    if hnf is not None:
+        supercell_size = round(np.linalg.det(hnf))
 
     elements_lattice = set_elements_on_sublattices(
         n_sites=unitcell.n_atoms,
         occupation=occupation,
         elements=elements,
     )
+
+    n_sites_supercell = [n * supercell_size for n in unitcell.n_atoms]
     comp, comp_lb, comp_ub = set_compositions(
         elements_lattice=elements_lattice,
+        n_sites_supercell=n_sites_supercell,
         comp=comp,
         comp_lb=comp_lb,
         comp_ub=comp_ub,
@@ -174,14 +175,15 @@ def enum_derivatives(
 
     gs = zdd.one_of_k()
     if verbose:
-        print("n_str (one-of-k)           :", gs.len(), flush=True)
+        print("n_str (one-of-k):           ", gs.len(), flush=True)
 
     # Apply compositions
     if comp.count(None) != len(comp):
         gs &= zdd.composition(comp)
         if verbose:
             print("Composition:                ", comp, flush=True)
-            print("n_str (composition)        :", gs.len(), flush=True)
+            print("  Definition: n_element / n_possible_sites", flush=True)
+            print("n_str (composition):        ", gs.len(), flush=True)
 
     # Apply composition ranges
     if comp_lb.count(None) != len(comp_lb) or comp_ub.count(None) != len(comp_ub):
