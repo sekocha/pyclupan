@@ -87,6 +87,7 @@ In the example below, `-e 0 1 2` indicates that three different elements occupy 
 
 In the following example, binary nonequivalent configurations on the anion sites are enumerated in the cubic perovskite structure.
 The elements Sr (index 0) and Ti (index 1) are fixed, and configurations of two elements (indices 2 and 3) are considered on the third sublattice.
+The order of the `-e` options is important for controlling the sublattices on which configurations are considered.
 
 ```shell
 # > cat POSCAR
@@ -144,12 +145,6 @@ Cations A and B occupy both the first and second cation sublattices, while catio
 Anions X occupy the third sublattice, with one-sixth of this sublattice remaining vacant.
 
 ```shell
-#  - Comp.(ele=0) = 1/2 of perovskite A and B sites
-#  - Comp.(ele=1) = 1/4 of perovskite A and B sites
-#  - Comp.(ele=2) = 1/2 of perovskite B sites
-#  - Comp.(ele=3) = 5/6 of perovskite anion sites
-#  - Comp.(ele=4) = 1/6 of perovskite anion sites
-
 # > cat POSCAR
 # Perovskite unit cell
 # 1.0
@@ -176,12 +171,25 @@ The following example enumerates configurations of cations A(2+) and B(3+) on th
 Only derivative structures satisfying charge neutrality are enumerated.
 
 ```shell
-# element 0: A (2+)
-# element 1: B (3+)
-# element 2: C (4+)
-# element 3: D (3+)
-# element 4: X (2-)
+# > cat POSCAR
+# Perovskite unit cell
+# 1.0
+#   4.000000000  0.000000000  0.000000000
+#   0.000000000  4.000000000  0.000000000
+#   0.000000000  0.000000000  4.000000000
+#   Sr Ti O
+#   1  1  3
+# Direct
+#   0.000000000 0.000000000 0.000000000
+#   0.5000000000 0.5000000000 0.5000000000
+#   0.5000000000 0.5000000000 0.000000000
+#   0.000000000 0.5000000000 0.5000000000
+#   0.5000000000 0.000000000 0.5000000000
 
-> pyclupan -p perovskite-unitcell --supercell_size 2 -e 0 1 -e 2 3 -e 4 --charge 0 2.0 --charge 1 3.0 --charge 2 4.0 --charge 3 3.0 --charge 4 -2.0
+# element 0: A (2+), element 1: B (3+) on sublattice 1
+# element 2: C (4+), element 3: D (3+) on sublattice 2
+# element 4: X (2-) on sublattice 3
+
+> pyclupan -p POSCAR --supercell_size 4 -e 0 1 -e 2 3 -e 4 --charge 0 2.0 --charge 1 3.0 --charge 2 4.0 --charge 3 3.0 --charge 4 -2.0
 ```
 When enumerating structures that satisfy charge neutrality, the charges of all elements are required.
