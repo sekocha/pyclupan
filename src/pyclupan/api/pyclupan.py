@@ -57,17 +57,18 @@ class Pyclupan:
                   Example: [[0],[1],[2, 3]].
         comp: Compositions for sublattices (n_elements / n_sites).
               Compositions are not needed to be normalized.
-              Format: [(element ID, composition), (element ID, compositions),...]
+              Format: [(element ID, composition), (element ID, composition),...]
         comp_lb: Lower bounds of compositions for sublattices.
-              Format: [(element ID, composition), (element ID, compositions),...]
+              Format: [(element ID, composition), (element ID, composition),...]
         comp_ub: Upper bounds of compositions for sublattices.
-              Format: [(element ID, composition), (element ID, compositions),...]
+              Format: [(element ID, composition), (element ID, composition),...]
         supercell_size: Determinant of supercell matrices.
                     Derivative structures for all nonequivalent HNFs are enumerated.
         hnf: Supercell matrix in Hermite normal form.
         superperiodic: Include superperiodic derivative structures.
         end_members: Include structures of end members.
         charges: Charges of elements.
+              Format: [(element ID, charge), (element ID, charge),...]
         """
         self._derivs_set = run_derivatives(
             self._unitcell,
@@ -127,3 +128,8 @@ class Pyclupan:
         elif method == "random":
             self._derivs_set.random(n_samples=n_samples)
         self._derivs_set.save(path=path, elements=elements)
+
+    @property
+    def derivative_structures(self):
+        """Return derivative structures."""
+        return self._derivs_set

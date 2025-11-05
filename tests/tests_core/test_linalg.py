@@ -5,12 +5,13 @@ from pathlib import Path
 import numpy as np
 from pypolymlp.core.interface_vasp import Poscar
 
-from pyclupan.core.normal_form import enumerate_hnf, get_nonequivalent_hnf
+from pyclupan.core.linalg_utils import enumerate_hnf, get_nonequivalent_hnf
 
 cwd = Path(__file__).parent
 
 
 def test_entire_hnfs():
+    """Test number of HNFs."""
     n_hnfs = [len(enumerate_hnf(n)) for n in range(2, 11)]
     n_refs = [7, 13, 35, 31, 91, 57, 155, 130, 217]
     np.testing.assert_equal(n_hnfs, n_refs)

@@ -6,7 +6,7 @@ from typing import Optional
 import numpy as np
 from pypolymlp.core.data_format import PolymlpStructure
 
-from pyclupan.core.normal_form import get_nonequivalent_hnf
+from pyclupan.core.linalg_utils import get_nonequivalent_hnf
 from pyclupan.derivative.derivative_utils import Derivatives, DerivativesSet
 from pyclupan.derivative.init_utils import (
     set_charges,
@@ -45,19 +45,20 @@ def run_derivatives(
                 Example: [[0], [1], [2], [2]].
     elements: Element IDs on lattices.
               Example: [[0],[1],[2, 3]].
-    comp: Compositions for sublattices (n_elements / n_sites).
+    comp: Compositions for sublattices.
           Compositions are not needed to be normalized.
-          Format: [(element ID, composition), (element ID, compositions),...]
+          Format: [(element ID, composition), (element ID, composition),...]
     comp_lb: Lower bounds of compositions for sublattices.
-          Format: [(element ID, composition), (element ID, compositions),...]
+          Format: [(element ID, composition), (element ID, composition),...]
     comp_ub: Upper bounds of compositions for sublattices.
-          Format: [(element ID, composition), (element ID, compositions),...]
+          Format: [(element ID, composition), (element ID, composition),...]
     supercell_size: Determinant of supercell matrices.
                 Derivative structures for all nonequivalent HNFs are enumerated.
     hnf: Supercell matrix in Hermite normal form.
     superperiodic: Include superperiodic derivative structures.
     end_members: Include structures of end members.
     charges: Charges of elements.
+          Format: [(element ID, charge), (element ID, charge),...]
     """
     if supercell_size is None and hnf is None:
         raise RuntimeError("supercell_size or hnf required.")
@@ -181,7 +182,7 @@ def enum_derivatives(
     comp_ub: Upper bounds of compositions for sublattices.
           Format: [(element ID, composition), (element ID, compositions),...]
     charges: Charges for elements.
-          Format: ***
+          Format: [(element ID, charge), (element ID, charge),...]
     """
     zdd.reset_zdd()
     zdd.set_permutations(hnf)
@@ -214,7 +215,7 @@ def enum_derivatives(
     # Apply symmetry operations
     try:
         if verbose:
-            print("Using graphillion for calculating non-equiv. structures", flush=True)
+            print("Using graphillion for enumerating nonequiv. structures", flush=True)
         t1 = time.time()
         gs = zdd.nonequivalent_permutations(gs=gs)
         t2 = time.time()
@@ -224,20 +225,14 @@ def enum_derivatives(
         labelings, inactive_labeling = zdd.to_labelings(gs)
     except:
         if verbose:
-            print("Using labelings for calculating non-equiv. structures", flush=True)
+            print("Using labelings for enumerating nonequiv. structures", flush=True)
         t1 = time.time()
         labelings, inactive_labeling = zdd.to_labelings(gs)
         labelings = get_nonequivalent_labelings(labelings, zdd.site_permutations)
         t2 = time.time()
-        if not end_members:
-            pass
 
     if verbose:
         print("n_str (non-equivalent)     :", labelings.shape[0], flush=True)
-        print(
-            "Elapsed_time (non-equiv.)  :",
-            np.round(t2 - t1, 3),
-            "(s)",
-            flush=True,
-        )
+        t_round = np.round(t2 - t1, 3)
+        print("Elapsed_time (non-equiv.)  :", t_round, "(s)", flush=True)
     return labelings, inactive_labeling

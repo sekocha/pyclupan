@@ -137,6 +137,11 @@ class Derivatives:
             write_poscar_file(sup_copy, filename=path + "/" + filename)
         return self
 
+    @property
+    def samples(self):
+        """Return sample structures."""
+        return self._samples
+
 
 @dataclass
 class DerivativesSet:
@@ -206,3 +211,11 @@ class DerivativesSet:
         for derivs in self.derivatives_set:
             if derivs._samples is not None:
                 derivs.save(path=path, elements=elements)
+
+    @property
+    def n_structures(self):
+        """Return number of total derivative structures."""
+        n = 0
+        for ds in self.derivatives_set:
+            n += ds.n_labelings
+        return n

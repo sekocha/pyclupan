@@ -4,9 +4,40 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.derivative.init_utils import set_compositions
+from pyclupan.derivative.init_utils import (
+    set_charges,
+    set_compositions,
+    set_elements_on_sublattices,
+)
 
 cwd = Path(__file__).parent
+
+
+def test_elements_on_sublattices():
+    """Test set_elements_on_sublattices."""
+    n_sites = [1]
+    elements = [[0, 1]]
+    elements_lattice = set_elements_on_sublattices(n_sites)
+    assert elements == elements_lattice
+
+    occupation = [[0], [0]]
+    elements_lattice = set_elements_on_sublattices(n_sites, occupation=occupation)
+    assert elements == elements_lattice
+
+    n_sites = [1, 1, 3]
+    elements = [[0], [1], [2, 3]]
+    elements_lattice = set_elements_on_sublattices(n_sites, elements=elements)
+    assert elements == elements_lattice
+
+    elements = [[0], [1], [2, 3]]
+    occupation = [[0], [1], [2], [2]]
+    elements_lattice = set_elements_on_sublattices(n_sites, occupation=occupation)
+    assert elements == elements_lattice
+
+    elements = [[0, 1], [0, 1, 2, 3], [4, 5, 6]]
+    occupation = [[0, 1], [0, 1], [1], [1], [2], [2], [2]]
+    elements_lattice = set_elements_on_sublattices(n_sites, occupation=occupation)
+    assert elements == elements_lattice
 
 
 def test_compositions_single_lattice():
@@ -65,3 +96,11 @@ def test_compositions_multiple_sublattices2():
     np.testing.assert_allclose(comp[:3], comp_true, atol=1e-6)
     assert comp[3] is None
     assert comp[4] is None
+
+
+def test_charges():
+    """Test set_charges."""
+    elements_lattice = [[0, 1], [2]]
+    charges_in = [(0, "1.0"), (1, "3.0"), (2, "-2.0")]
+    charges = set_charges(charges_in, elements_lattice)
+    assert charges == [1.0, 3.0, -2.0]
