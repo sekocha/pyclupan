@@ -4,9 +4,9 @@ import time
 from typing import Optional
 
 import numpy as np
-from pypolymlp.core.data_format import PolymlpStructure
 
 from pyclupan.core.linalg_utils import get_nonequivalent_hnf
+from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.derivative.derivative_utils import Derivatives, DerivativesSet
 from pyclupan.derivative.init_utils import (
     set_charges,

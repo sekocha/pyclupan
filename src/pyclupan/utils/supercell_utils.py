@@ -3,9 +3,8 @@
 from typing import Literal
 
 import numpy as np
-from pypolymlp.core.data_format import PolymlpStructure
-from pypolymlp.utils.spglib_utils import ReducedCell
-from pypolymlp.utils.structure_utils import supercell
+
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, ReducedCell, supercell
 
 
 def supercell_reduced(

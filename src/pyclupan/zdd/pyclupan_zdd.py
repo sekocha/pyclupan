@@ -4,9 +4,8 @@ from typing import Optional
 
 import numpy as np
 from graphillion import GraphSet
-from pypolymlp.core.data_format import PolymlpStructure
-from pypolymlp.core.interface_vasp import Poscar
 
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
 from pyclupan.zdd.zdd import ZddCore
 from pyclupan.zdd.zdd_base import ZddLattice
 
@@ -75,8 +74,7 @@ class PyclupanZdd:
 
     def set_permutations(self, supercell_matrix: np.ndarray):
         """Set atomic permutations."""
-        from pypolymlp.utils.structure_utils import supercell
-
+        from pyclupan.core.pypolymlp_utils import supercell
         from pyclupan.core.spglib_utils import get_permutation
 
         self._hnf = supercell_matrix

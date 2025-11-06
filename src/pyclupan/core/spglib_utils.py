@@ -4,8 +4,9 @@ from typing import Optional
 
 import numpy as np
 import spglib
-from pypolymlp.core.data_format import PolymlpStructure
 from symfc.utils.utils import compute_sg_permutations
+
+from pyclupan.core.pypolymlp_utils import PolymlpStructure
 
 # from scipy.spatial import distance
 

@@ -3,8 +3,8 @@
 import numpy as np
 import yaml
 
+from pyclupan.core.pypolymlp_utils import load_cell, save_cell
 from pyclupan.derivative.derivative_utils import Derivatives, DerivativesSet
-from pyclupan.utils.yaml_utils import load_cell, save_cell
 from pyclupan.zdd.pyclupan_zdd import PyclupanZdd
 
 

@@ -3,9 +3,8 @@
 from typing import Literal, Optional
 
 import numpy as np
-from pypolymlp.core.data_format import PolymlpStructure
-from pypolymlp.core.interface_vasp import Poscar
 
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
 from pyclupan.derivative.derivative_io import (
     load_derivative_yaml,
     write_derivative_yaml,

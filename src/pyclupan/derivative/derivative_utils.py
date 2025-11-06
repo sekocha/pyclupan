@@ -6,9 +6,8 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-from pypolymlp.core.data_format import PolymlpStructure
-from pypolymlp.utils.vasp_utils import write_poscar_file
 
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, write_poscar_file
 from pyclupan.zdd.zdd_base import ZddLattice
 
 
@@ -77,7 +76,7 @@ class Derivatives:
     @property
     def supercell(self):
         """Return supercell."""
-        from pypolymlp.utils.structure_utils import supercell
+        from pyclupan.core.pypolymlp_utils import supercell
 
         return supercell(self.unitcell, self.hnf)
 

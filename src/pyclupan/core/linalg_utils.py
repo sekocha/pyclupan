@@ -3,8 +3,8 @@
 import itertools
 
 import numpy as np
-from pypolymlp.core.data_format import PolymlpStructure
 
+from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.core.spglib_utils import get_rotations
 
 
