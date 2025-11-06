@@ -6,9 +6,10 @@ import numpy as np
 import spglib
 from symfc.utils.utils import compute_sg_permutations
 
+import pyclupan.core.pypolymlp_utils as pypolymlp_utils
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 
-# from scipy.spatial import distance
+ReducedCell = pypolymlp_utils.ReducedCell
 
 
 def _structure_to_cell(st: PolymlpStructure):

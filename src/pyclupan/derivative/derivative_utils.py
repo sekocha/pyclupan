@@ -7,29 +7,8 @@ from typing import Optional
 
 import numpy as np
 
-from pyclupan.core.pypolymlp_utils import PolymlpStructure, write_poscar_file
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, save_cell, write_poscar_file
 from pyclupan.zdd.zdd_base import ZddLattice
-
-
-def reorder_positions(st: PolymlpStructure):
-    """Reorder positions, types, and elements."""
-
-    map_elements = dict()
-    for t, e in zip(st.types, st.elements):
-        map_elements[t] = e
-
-    n_atoms, positions_reorder, types_reorder = [], [], []
-    for i in sorted(set(st.types)):
-        ids = np.array(st.types) == i
-        n_atoms.append(np.count_nonzero(ids))
-        positions_reorder.extend(st.positions.T[ids])
-        types_reorder.extend(np.array(st.types)[ids])
-
-    st.positions = np.array(positions_reorder).T
-    st.n_atoms = n_atoms
-    st.types = types_reorder
-    st.elements = [map_elements[t] for t in types_reorder]
-    return st
 
 
 @dataclass
@@ -76,9 +55,9 @@ class Derivatives:
     @property
     def supercell(self):
         """Return supercell."""
-        from pyclupan.core.pypolymlp_utils import supercell
+        from pyclupan.utils.supercell_utils import supercell_reduced
 
-        return supercell(self.unitcell, self.hnf)
+        return supercell_reduced(self.unitcell, self.hnf)
 
     @property
     def complete_labelings(self):
@@ -125,16 +104,27 @@ class Derivatives:
 
         os.makedirs(path, exist_ok=True)
         sup = self.supercell
-        prefix = "POSCAR-" + str(self.supercell_size) + "-" + str(self.supercell_id + 1)
+
+        filenames = []
+        prefix = "-".join(["POSCAR", str(self.supercell_size), str(self.supercell_id)])
         elements = np.array(elements)
         for i, sample_id in enumerate(self._samples):
-            filename = prefix + "-" + str(i + 1).zfill(5)
+            filename = prefix + "-" + str(sample_id).zfill(5)
             sup_copy = copy.deepcopy(sup)
             sup_copy.types = self.get_complete_labeling(sample_id)
             sup_copy.elements = elements[sup_copy.types]
-            sup_copy = reorder_positions(sup_copy)
+            sup_copy = sup_copy.reorder()
             write_poscar_file(sup_copy, filename=path + "/" + filename)
-        return self
+            filenames.append(filename)
+
+        active_labelings = self.active_labelings[self._samples]
+        return (
+            self.supercell_size,
+            self.hnf,
+            self.supercell_id,
+            filenames,
+            active_labelings,
+        )
 
     @property
     def samples(self):
@@ -186,6 +176,7 @@ class DerivativesSet:
         """Sample all derivative structures for all HNFs."""
         for derivs in self.derivatives_set:
             derivs.all()
+        return self
 
     def uniform(self, n_samples: int = 100):
         """Sample derivative structures randomly from uniformly-sampled HNFs."""
@@ -212,14 +203,39 @@ class DerivativesSet:
     def save(self, path: str = "poscars", elements: tuple = ("Al", "Cu")):
         """Save derivative structures sampled."""
         os.makedirs(path, exist_ok=True)
+        deriv_info = []
         for derivs in self.derivatives_set:
-            if derivs._samples is not None:
-                derivs.save(path=path, elements=elements)
+            if derivs.samples is not None:
+                sampled_info = derivs.save(path=path, elements=elements)
+                deriv_info.append(sampled_info)
+
+        derivs = self.derivatives_set[0]
+        with open(path + "/pyclupan_samples.yaml", "w") as f:
+            save_cell(derivs.unitcell, tag="unitcell", file=f)
+            print("derivative_structures:", file=f)
+            for info in deriv_info:
+                sup_size, hnf, sup_id, filenames, active_labelings = info
+                print("- id: ", sup_id, file=f)
+                print("  supercell_size: ", sup_size, file=f)
+                print("  HNF:", file=f)
+                print("  -   ", hnf[0], file=f)
+                print("  -   ", hnf[1], file=f)
+                print("  -   ", hnf[2], file=f)
+                print("  active_sites: ", file=f)
+                print("  active_labelings:", file=f)
+                for active in active_labelings:
+                    print("  -", list(active), file=f)
+                print("  structure_files:", file=f)
+                for fname in filenames:
+                    print("  -", fname, file=f)
+                print(file=f)
 
     @property
     def n_structures(self):
         """Return number of total derivative structures."""
-        n = 0
-        for ds in self.derivatives_set:
-            n += ds.n_labelings
-        return n
+        return np.sum(self._cnt)
+
+    @property
+    def sampled_indices(self):
+        """Return indices of sampled structures."""
+        return [derivs.samples for derivs in self.derivatives_set]

@@ -14,10 +14,11 @@ The code also enables the enumeration of nonequivalent substitutional derivative
 - scipy
 - pyyaml
 - setuptools
-- spglib
-- pypolymlp
-- openmp (recommended)
 
+- pypolymlp
+- spglib
+- phonopy
+- openmp (recommended)
 
 [Optional]
 - graphillion
@@ -46,4 +47,3 @@ pip install . -vvv
 ## How to use pyclupan
 
 - [Enumeration of derivative structures](docs/calc_derivative.md)
-

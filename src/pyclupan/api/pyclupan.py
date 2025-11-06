@@ -25,6 +25,10 @@ class Pyclupan:
     def load_poscar(self, poscar: str = "POSCAR") -> PolymlpStructure:
         """Parse POSCAR files.
 
+        Parameter
+        ---------
+        poscar: Name of POSCAR file.
+
         Returns
         -------
         structure: Structure in PolymlpStructure format.
@@ -32,7 +36,7 @@ class Pyclupan:
         self._unitcell = Poscar(poscar).structure
         return self._unitcell
 
-    def run(
+    def run_derivative(
         self,
         occupation: Optional[list] = None,
         elements: Optional[list] = None,
@@ -86,8 +90,13 @@ class Pyclupan:
         )
         return self
 
-    def save_derivatives(self, filename: str = "derivatives.yaml"):
-        """Save derivative structures."""
+    def save_derivatives(self, filename: str = "pyclupan_derivatives.yaml"):
+        """Save derivative structures.
+
+        Parameter
+        ---------
+        filename: YAML file for saving derivative structures.
+        """
         fname_output = write_derivative_yaml(self._derivs_set, filename=filename)
         if self._verbose:
             if fname_output is None:
@@ -97,12 +106,12 @@ class Pyclupan:
 
         return self
 
-    def load_derivatives(self, filename: str = "derivatives.yaml"):
-        """Parse derivatives.yaml.
+    def load_derivatives(self, filename: str = "pyclupan_derivatives.yaml"):
+        """Load derivatives.yaml.
 
-        Returns
-        -------
-        TODO: ***
+        Parameter
+        ---------
+        filename: YAML file for derivative structures.
         """
         self._derivs_set = load_derivative_yaml(filename=filename)
         return self
@@ -130,5 +139,10 @@ class Pyclupan:
 
     @property
     def derivative_structures(self):
-        """Return derivative structures."""
+        """Return derivative structures.
+
+        Return
+        ------
+        deriv_set: Instance of DerivativeSet class.
+        """
         return self._derivs_set

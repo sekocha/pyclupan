@@ -63,3 +63,9 @@ def test_deriv_perovskite_multiple_sublattices2():
     n_str = [ds1.n_structures for ds1 in ds.derivatives_set]
     assert n_str == [10, 11, 7, 10, 8, 7, 5, 8, 3]
     assert sum(n_str) == 69
+
+    clupan.run(elements=elements, supercell_size=4, charges=charges, superperiodic=True)
+    ds = clupan.derivative_structures
+    n_str = [ds1.n_structures for ds1 in ds.derivatives_set]
+    assert n_str == [13, 15, 10, 13, 12, 10, 9, 13, 6]
+    assert sum(n_str) == 101

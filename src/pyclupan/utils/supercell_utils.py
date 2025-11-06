@@ -4,7 +4,10 @@ from typing import Literal
 
 import numpy as np
 
-from pyclupan.core.pypolymlp_utils import PolymlpStructure, ReducedCell, supercell
+import pyclupan.core.pypolymlp_utils as pypolymlp_utils
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, ReducedCell
+
+supercell = pypolymlp_utils.supercell
 
 
 def supercell_reduced(

@@ -1,4 +1,4 @@
-"""Functions for obtaining normal forms."""
+"""Functions for linear algebra."""
 
 import itertools
 

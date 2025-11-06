@@ -32,7 +32,8 @@ def write_derivative_yaml(
         print("  element_sets:", file=f)
         for i, ele in enumerate(derivs.element_orbit):
             print("  - id:         ", i, file=f)
-            print("    elements:   ", ele, file=f)
+            print("    elements:   ", ele[0], file=f)
+            print("    elements_dd:", ele[1], file=f)
         print("", file=f)
 
         print("compositions:", file=f)
@@ -48,7 +49,6 @@ def write_derivative_yaml(
             print("  -", list(derivs.hnf[0]), file=f)
             print("  -", list(derivs.hnf[1]), file=f)
             print("  -", list(derivs.hnf[2]), file=f)
-            # save_cell(derivs.supercell, tag="supercell", file=f)
 
             print("  inactive_sites:   ", end=" ", file=f)
             _write_list_no_space(derivs.inactive_sites, file=f)
@@ -72,7 +72,9 @@ def load_derivative_yaml(filename: str = "derivative.yaml", verbose: bool = Fals
     unitcell = load_cell(yaml_data=data, tag="unitcell")
     n_cells = data["zdd"]["n_cells"]
     one_of_k_rep = data["zdd"]["one_of_k"]
-    element_orbit = [d["elements"] for d in data["zdd"]["element_sets"]]
+    element_orbit = [
+        [d["elements"], d["elements_dd"]] for d in data["zdd"]["element_sets"]
+    ]
     elements_lattice = [e[0] for e in element_orbit]
 
     zdd = PyclupanZdd(verbose=verbose)

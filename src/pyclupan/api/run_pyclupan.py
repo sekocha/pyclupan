@@ -83,12 +83,17 @@ def run():
         default=None,
         help="Charge of element (element id, charge).",
     )
+    parser.add_argument(
+        "--superperiodic",
+        action="store_true",
+        help="Include superperiodic structures.",
+    )
 
     parser.add_argument(
         "--yaml",
         type=str,
         default="derivatives.yaml",
-        help="Yaml file.",
+        help="Yaml file for derivative structures.",
     )
     parser.add_argument(
         "--element_strings",
@@ -107,7 +112,7 @@ def run():
         args.hnf = np.array(args.hnf).reshape((3, 3))
     if args.poscar:
         clupan.load_poscar(args.poscar)
-        clupan.run(
+        clupan.run_derivative(
             occupation=args.occupation,
             elements=args.elements,
             comp=args.comp,
@@ -116,9 +121,13 @@ def run():
             supercell_size=args.supercell_size,
             hnf=args.hnf,
             charges=args.charge,
+            superperiodic=args.superperiodic,
         )
-        clupan.save_derivatives(filename="derivatives.yaml")
+        clupan.save_derivatives(filename="pyclupan_derivatives.yaml")
     elif args.yaml:
+        if args.element_strings is None:
+            raise RuntimeError("Element string must be given.")
+
         clupan.load_derivatives(args.yaml)
         clupan.sample_derivatives(
             method="uniform",
