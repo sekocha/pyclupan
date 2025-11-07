@@ -76,21 +76,25 @@ class ClusterSearch:
                 if dis <= max_cut + tol:
                     self._active_sites_updated.append(j)
             self._active_sites_updated.append(i)
-        self._active_sites = np.array(self._active_sites_updated)
+        self._active_sites = np.unique(self._active_sites_updated)
         return self
 
     def _extend_cluster_order(self, clusters_prev: list):
         """Increase site to clusters from enumerated smaller clusters."""
         t1 = time.time()
         cl_reps = set()
+        # TODO: Use of min works for systems with multiple nonequivalent sites?
         for cl, s in itertools.product(clusters_prev, self._active_sites):
             if s not in cl:
                 cl_trial = np.array(sorted(list(cl) + [s]))
                 cl_perm = self._permutation[:, cl_trial]
-                cl_min = min([tuple(sorted(cl)) for cl in cl_perm])
-                cl_reps.add(cl_min)
+                cl_perm = np.sort(cl_perm, axis=1)
+                cl_min = np.unique(cl_perm, axis=0)[0]
+                cl_reps.add(tuple(cl_min))
+
         t2 = time.time()
         print(t2 - t1)
+
         return sorted(cl_reps)
 
     def search(self, max_order: int = 4, cutoffs: tuple[float] = (6.0, 6.0, 6.0)):
@@ -137,53 +141,34 @@ class ClusterSearch:
                 neighbors.append(s1)
         return origin, neighbors
 
-    def _compute_distance(self, i, j):
+    def _is_within_cutoff(self, cluster: tuple, cut: float, tol: float = 1e-10):
+        """Check if all pairs of cluster are below cutoff distance."""
 
         axis = self._supercell.axis
         positions = self._supercell.positions
 
-        diff1 = positions[:, j] - positions[:, i]
-        position_j = positions[:, j] - np.round(diff1)
-
-        key = tuple(sorted([i, j]))
-        if key not in self._distances:
-            diff = position_j - positions[:, i]
-            dis = np.linalg.norm(axis @ diff)
-            self._distances[key] = dis
-
-        return self._distances[key], position_j
-
-    def _is_within_cutoff(self, cluster: tuple, cut: float, tol: float = 1e-10):
-        """Check if all pairs of cluster are below cutoff distance."""
-
-        axis = self._lattice_supercell.cell.axis
-        positions = self._lattice_supercell.cell.positions
-
-        is_cutoff = True
         positions_nearest = []
         i, neighbors = self._define_cluster_origin(cluster)
         for j in neighbors:
             key = tuple(sorted([i, j]))
-            dis = self._distances[key]
-            if dis > cut + tol:
-                is_cutoff = False
-                return is_cutoff, None
+            if self._distances[key] > cut + tol:
+                return False, None
 
             diff1 = positions[:, j] - positions[:, i]
             position_j = positions[:, j] - np.round(diff1)
             positions_nearest.append(position_j)
 
-        positions_nearest = np.array(positions_nearest).T
-        order = len(cluster)
-        if order > 2:
-            for i, j in itertools.combinations(range(order - 1), 2):
-                diff = positions_nearest[:, j] - positions_nearest[:, i]
-                dis = np.linalg.norm(axis @ diff)
-                if dis > cut + tol:
-                    is_cutoff = False
-                    return is_cutoff, None
+        if len(cluster) > 2:
+            for pos_i, pos_j in itertools.combinations(positions_nearest, 2):
+                if np.linalg.norm(axis @ (pos_j - pos_i)) > cut + tol:
+                    return False, None
 
-        return is_cutoff, positions_nearest
+        return True, positions_nearest
+
+    @property
+    def clusters(self):
+        """Return enumerated clusters."""
+        return self._enum_clusters
 
 
 def run_cluster(
