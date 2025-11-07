@@ -54,7 +54,7 @@ class Lattice:
 
     def __init__(
         self,
-        unitcell: PolymlpStructure,
+        cell: PolymlpStructure,
         occupation: Optional[list] = None,
         elements: Optional[list] = None,
         verbose: bool = False,
@@ -63,19 +63,19 @@ class Lattice:
 
         Parameter
         ---------
-        unitcell: Unit cell of lattice.
+        cell: Unit cell of lattice.
         occupation: Lattice IDs occupied by each element.
                 Example: [[0], [1], [2], [2]].
         elements: Element IDs on each lattices.
                 Example: [[0], [1], [2, 3]].
         """
         self._elements_on_lattice = set_elements_on_sublattices(
-            n_sites=unitcell.n_atoms,
+            n_sites=cell.n_atoms,
             occupation=occupation,
             elements=elements,
         )
 
-        self._unitcell = unitcell
+        self._cell = cell
         self._verbose = verbose
 
         self._active_lattice = [
@@ -85,9 +85,14 @@ class Lattice:
         self._reduced_cell = None
 
     @property
-    def unitcell(self):
-        """Return unitcell of lattice."""
-        return self._unitcell
+    def cell(self):
+        """Return cell of lattice."""
+        return self._cell
+
+    @cell.setter
+    def cell(self, c: PolymlpStructure):
+        """Set cell."""
+        self._cell = c
 
     @property
     def elements_on_lattice(self):
@@ -100,7 +105,7 @@ class Lattice:
         if self._active_sites is not None:
             return self._active_sites
 
-        n_sites = self._unitcell.n_atoms
+        n_sites = self._cell.n_atoms
         self._active_sites = []
         for lattice_id in self._active_lattice:
             begin = sum(n_sites[:lattice_id])
@@ -110,11 +115,11 @@ class Lattice:
 
     @property
     def reduced_cell(self):
-        """Return reduced unitcell."""
+        """Return reduced cell."""
         if self._reduced_cell is not None:
             return self._reduced_cell
 
         from pyclupan.core.pypolymlp_utils import ReducedCell
 
-        reduced = ReducedCell(self._unitcell.axis, method="delaunay")
-        return reduced.reduce_structure(self._unitcell)
+        reduced = ReducedCell(self._cell.axis, method="delaunay")
+        return reduced.reduce_structure(self._cell)
