@@ -31,8 +31,10 @@ class ClusterAttr:
 
     sites_unitcell: Optional[tuple] = None
     cells_unitcell: Optional[np.ndarray] = None
+
     sites_supercell: Optional[tuple] = None
     positions_supercell: Optional[np.array] = None
+
     elements: Optional[tuple] = None
     elements_combinations: Optional[tuple] = None
 
@@ -55,6 +57,8 @@ class ClusterSearch:
         self._nonequiv_sites = None
         self._distances = dict()
         self._enum_clusters = dict()
+
+        self._cutoffs = None
 
     def _find_supercell(self, max_cut: float):
         """Find supercell expansion for searching clusters."""
@@ -104,7 +108,8 @@ class ClusterSearch:
         point_clusters = []
         for s in self._nonequiv_sites:
             cl_attr = ClusterAttr(
-                sites_supercell=[s], positions_supercell=self._supercell.positions[:, s]
+                sites_supercell=[s],
+                positions_supercell=np.array([self._supercell.positions[:, s]]).T,
             )
             point_clusters.append(cl_attr)
 
@@ -177,7 +182,9 @@ class ClusterSearch:
                 "Cutoffs must be smaller or equal to those for smaller orders."
             )
 
+        self._cutoffs = cutoffs
         max_cut = max(cutoffs)
+
         self._find_supercell(max_cut)
         self._enum_clusters[1] = self._find_nonequivalent_sites(max_cut)
 
@@ -283,7 +290,13 @@ class ClusterSearch:
 
     def save(self, filename: str = "pyclupan_cluster.yaml"):
         """Save results of cluster search."""
-        save_cluster_yaml(self._enum_clusters, filename=filename)
+        unitcell = self._lattice.cell
+        save_cluster_yaml(
+            self._enum_clusters,
+            unitcell,
+            self._cutoffs,
+            filename=filename,
+        )
         return self
 
     @property
