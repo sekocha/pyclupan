@@ -1,17 +1,40 @@
 """Class for searching nonequivalent clusters."""
 
-# from dataclasses import dataclass
 import copy
 import itertools
 import time
+from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
 
+from pyclupan.cluster.cluster_io import save_cluster_yaml
 from pyclupan.cluster.cluster_utils import calc_distance_pairs
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, supercell
 from pyclupan.core.spglib_utils import get_permutation
+
+
+@dataclass
+class ClusterAttr:
+    """Dataclass for cluster attributes.
+
+    Parameters
+    ----------
+    sites_unitcell: Site IDs in unitcell.
+    cells_unitcell: Fractional coordinates of cells in unitcell representation.
+    sites_supercell: Site IDs in reduced supercell.
+    positions_supercell: Fractional coordinates of sites in reduced supercell.
+    elements: Elements on sites.
+    elements_combinations: Set of elements on sites.
+    """
+
+    sites_unitcell: Optional[tuple] = None
+    cells_unitcell: Optional[np.ndarray] = None
+    sites_supercell: Optional[tuple] = None
+    positions_supercell: Optional[np.array] = None
+    elements: Optional[tuple] = None
+    elements_combinations: Optional[tuple] = None
 
 
 class ClusterSearch:
@@ -22,20 +45,20 @@ class ClusterSearch:
         self._lattice = lattice
         self._verbose = verbose
 
+        self._elements_lattice = lattice.elements_on_lattice
+
         self._lattice_supercell = None
         self._supercell = None
         self._permutation = None
         self._active_sites = None
+
         self._nonequiv_sites = None
         self._distances = dict()
         self._enum_clusters = dict()
 
-        # elements_lattice = lattice.elements_on_lattice
-
     def _find_supercell(self, max_cut: float):
         """Find supercell expansion for searching clusters."""
         reduced_cell = self._lattice.reduced_cell
-
         reduced_norm = np.linalg.norm(reduced_cell.axis, axis=0)
         supercell_matrix = np.diag(np.ceil(np.ones(3) * max_cut * 2 / reduced_norm))
         self._supercell = supercell(reduced_cell, supercell_matrix=supercell_matrix)
@@ -45,17 +68,6 @@ class ClusterSearch:
         self._lattice_supercell.cell = self._supercell
         self._active_sites = self._lattice_supercell.active_sites
         return self
-
-    def _find_nonequivalent_sites(self, max_cut: float):
-        """Find nonequivalent sites."""
-        if self._permutation is None:
-            raise RuntimeError("Permutation not found.")
-
-        rep = np.min(self._permutation[:, self._active_sites], axis=0)
-        self._nonequiv_sites = np.unique(rep)
-        if self._verbose:
-            print("Nonequivalent sites:", self._nonequiv_sites)
-        return self._nonequiv_sites
 
     def _update_active_sites(self, max_cut: float, tol: float = 1e-10):
         """Update active sites.
@@ -79,55 +91,43 @@ class ClusterSearch:
         self._active_sites = np.unique(self._active_sites_updated)
         return self
 
-    def _extend_cluster_order(self, clusters_prev: list):
-        """Increase site to clusters from enumerated smaller clusters."""
-        t1 = time.time()
-        cl_reps = set()
-        # TODO: Use of min works for systems with multiple nonequivalent sites?
-        for cl, s in itertools.product(clusters_prev, self._active_sites):
-            if s not in cl:
-                cl_trial = np.array(sorted(list(cl) + [s]))
-                cl_perm = self._permutation[:, cl_trial]
-                cl_perm = np.sort(cl_perm, axis=1)
-                cl_min = np.unique(cl_perm, axis=0)[0]
-                cl_reps.add(tuple(cl_min))
+    def _find_nonequivalent_sites(self, max_cut: float):
+        """Find nonequivalent sites."""
+        if self._permutation is None:
+            raise RuntimeError("Permutation not found.")
 
+        rep = np.min(self._permutation[:, self._active_sites], axis=0)
+        self._nonequiv_sites = np.unique(rep)
+        if self._verbose:
+            print("Nonequivalent sites:", self._nonequiv_sites)
+
+        point_clusters = []
+        for s in self._nonequiv_sites:
+            cl_attr = ClusterAttr(
+                sites_supercell=[s], positions_supercell=self._supercell.positions[:, s]
+            )
+            point_clusters.append(cl_attr)
+
+        self._update_active_sites(max_cut)
+        return point_clusters
+
+    def _extend_cluster_order(self, clusters_prev: list[ClusterAttr]):
+        """Increase site to clusters from enumerated smaller clusters."""
+        sites_reps = set()
+        t1 = time.time()
+        for cl, s in itertools.product(clusters_prev, self._active_sites):
+            if s not in cl.sites_supercell:
+                sites_trial = np.array(sorted(list(cl.sites_supercell) + [s]))
+                sites_perm = self._permutation[:, sites_trial]
+                sites_perm = np.sort(sites_perm, axis=1)
+                # TODO: Use of min works for systems with
+                #       multiple nonequivalent sites?
+                sites_min = np.unique(sites_perm, axis=0)[0]
+                sites_reps.add(tuple(sites_min))
         t2 = time.time()
         print(t2 - t1)
 
-        return sorted(cl_reps)
-
-    def search(self, max_order: int = 4, cutoffs: tuple[float] = (6.0, 6.0, 6.0)):
-        """Search clusters."""
-        if len(cutoffs) != max_order - 1:
-            raise RuntimeError("Cutoff size must be equal to max_order - 1.")
-
-        max_cut = max(cutoffs)
-        self._find_supercell(max_cut)
-        self._nonequiv_sites = self._find_nonequivalent_sites(max_cut)
-        self._update_active_sites(max_cut)
-
-        self._enum_clusters[1] = [[s] for s in self._nonequiv_sites]
-        for order in range(2, max_order + 1):
-            if self._verbose:
-                print("Searching for clusters (order =", str(order) + ")", flush=True)
-            cut = cutoffs[order - 2]
-            clusters_cand = self._extend_cluster_order(self._enum_clusters[order - 1])
-            clusters = []
-            for cl_trial in clusters_cand:
-                is_cutoff, _ = self._is_within_cutoff(cl_trial, cut)
-                if is_cutoff:
-                    clusters.append(cl_trial)
-            self._enum_clusters[order] = sorted(clusters)
-
-            if self._verbose:
-                prefix = "Number of clusters (order = " + str(order) + "):"
-                print(prefix, len(self._enum_clusters[order]), flush=True)
-
-        if self._verbose:
-            n_total_clusters = sum(len(v) for v in self._enum_clusters.values())
-            print("Total number of clusters:", n_total_clusters, flush=True)
-        return self
+        return sorted(sites_reps)
 
     def _define_cluster_origin(self, cluster: list):
         """Pick up a nonequivalent site from cluster."""
@@ -152,7 +152,7 @@ class ClusterSearch:
         for j in neighbors:
             key = tuple(sorted([i, j]))
             if self._distances[key] > cut + tol:
-                return False, None
+                return False, None, None
 
             diff1 = positions[:, j] - positions[:, i]
             position_j = positions[:, j] - np.round(diff1)
@@ -161,9 +161,130 @@ class ClusterSearch:
         if len(cluster) > 2:
             for pos_i, pos_j in itertools.combinations(positions_nearest, 2):
                 if np.linalg.norm(axis @ (pos_j - pos_i)) > cut + tol:
-                    return False, None
+                    return False, None, None
 
-        return True, positions_nearest
+        cluster_reordered = tuple([i] + neighbors)
+        cl_positions = np.array([positions[:, i]] + positions_nearest).T
+        return True, cluster_reordered, cl_positions
+
+    def search(self, max_order: int = 4, cutoffs: tuple[float] = (6.0, 6.0, 6.0)):
+        """Search nonequivalent clusters."""
+        if len(cutoffs) != max_order - 1:
+            raise RuntimeError("Cutoff size must be equal to max_order - 1.")
+
+        if cutoffs != tuple(reversed(sorted(cutoffs))):
+            raise RuntimeError(
+                "Cutoffs must be smaller or equal to those for smaller orders."
+            )
+
+        max_cut = max(cutoffs)
+        self._find_supercell(max_cut)
+        self._enum_clusters[1] = self._find_nonequivalent_sites(max_cut)
+
+        for order in range(2, max_order + 1):
+            if self._verbose:
+                print("Searching for clusters (order", str(order) + ")", flush=True)
+            cut = cutoffs[order - 2]
+            clusters_cand = self._extend_cluster_order(self._enum_clusters[order - 1])
+
+            clusters = []
+            for cl_trial in clusters_cand:
+                is_cutoff, sites, fracs = self._is_within_cutoff(cl_trial, cut)
+                if is_cutoff:
+                    cl = ClusterAttr(sites_supercell=sites, positions_supercell=fracs)
+                    clusters.append(cl)
+            sorted_clusters = sorted(clusters, key=lambda p: p.sites_supercell)
+            self._enum_clusters[order] = sorted_clusters
+
+            if self._verbose:
+                prefix = "Number of clusters (order " + str(order) + "):"
+                print(prefix, len(self._enum_clusters[order]), flush=True)
+
+        if self._verbose:
+            n_total_clusters = sum(len(v) for v in self._enum_clusters.values())
+            print("Total number of clusters:", n_total_clusters, flush=True)
+        return self
+
+    def _extract_cluster_sites_permutation(self, cl_sites: np.ndarray):
+        """Get permutations for cluster sites."""
+        perm_cluster = self._permutation[:, cl_sites]
+        ids = np.where(perm_cluster == cl_sites[0])[0]
+        for s in cl_sites[1:]:
+            ids = np.intersect1d(ids, np.where(perm_cluster == s)[0])
+        perm_cluster = np.unique(perm_cluster[ids], axis=0)
+
+        perm = np.zeros(perm_cluster.shape, dtype=int)
+        for i, site in enumerate(cl_sites):
+            perm[np.where(perm_cluster == site)] = i
+        return perm
+
+    def _find_element_combinations(self, cluster_sites: tuple):
+        """Find possible element combinations."""
+        lattice_types = self._lattice_supercell.types
+        cl_sites = np.array(cluster_sites)
+        perm = self._extract_cluster_sites_permutation(cl_sites)
+
+        element_combs = set()
+        elements = [self._elements_lattice[lattice_types[s]] for s in cl_sites]
+        candidates = itertools.product(*elements)
+        for c in candidates:
+            c_rep = np.unique(np.array(c)[perm], axis=0)[0]
+            element_combs.add(tuple(c_rep))
+        return sorted(element_combs)
+
+    def search_with_elements(self):
+        """Search clusters with distinguishing elements."""
+        if self._enum_clusters is None:
+            raise RuntimeError("Run search() first.")
+
+        for order, clusters in self._enum_clusters.items():
+            for cl in clusters:
+                sites = cl.sites_supercell
+                cl.elements_combinations = self._find_element_combinations(sites)
+        return self
+
+    def represent_in_unitcell(self, tol: float = 1e-14):
+        """Calculate representation of cluster positions in unitcell.
+
+        Definition
+        ----------
+        A_(sup,reduce) = A_(reduce) @ H = A_(unit) @ T @ H
+        x = A_(unit)^-1 @ A_(sup,reduce) @ x_(sup,reduce)
+          = T @ H @ x_(sup,reduce)
+        """
+        if self._enum_clusters is None:
+            raise RuntimeError("Run search() first.")
+
+        unitcell, supercell = self._lattice.cell, self._supercell
+        mat = np.linalg.inv(unitcell.axis) @ supercell.axis
+
+        for order, clusters in self._enum_clusters.items():
+            for cl in clusters:
+                positions = mat @ cl.positions_supercell
+                cells = np.floor(positions + tol).astype(int)
+                positions_frac = positions - cells
+
+                sites = []
+                for pos1 in positions_frac.T:
+                    for j, pos2 in enumerate(unitcell.positions.T):
+                        if np.allclose(pos1, pos2):
+                            sites.append(j)
+                            break
+                cl.sites_unitcell = sites
+                cl.cells_unitcell = cells
+        return self
+
+    def run(self, max_order: int = 4, cutoffs: tuple = (6.0, 6.0, 6.0)):
+        """Search clusters and get required attributes."""
+        self.search(max_order=max_order, cutoffs=cutoffs)
+        self.search_with_elements()
+        self.represent_in_unitcell()
+        return self
+
+    def save(self, filename: str = "pyclupan_cluster.yaml"):
+        """Save results of cluster search."""
+        save_cluster_yaml(self._enum_clusters, filename=filename)
+        return self
 
     @property
     def clusters(self):
@@ -175,12 +296,23 @@ def run_cluster(
     unitcell: PolymlpStructure,
     occupation: Optional[list] = None,
     elements: Optional[list] = None,
-    cutoff: float = 6.0,
     max_order: int = 4,
+    cutoffs: tuple = (6.0, 6.0, 6.0),
+    filename: Optional[str] = None,
     verbose: bool = False,
 ):
-    """Search nonequivalent clusters."""
+    """Search nonequivalent clusters.
 
+    Parameters
+    ----------
+    occupation: Lattice IDs occupied by elements.
+                Example: [[0], [1], [2], [2]].
+    elements: Element IDs on lattices.
+                Example: [[0], [1], [2, 3]].
+    max_order: Maximum order of clusters.
+    cutoffs: Cutoff distances for orders >= 2.
+            (two-body, three-body, four-body, ...)
+    """
     lattice = Lattice(
         cell=unitcell,
         occupation=occupation,
@@ -188,4 +320,7 @@ def run_cluster(
         verbose=verbose,
     )
     cs = ClusterSearch(lattice, verbose=verbose)
-    cs.search()
+    cs.run(max_order=max_order, cutoffs=cutoffs)
+    if filename is not None:
+        cs.save(filename=filename)
+    return cs.clusters

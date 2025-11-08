@@ -4,12 +4,8 @@ from typing import Literal, Optional
 
 import numpy as np
 
+from pyclupan.cluster.run_cluster import run_cluster
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
-from pyclupan.derivative.derivative_io import (
-    load_derivative_yaml,
-    write_derivative_yaml,
-)
-from pyclupan.derivative.run_derivative import run_derivatives
 
 
 class Pyclupan:
@@ -17,10 +13,11 @@ class Pyclupan:
 
     def __init__(self, verbose: bool = False):
         """Init method."""
-        self._unitcell = None
         self._verbose = verbose
 
+        self._unitcell = None
         self._derivs_set = None
+        self._clusters = None
 
     def load_poscar(self, poscar: str = "POSCAR") -> PolymlpStructure:
         """Parse POSCAR files.
@@ -35,6 +32,43 @@ class Pyclupan:
         """
         self._unitcell = Poscar(poscar).structure
         return self._unitcell
+
+    def run_cluster(
+        self,
+        occupation: Optional[list] = None,
+        elements: Optional[list] = None,
+        max_order: int = 4,
+        cutoffs: tuple[float] = (6.0, 6.0, 6.0),
+        filename: str = "pyclupan_cluster.yaml",
+    ):
+        """Search nonequivalent clusters.
+        Parameters
+        ----------
+        occupation: Lattice IDs occupied by elements.
+                    Example: [[0], [1], [2], [2]].
+        elements: Element IDs on lattices.
+                  Example: [[0], [1], [2, 3]].
+        max_order: Maximum order of clusters.
+        cutoffs: Cutoff distances for orders >= 2.
+                (two-body, three-body, four-body, ...)
+                Size of cutoffs must be equal to max_order - 1.
+                Cutoffs must be smaller or equal to those for smaller orders.
+        filename: Name of output file for cluster search results.
+                  If None, no file will be generated.
+        """
+        if self._unitcell is None:
+            raise RuntimeError("Unitcell not found.")
+
+        self._clusters = run_cluster(
+            unitcell=self._unitcell,
+            occupation=occupation,
+            elements=elements,
+            max_order=max_order,
+            cutoffs=cutoffs,
+            filename=filename,
+            verbose=self._verbose,
+        )
+        return self
 
     def run_derivative(
         self,
@@ -57,7 +91,7 @@ class Pyclupan:
         occupation: Lattice IDs occupied by elements.
                     Example: [[0], [1], [2], [2]].
         elements: Element IDs on lattices.
-                  Example: [[0],[1],[2, 3]].
+                  Example: [[0], [1], [2, 3]].
         comp: Compositions for sublattices (n_elements / n_sites).
               Compositions are not needed to be normalized.
               Format: [(element ID, composition), (element ID, composition),...]
@@ -73,6 +107,11 @@ class Pyclupan:
         charges: Charges of elements.
               Format: [(element ID, charge), (element ID, charge),...]
         """
+        from pyclupan.derivative.run_derivative import run_derivatives
+
+        if self._unitcell is None:
+            raise RuntimeError("Unitcell not found.")
+
         self._derivs_set = run_derivatives(
             self._unitcell,
             occupation=occupation,
@@ -97,6 +136,8 @@ class Pyclupan:
         ---------
         filename: YAML file for saving derivative structures.
         """
+        from pyclupan.derivative.derivative_io import write_derivative_yaml
+
         fname_output = write_derivative_yaml(self._derivs_set, filename=filename)
         if self._verbose:
             if fname_output is None:
@@ -113,6 +154,8 @@ class Pyclupan:
         ---------
         filename: YAML file for derivative structures.
         """
+        from pyclupan.derivative.derivative_io import load_derivative_yaml
+
         self._derivs_set = load_derivative_yaml(filename=filename)
         return self
 
@@ -146,3 +189,14 @@ class Pyclupan:
         deriv_set: Instance of DerivativeSet class.
         """
         return self._derivs_set
+
+    @property
+    def clusters(self):
+        """Return nonequivalent clusters.
+
+        Return
+        ------
+        clusters: Nonequivalent clusters, dict[list[ClusterAttr]].
+                  Dictionary keys are cluster orders.
+        """
+        return self._clusters

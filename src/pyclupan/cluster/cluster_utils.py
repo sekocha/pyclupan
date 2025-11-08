@@ -18,7 +18,3 @@ def calc_distance_pairs(
     diff -= np.round(diff)
     distance = np.linalg.norm(axis @ diff, axis=0)
     return distance
-
-
-# def is_lpairs_uster_in_cutoff_sphere
-#     """Check if an atom pair in cluster is larger than cutoff."""

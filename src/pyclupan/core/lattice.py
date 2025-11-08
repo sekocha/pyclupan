@@ -95,6 +95,11 @@ class Lattice:
         self._cell = c
 
     @property
+    def types(self):
+        """Return lattice types for each site."""
+        return self._cell.types
+
+    @property
     def elements_on_lattice(self):
         """Return elements on sublattices."""
         return self._elements_on_lattice
