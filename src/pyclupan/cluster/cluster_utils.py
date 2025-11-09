@@ -18,6 +18,8 @@ class ClusterAttr:
     positions_supercell: Fractional coordinates of sites in reduced supercell.
     elements: Elements on sites.
     elements_combinations: Set of elements on sites.
+    cluster_id: ID for distinguishing lattice site cluster.
+    element_cluster_id: ID for distinguishing cluster with element species.
     """
 
     sites_unitcell: Optional[tuple] = None
@@ -28,6 +30,9 @@ class ClusterAttr:
 
     elements: Optional[tuple] = None
     elements_combinations: Optional[tuple] = None
+
+    cluster_id: Optional[int] = None
+    element_cluster_id: Optional[int] = None
 
 
 def calc_distance_pairs(

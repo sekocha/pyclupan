@@ -6,6 +6,7 @@ from typing import Optional
 import numpy as np
 import yaml
 
+from pyclupan.cluster.cluster_utils import ClusterAttr
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, load_cell, save_cell
 
 
@@ -75,6 +76,27 @@ def load_cluster_yaml(filename: str = "pyclupan_cluster.yaml"):
     """Load cluster.yaml."""
     yaml_data = yaml.safe_load(open(filename))
     unitcell = load_cell(yaml_data=yaml_data)
-    clusters = yaml_data["clusters"]
-    element_clusters = yaml_data["element_clusters"]
-    return unitcell, clusters, element_clusters
+
+    cluster_attrs = []
+    for cl in yaml_data["clusters"]:
+        sites = tuple([s["site"] for s in cl["lattice_sites"]])
+        cells = np.array([s["cell"] for s in cl["lattice_sites"]]).T
+        attr = ClusterAttr(
+            sites_unitcell=sites,
+            cells_unitcell=cells,
+            cluster_id=cl["serial_id"],
+        )
+        cluster_attrs.append(attr)
+
+    element_cluster_attrs = []
+    for cl in yaml_data["element_clusters"]:
+        lattice_sites = cl["lattice_sites"]
+        attr = ClusterAttr(
+            sites_unitcell=tuple(lattice_sites["sites"]),
+            cells_unitcell=np.array(lattice_sites["cells"]).T,
+            elements=tuple(lattice_sites["elements"]),
+            cluster_id=cl["cluster_id"],
+            element_cluster_id=cl["serial_id"],
+        )
+        element_cluster_attrs.append(attr)
+    return unitcell, cluster_attrs, element_cluster_attrs
