@@ -3,40 +3,15 @@
 import copy
 import itertools
 import time
-from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
 
 from pyclupan.cluster.cluster_io import save_cluster_yaml
-from pyclupan.cluster.cluster_utils import calc_distance_pairs
+from pyclupan.cluster.cluster_utils import ClusterAttr, calc_distance_pairs
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, supercell
 from pyclupan.core.spglib_utils import get_permutation
-
-
-@dataclass
-class ClusterAttr:
-    """Dataclass for cluster attributes.
-
-    Parameters
-    ----------
-    sites_unitcell: Site IDs in unitcell.
-    cells_unitcell: Fractional coordinates of cells in unitcell representation.
-    sites_supercell: Site IDs in reduced supercell.
-    positions_supercell: Fractional coordinates of sites in reduced supercell.
-    elements: Elements on sites.
-    elements_combinations: Set of elements on sites.
-    """
-
-    sites_unitcell: Optional[tuple] = None
-    cells_unitcell: Optional[np.ndarray] = None
-
-    sites_supercell: Optional[tuple] = None
-    positions_supercell: Optional[np.array] = None
-
-    elements: Optional[tuple] = None
-    elements_combinations: Optional[tuple] = None
 
 
 class ClusterSearch:
@@ -102,8 +77,6 @@ class ClusterSearch:
 
         rep = np.min(self._permutation[:, self._active_sites], axis=0)
         self._nonequiv_sites = np.unique(rep)
-        if self._verbose:
-            print("Nonequivalent sites:", self._nonequiv_sites)
 
         point_clusters = []
         for s in self._nonequiv_sites:
@@ -172,6 +145,24 @@ class ClusterSearch:
         cl_positions = np.array([positions[:, i]] + positions_nearest).T
         return True, cluster_reordered, cl_positions
 
+    def _print_log(self, cutoffs: tuple):
+        """Print logs about initial parameters."""
+        print("Finding nonequivalent clusters.", flush=True)
+        print("Sublattices:", flush=True)
+        for i, elements in enumerate(self._elements_lattice):
+            print("- Lattice:   ", i, flush=True)
+            print("  Elements:  ", elements, flush=True)
+            print("  active:    ", len(elements) > 1, flush=True)
+        print("Parameters:", flush=True)
+        print("  Max order: ", len(cutoffs) + 1, flush=True)
+        for i, cut in enumerate(cutoffs):
+            order = i + 2
+            print("  Cutoff:", flush=True)
+            print("  - Order:   ", order, flush=True)
+            print("    Distance:", cut, flush=True)
+
+        return self
+
     def search(self, max_order: int = 4, cutoffs: tuple[float] = (6.0, 6.0, 6.0)):
         """Search nonequivalent clusters."""
         if len(cutoffs) != max_order - 1:
@@ -182,11 +173,17 @@ class ClusterSearch:
                 "Cutoffs must be smaller or equal to those for smaller orders."
             )
 
+        if self._verbose:
+            self._print_log(cutoffs)
+
         self._cutoffs = cutoffs
         max_cut = max(cutoffs)
 
         self._find_supercell(max_cut)
         self._enum_clusters[1] = self._find_nonequivalent_sites(max_cut)
+
+        if self._verbose:
+            print("Nonequivalent sites:", self._nonequiv_sites)
 
         for order in range(2, max_order + 1):
             if self._verbose:
