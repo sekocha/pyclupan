@@ -4,8 +4,9 @@ import io
 from typing import Optional
 
 import numpy as np
+import yaml
 
-from pyclupan.core.pypolymlp_utils import PolymlpStructure, save_cell
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, load_cell, save_cell
 
 
 def _write_clusters(clusters: dict, file: Optional[str] = None):
@@ -68,3 +69,12 @@ def save_cluster_yaml(
 
     _write_clusters(clusters, file=f)
     f.close()
+
+
+def load_cluster_yaml(filename: str = "pyclupan_cluster.yaml"):
+    """Load cluster.yaml."""
+    yaml_data = yaml.safe_load(open(filename))
+    unitcell = load_cell(yaml_data=yaml_data)
+    clusters = yaml_data["clusters"]
+    element_clusters = yaml_data["element_clusters"]
+    return unitcell, clusters, element_clusters
