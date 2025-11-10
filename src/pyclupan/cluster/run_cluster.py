@@ -45,7 +45,11 @@ class ClusterSearch:
         self._lattice_supercell = copy.deepcopy(self._lattice)
         self._lattice_supercell.cell = self._supercell
         self._active_sites = self._lattice_supercell.active_sites
+        t1 = time.time()
         self._permutation = get_permutation(self._supercell)
+        # self._permutation = np.unique(self._permutation, axis=0)
+        t2 = time.time()
+        print("perm: ", t2 - t1)
         return self
 
     def _find_nonequivalent_sites(self, max_cut: float):

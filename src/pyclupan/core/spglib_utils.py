@@ -72,37 +72,37 @@ def _get_lattice_translations(
     return np.array(lattice_translations_ids)
 
 
-# def _symmetry_to_permutation(rotations, translations, positions, tol=1e-10):
-#
-#     # permutation (slice notation)
-#     positions = positions.astype(float)
-#     permutation = set()
-#     for rot, trans in zip(rotations, translations):
-#         posrot = (np.dot(rot, positions).T + trans).T
-#         cells = np.floor(posrot).astype(int)
-#         rposrot = posrot - cells
-#         rposrot[np.where(rposrot > 1 - tol)] -= 1.0
-#         sites = np.where(distance.cdist(rposrot.T, positions.T) < tol)[1]
-#         permutation.add(tuple(sites))
-#
-#     return np.array(list(permutation))
-#
+def apply_symmetry_operations(
+    rotations: np.ndarray,
+    translations: np.ndarray,
+    positions: np.ndarray,
+    positions_ref: Optional[np.ndarray] = None,
+    tol: float = 1e-10,
+):
+    """Apply symmetry operations to fractional coordinates."""
 
-#
-# def apply_symmetric_operations(rotations,
-#                                translations,
-#                                positions,
-#                                positions_ref,
-#                                tol=1e-10):
-#
-#     sites_all, cells_all = [], []
-#     for rot, trans in zip(rotations, translations):
-#         posrot = (np.dot(rot, positions).T + trans).T
-#         cells = np.floor(posrot).astype(int)
-#         rposrot = posrot - cells
-#         sites = np.where(distance.cdist(rposrot.T, positions_ref.T) < tol)[1]
-#         sites_all.append(sites)
-#         cells_all.append(cells)
-#
-#     return sites_all, cells_all
-#
+    rot_positions, rot_cells = [], []
+    for rot, trans in zip(rotations, translations):
+        posrot = ((rot @ positions).T + trans).T
+        cells = np.floor(posrot).astype(int)
+        rposrot = posrot - cells
+        rot_positions.append(rposrot)
+        rot_cells.append(cells)
+
+    if positions_ref is not None:
+        rot_sites = [
+            get_matching_positions(pos, positions_ref, tol=tol) for pos in rot_positions
+        ]
+        return np.array(rot_sites), np.array(rot_cells)
+
+    return np.array(rot_positions), np.array(rot_cells)
+
+
+def get_matching_positions(
+    positions: np.ndarray, positions_ref: np.ndarray, tol: float = 1e-10
+):
+    """Calculate matching of two set of positions."""
+    import scipy.spatial.distance as distance
+
+    sites = np.where(distance.cdist(positions.T, positions_ref.T) < tol)[1]
+    return sites

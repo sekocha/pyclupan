@@ -36,6 +36,12 @@ class ClusterAttr:
     cluster_id: Optional[int] = None
     element_cluster_id: Optional[int] = None
 
+    def positions(self, unitcell: PolymlpStructure):
+        """Return fractional coordinates of cluster."""
+        cl_positions = unitcell.positions[:, np.array(self.sites_unitcell)]
+        cl_positions += self.cells_unitcell
+        return cl_positions
+
 
 def find_supercell(unitcell: PolymlpStructure, max_cut: float):
     """Find supercell expansion used for searching clusters."""

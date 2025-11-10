@@ -55,7 +55,7 @@ class Derivatives:
     @property
     def supercell(self):
         """Return supercell."""
-        from pyclupan.utils.supercell_utils import supercell_reduced
+        from pyclupan.utils.cell_utils import supercell_reduced
 
         return supercell_reduced(self.unitcell, self.hnf)
 
