@@ -5,6 +5,8 @@ from typing import Optional
 
 import numpy as np
 
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, supercell
+
 
 @dataclass
 class ClusterAttr:
@@ -33,6 +35,13 @@ class ClusterAttr:
 
     cluster_id: Optional[int] = None
     element_cluster_id: Optional[int] = None
+
+
+def find_supercell(unitcell: PolymlpStructure, max_cut: float):
+    """Find supercell expansion used for searching clusters."""
+    norm = np.linalg.norm(unitcell.axis, axis=0)
+    supercell_matrix = np.diag(np.ceil(np.ones(3) * max_cut * 2 / norm))
+    return supercell(unitcell, supercell_matrix=supercell_matrix)
 
 
 def calc_distance_pairs(
