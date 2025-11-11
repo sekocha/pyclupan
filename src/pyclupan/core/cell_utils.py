@@ -93,5 +93,6 @@ def unitcell_reps_to_supercell_reps(
     """Transform positions in unitcell rep. to those in supercell rep."""
     positions_sup = np.linalg.inv(supercell.axis) @ unitcell.axis @ positions
     _, positions_sup = decompose_fraction(positions_sup)
+
     sites = get_matching_positions(positions_sup, supercell.positions)
-    return sites
+    print(sites)

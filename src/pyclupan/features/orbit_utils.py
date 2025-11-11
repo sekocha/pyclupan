@@ -7,6 +7,9 @@ from dataclasses import dataclass
 import numpy as np
 
 from pyclupan.cluster.cluster_utils import ClusterAttr
+from pyclupan.core.cell_utils import unitcell_reps_to_supercell_reps
+
+# from pyclupan.core.cell_utils import get_unitcell_reps
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.core.spglib_utils import apply_symmetry_operations
 
@@ -17,6 +20,13 @@ class OrbitAttr:
 
     sites: np.ndarray
     cells: np.ndarray
+
+
+@dataclass
+class Orbit:
+    """Class for cluster orbit."""
+
+    attrs: list[OrbitAttr]
 
 
 def find_orbit_unitcell(
@@ -53,4 +63,23 @@ def find_orbit_unitcell(
                 orbit_site[site].append(attr)
     # t3 = time.time()
     # print(t2-t1, t3-t2, t3-t1, len(orbit_site[0]))
+    return orbit_site
+
+
+def get_orbit_supercell(
+    unitcell: PolymlpStructure,
+    supercell: PolymlpStructure,
+    orbit_unitcell: dict,
+    map_unit_to_sup: dict,
+):
+    """Extend orbit for unitcell to orbit for supercell."""
+    orbit_site = defaultdict(list)
+    for key, site_sup in map_unit_to_sup.items():
+        site_unit, cell = key
+        for attr in orbit_unitcell[site_unit]:
+            unitcell_frac = unitcell.positions[:, attr.sites]
+            unitcell_frac += attr.cells
+            unitcell_frac = (unitcell_frac.T + cell).T
+            sites = unitcell_reps_to_supercell_reps(unitcell_frac, unitcell, supercell)
+            orbit_site[site_sup].append(sites)
     return orbit_site

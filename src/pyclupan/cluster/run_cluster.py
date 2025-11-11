@@ -13,6 +13,7 @@ from pyclupan.cluster.cluster_utils import (
     calc_distance_pairs,
     find_supercell,
 )
+from pyclupan.core.cell_utils import decompose_fraction
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.core.spglib_utils import get_permutation
@@ -269,8 +270,7 @@ class ClusterSearch:
         for order, clusters in self._enum_clusters.items():
             for cl in clusters:
                 positions = mat @ cl.positions_supercell
-                cells = np.floor(positions + tol).astype(int)
-                positions_frac = positions - cells
+                cells, positions_frac = decompose_fraction(positions, tol=tol)
 
                 sites = []
                 for pos1 in positions_frac.T:

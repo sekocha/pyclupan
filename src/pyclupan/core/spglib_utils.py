@@ -7,6 +7,7 @@ import spglib
 from symfc.utils.utils import compute_sg_permutations
 
 import pyclupan.core.pypolymlp_utils as pypolymlp_utils
+from pyclupan.core.cell_utils import decompose_fraction, get_matching_positions
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 
 ReducedCell = pypolymlp_utils.ReducedCell
@@ -84,8 +85,7 @@ def apply_symmetry_operations(
     rot_positions, rot_cells = [], []
     for rot, trans in zip(rotations, translations):
         posrot = ((rot @ positions).T + trans).T
-        cells = np.floor(posrot).astype(int)
-        rposrot = posrot - cells
+        cells, rposrot = decompose_fraction(posrot, tol=tol)
         rot_positions.append(rposrot)
         rot_cells.append(cells)
 
@@ -96,13 +96,3 @@ def apply_symmetry_operations(
         return np.array(rot_sites), np.array(rot_cells)
 
     return np.array(rot_positions), np.array(rot_cells)
-
-
-def get_matching_positions(
-    positions: np.ndarray, positions_ref: np.ndarray, tol: float = 1e-10
-):
-    """Calculate matching of two set of positions."""
-    import scipy.spatial.distance as distance
-
-    sites = np.where(distance.cdist(positions.T, positions_ref.T) < tol)[1]
-    return sites
