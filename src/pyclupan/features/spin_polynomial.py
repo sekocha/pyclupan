@@ -4,35 +4,50 @@ import copy
 
 import numpy as np
 
+# @dataclass
+# class ClusterFunction:
+#    """Class for cluster function."""
+#    cons: np.ndarray
+#    spins: np.ndarray
+#
+#    def eval(self, spins_input: np.ndarray):
+#        """Evaluate cluster function value for spin."""
+#        return np.polyval(coeff, spin)
+#
 
-def _eval_basis(coeff, spin):
-    return np.polyval(coeff, spin)
+
+# def _eval_basis(coeffs: np.ndarray, spin: int):
+#    """Evaluate cluster function values."""
+#    return np.polyval(coeffs, spin)
+#
+#
+# def eval_basis_prod(coeffs_cl, spin_cl):
+#    """Evaluate cluster function values."""
+#    return np.prod([_eval_basis(c, s) for c, s in zip(coeffs_cl, spin_cl)])
+#
 
 
-def eval_basis_prod(coeffs_cl, spin_cl):
-    return np.prod([_eval_basis(c, s) for c, s in zip(coeffs_cl, spin_cl)])
+def _inner_prod(coeffs1: np.ndarray, coeffs2: np.ndarray, spins: np.ndarray):
+    """Calculate inner products between two polynomials."""
+    return np.mean(np.polyval(coeffs1, spins) * np.polyval(coeffs2, spins))
 
 
-def _inner_prod(coeff1, coeff2, spins):
-    return np.mean(np.polyval(coeff1, spins) * np.polyval(coeff2, spins))
-
-
-def _normalize(coeff: np.ndarray, spins: np.ndarray):
+def _normalize(coeffs: np.ndarray, spins: np.ndarray):
     """Normalize polynomial coefficients."""
-    prod = np.mean(np.square(np.polyval(coeff, spins)))
-    coeff_normilized = coeff / np.sqrt(prod)
-    return np.array(coeff_normilized)
+    prod = np.mean(np.square(np.polyval(coeffs, spins)))
+    coeffs_normalized = coeffs / np.sqrt(prod)
+    return np.array(coeffs_normalized)
 
 
 def gram_schmidt(spins: np.ndarray):
-    """Calculate orthogonal cluster functions from spin values using Gram-Schmidt.
+    """Construct orthogonal point functions from spin values using Gram-Schmidt.
 
     Return
     ------
     cons: Coefficients of complete orthonomal system.
-          Binary cluster functions: cons[0] * spin + cons[1]
-          Ternary cluster function:  cons[0] * spin**2 + cons[1] * spin + cons[2]
-          k-ary cluster function: cons[0] * spin**(k-1) + ... + cons[-1]
+          Binary point function: cons[0] * spin + cons[1]
+          Ternary point function:  cons[0] * spin**2 + cons[1] * spin + cons[2]
+          k-ary point function: cons[0] * spin**(k-1) + ... + cons[-1]
     """
     n_type = len(spins)
     start = np.eye(n_type)[::-1]
@@ -45,13 +60,3 @@ def gram_schmidt(spins: np.ndarray):
         update = _normalize(update, spins)
         cons.append(update)
     return np.array(cons)
-
-
-if __name__ == "__main__":
-
-    spins = [1, 0, -1]
-    cons = gram_schmidt(spins)
-    print(cons)
-    spins = [2, 1, 0, -1]
-    cons = gram_schmidt(spins)
-    print(cons)
