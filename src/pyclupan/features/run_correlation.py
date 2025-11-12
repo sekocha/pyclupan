@@ -7,10 +7,8 @@ import numpy as np
 from pyclupan.cluster.cluster_io import load_cluster_yaml
 from pyclupan.core.cell_utils import get_unitcell_reps, is_cell_equal, supercell_reduced
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
-
-# from pyclupan.core.spglib_utils import get_permutation, get_symmetry
 from pyclupan.core.spglib_utils import get_symmetry
-from pyclupan.features.orbit_utils import find_orbit_unitcell, get_orbit_supercell
+from pyclupan.features.orbit_utils import find_orbit
 
 
 def run_correlation(
@@ -36,23 +34,21 @@ def run_correlation(
     supercell = supercell_reduced(unitcell, supercell_matrix=supercell_matrix)
     supercell_matrix = supercell.supercell_matrix
     map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
-    # print(map_unit_to_sup)
 
     rotations, translations = get_symmetry(unitcell)
     t1 = time.time()
+    orbit_all = []
     for cl in clusters:
-        orbit = find_orbit_unitcell(cl, unitcell, rotations, translations)
-        get_orbit_supercell(unitcell, supercell, orbit, map_unit_to_sup)
-
-        # for site, orbit_attrs in orbit.items():
-        #    print(site)
-        #    for attr in orbit_attrs:
-        #        print(attr.sites)
-        #        print(attr.cells)
-
+        orbit = find_orbit(
+            cl,
+            unitcell,
+            supercell,
+            rotations,
+            translations,
+            map_unit_to_sup,
+        )
+        orbit_all.append(orbit)
     t2 = time.time()
     print(t2 - t1)
-
-    # permutation = np.unique(get_permutation(supercell), axis=0)
 
     return None

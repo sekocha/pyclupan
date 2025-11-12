@@ -1,6 +1,6 @@
-"""Classes for constructing supercells."""
+"""Utility functions for cells."""
 
-from typing import Literal
+from typing import Literal, Optional
 
 import numpy as np
 
@@ -18,7 +18,6 @@ def supercell_reduced(
     """Construct supercell for a given supercell matrix."""
 
     st_sup = supercell(st, supercell_matrix)
-    print(st_sup.positions)
     reduced = ReducedCell(st_sup.axis, method=method)
     st_sup.axis = reduced.reduced_axis
     st_sup.positions = reduced.transform_fr_coords(st_sup.positions)
@@ -87,12 +86,15 @@ def get_unitcell_reps(unitcell: PolymlpStructure, supercell: PolymlpStructure):
 
 def unitcell_reps_to_supercell_reps(
     positions: np.ndarray,
-    unitcell: PolymlpStructure,
     supercell: PolymlpStructure,
+    supercell_matrix_inv: Optional[np.ndarray] = None,
+    unitcell: Optional[PolymlpStructure] = None,
 ):
     """Transform positions in unitcell rep. to those in supercell rep."""
-    positions_sup = np.linalg.inv(supercell.axis) @ unitcell.axis @ positions
+    if supercell_matrix_inv is None:
+        positions_sup = np.linalg.inv(supercell.axis) @ unitcell.axis @ positions
+    else:
+        positions_sup = supercell_matrix_inv @ positions
     _, positions_sup = decompose_fraction(positions_sup)
-
     sites = get_matching_positions(positions_sup, supercell.positions)
-    print(sites)
+    return sites

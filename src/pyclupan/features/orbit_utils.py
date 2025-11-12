@@ -1,32 +1,13 @@
 """Class for calculating cluster orbits."""
 
-# import time
 from collections import defaultdict
-from dataclasses import dataclass
 
 import numpy as np
 
 from pyclupan.cluster.cluster_utils import ClusterAttr
 from pyclupan.core.cell_utils import unitcell_reps_to_supercell_reps
-
-# from pyclupan.core.cell_utils import get_unitcell_reps
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.core.spglib_utils import apply_symmetry_operations
-
-
-@dataclass
-class OrbitAttr:
-    """Class for cluster orbit attributes."""
-
-    sites: np.ndarray
-    cells: np.ndarray
-
-
-@dataclass
-class Orbit:
-    """Class for cluster orbit."""
-
-    attrs: list[OrbitAttr]
 
 
 def find_orbit_unitcell(
@@ -53,33 +34,56 @@ def find_orbit_unitcell(
                 orbit.add(tuple(sorted(to_sort)))
 
     # t2 = time.time()
-    orbit_site = defaultdict(list)
+    orbit_sites = defaultdict(list)
+    orbit_positions = defaultdict(list)
     for cl_info in orbit:
         for site, cell in cl_info:
             if np.linalg.norm(cell) < 1e-15:
                 sites = np.array([s for s, c in cl_info])
                 cells = np.array([c for s, c in cl_info]).T
-                attr = OrbitAttr(sites, cells)
-                orbit_site[site].append(attr)
+                fracs = unitcell.positions[:, sites] + cells
+                orbit_sites[site].append(sites)
+                orbit_positions[site].append(fracs)
     # t3 = time.time()
     # print(t2-t1, t3-t2, t3-t1, len(orbit_site[0]))
-    return orbit_site
+    return orbit_sites, orbit_positions
 
 
-def get_orbit_supercell(
+def find_orbit_supercell(
     unitcell: PolymlpStructure,
     supercell: PolymlpStructure,
-    orbit_unitcell: dict,
+    orbit_positions_unitcell: dict,
     map_unit_to_sup: dict,
 ):
     """Extend orbit for unitcell to orbit for supercell."""
-    orbit_site = defaultdict(list)
-    for key, site_sup in map_unit_to_sup.items():
-        site_unit, cell = key
-        for attr in orbit_unitcell[site_unit]:
-            unitcell_frac = unitcell.positions[:, attr.sites]
-            unitcell_frac += attr.cells
-            unitcell_frac = (unitcell_frac.T + cell).T
-            sites = unitcell_reps_to_supercell_reps(unitcell_frac, unitcell, supercell)
-            orbit_site[site_sup].append(sites)
-    return orbit_site
+    orbit_sites = defaultdict(list)
+    supercell_matrix_inv = np.linalg.inv(supercell.axis) @ unitcell.axis
+    for (site_unit, cell), site_sup in map_unit_to_sup.items():
+        for unitcell_frac in orbit_positions_unitcell[site_unit]:
+            frac = (unitcell_frac.T + cell).T
+            sites = unitcell_reps_to_supercell_reps(
+                frac,
+                supercell,
+                supercell_matrix_inv=supercell_matrix_inv,
+            )
+            orbit_sites[site_sup].append(sites)
+
+    return orbit_sites
+
+
+def find_orbit(
+    cluster: ClusterAttr,
+    unitcell: PolymlpStructure,
+    supercell: PolymlpStructure,
+    rotations_unitcell: np.ndarray,
+    translations_unitcell: np.ndarray,
+    map_unit_to_sup: dict,
+):
+    """Find orbit for supercell using orbit for unitcell."""
+    _, orbit_fracs = find_orbit_unitcell(
+        cluster, unitcell, rotations_unitcell, translations_unitcell
+    )
+    orbit_sites = find_orbit_supercell(
+        unitcell, supercell, orbit_fracs, map_unit_to_sup
+    )
+    return orbit_sites
