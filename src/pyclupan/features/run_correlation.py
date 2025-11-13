@@ -27,8 +27,8 @@ def run_correlation(
     labelings: Element labelings in supercell.
     cluster_yaml: Name of output file for cluster search results.
     """
-    unitcell_cl, clusters, _ = load_cluster_yaml(cluster_yaml)
-    if not is_cell_equal(unitcell, unitcell_cl):
+    lattice, clusters, _ = load_cluster_yaml(cluster_yaml)
+    if not is_cell_equal(unitcell, lattice.cell):
         raise RuntimeError("Unitcell in cluster.yaml is not equal to given unitcell.")
 
     supercell = supercell_reduced(unitcell, supercell_matrix=supercell_matrix)

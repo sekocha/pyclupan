@@ -60,3 +60,42 @@ def gram_schmidt(spins: np.ndarray):
         update = _normalize(update, spins)
         cons.append(update)
     return np.array(cons)
+
+
+def define_spins(n_type: int):
+    """Define spins."""
+    if n_type == 1:
+        spin_array = [-1000]
+    elif n_type == 2:
+        spin_array = [1, -1]
+    elif n_type == 3:
+        spin_array = [1, 0, -1]
+    elif n_type == 4:
+        spin_array = [2, 1, 0, -1]
+    elif n_type == 5:
+        spin_array = [2, 1, 0, -1, 2]
+    else:
+        raise RuntimeError("Spin values not defined.")
+
+    return spin_array
+
+
+def set_spins(element_lattice: list):
+    """Define spin values."""
+
+    spins_lattice, basis_set, basis_lattice = [], [], []
+    basis_id = 0
+    for ele in element_lattice:
+        spins_sublattice = define_spins(len(ele))
+        spins_lattice.append(spins_sublattice)
+
+        ids = []
+        if len(ele) > 1:
+            for basis in gram_schmidt(spins_sublattice):
+                if not np.allclose(basis[:-1], 0.0) or not np.isclose(basis[-1], 1.0):
+                    basis_set.append(basis)
+                    ids.append(basis_id)
+                    basis_id += 1
+        basis_lattice.append(ids)
+
+    return spins_lattice, basis_lattice, basis_set

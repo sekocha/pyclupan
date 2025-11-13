@@ -7,7 +7,8 @@ import numpy as np
 import yaml
 
 from pyclupan.cluster.cluster_utils import ClusterAttr
-from pyclupan.core.pypolymlp_utils import PolymlpStructure, load_cell, save_cell
+from pyclupan.core.lattice import Lattice
+from pyclupan.core.pypolymlp_utils import load_cell
 
 
 def _write_clusters(clusters: dict, file: Optional[str] = None):
@@ -53,14 +54,14 @@ def _write_clusters(clusters: dict, file: Optional[str] = None):
 
 def save_cluster_yaml(
     clusters: dict,
-    unitcell: PolymlpStructure,
+    lattice: Lattice,
     cutoffs: tuple,
     filename: str = "pyclupan_cluster.yaml",
 ):
     """Save clusters to yaml file."""
     np.set_printoptions(legacy="1.21")
     f = open(filename, "w")
-    save_cell(unitcell, tag="unitcell", file=f)
+    lattice.save(file=f)
     print("parameters:", file=f)
     print("  cutoff:", file=f)
     for i, c in enumerate(cutoffs):
@@ -75,7 +76,10 @@ def save_cluster_yaml(
 def load_cluster_yaml(filename: str = "pyclupan_cluster.yaml"):
     """Load cluster.yaml."""
     yaml_data = yaml.safe_load(open(filename))
-    unitcell = load_cell(yaml_data=yaml_data)
+    unitcell = load_cell(yaml_data=yaml_data, tag="lattice_cell")
+    elements_lattice = yaml_data["elements_on_lattice"]
+
+    lattice = Lattice(cell=unitcell, elements=elements_lattice)
 
     cluster_attrs = []
     for cl in yaml_data["clusters"]:
@@ -99,4 +103,4 @@ def load_cluster_yaml(filename: str = "pyclupan_cluster.yaml"):
             element_cluster_id=cl["serial_id"],
         )
         element_cluster_attrs.append(attr)
-    return unitcell, cluster_attrs, element_cluster_attrs
+    return lattice, cluster_attrs, element_cluster_attrs

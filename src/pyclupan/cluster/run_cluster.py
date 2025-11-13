@@ -2,7 +2,6 @@
 
 import copy
 import itertools
-import time
 from typing import Optional
 
 import numpy as np
@@ -46,11 +45,7 @@ class ClusterSearch:
         self._lattice_supercell = copy.deepcopy(self._lattice)
         self._lattice_supercell.cell = self._supercell
         self._active_sites = self._lattice_supercell.active_sites
-        t1 = time.time()
         self._permutation = get_permutation(self._supercell)
-        # self._permutation = np.unique(self._permutation, axis=0)
-        t2 = time.time()
-        print("perm: ", t2 - t1)
         return self
 
     def _find_nonequivalent_sites(self, max_cut: float):
@@ -99,7 +94,6 @@ class ClusterSearch:
     def _extend_cluster_order(self, clusters_prev: list[ClusterAttr]):
         """Increase site to clusters from enumerated smaller clusters."""
         sites_reps = set()
-        t1 = time.time()
         for cl, s in itertools.product(clusters_prev, self._active_sites):
             if s not in cl.sites_supercell:
                 sites_trial = np.array(list(cl.sites_supercell) + [s])
@@ -107,8 +101,6 @@ class ClusterSearch:
                 sites_perm = np.sort(sites_perm, axis=1)
                 sites_min = np.unique(sites_perm, axis=0)[0]
                 sites_reps.add(tuple(sites_min))
-        t2 = time.time()
-        print(t2 - t1)
 
         return sorted(sites_reps)
 
@@ -291,10 +283,9 @@ class ClusterSearch:
 
     def save(self, filename: str = "pyclupan_cluster.yaml"):
         """Save results of cluster search."""
-        unitcell = self._lattice.cell
         save_cluster_yaml(
             self._enum_clusters,
-            unitcell,
+            self._lattice,
             self._cutoffs,
             filename=filename,
         )

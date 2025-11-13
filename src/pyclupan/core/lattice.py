@@ -1,10 +1,12 @@
 """Functions for handling lattice."""
 
+import io
 from typing import Optional
 
 import numpy as np
 
-from pyclupan.core.pypolymlp_utils import PolymlpStructure
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, save_cell
+from pyclupan.core.spin import set_spins
 
 
 def _check_elements(elements_lattice: list, n_sublattice: int):
@@ -57,7 +59,6 @@ class Lattice:
         cell: PolymlpStructure,
         occupation: Optional[list] = None,
         elements: Optional[list] = None,
-        verbose: bool = False,
     ):
         """Init method.
 
@@ -74,13 +75,12 @@ class Lattice:
             occupation=occupation,
             elements=elements,
         )
-
         self._cell = cell
-        self._verbose = verbose
 
         self._active_lattice = [
             i for i, e in enumerate(self._elements_on_lattice) if len(e) > 1
         ]
+
         self._active_sites = None
         self._reduced_cell = None
 
@@ -128,3 +128,26 @@ class Lattice:
 
         reduced = ReducedCell(self._cell.axis, method="delaunay")
         return reduced.reduce_structure(self._cell)
+
+    def set_spins(self):
+        """Set spin values and point cluster functions."""
+        set_spins(self._elements_on_lattice)
+
+    def save(self, file: Optional[str] = None):
+        """Save lattice."""
+        if isinstance(file, str):
+            f = open(file, "w")
+        elif isinstance(file, io.IOBase):
+            f = file
+        else:
+            raise RuntimeError("file is not str or io.IOBase")
+
+        save_cell(self._cell, tag="lattice_cell", file=f)
+        print("elements_on_lattice:", file=f)
+        for ele in self._elements_on_lattice:
+            print("-", list(ele), file=f)
+        print(file=f)
+
+        if isinstance(file, str):
+            f.close()
+        return self
