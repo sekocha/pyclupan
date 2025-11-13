@@ -1,13 +1,14 @@
 #!/usr/bin/env python
-import numpy as np
 import collections
 import time
 from collections import defaultdict
 
+import numpy as np
 from mlptools.common.structure import Structure
+
 from pyclupan.common.supercell import Supercell
-from pyclupan.common.symmetry import apply_symmetric_operations
-from pyclupan.common.symmetry import get_symmetry
+from pyclupan.common.symmetry import apply_symmetric_operations, get_symmetry
+
 
 class OrbitAttr:
 
@@ -28,12 +29,12 @@ class OrbitAttr:
 
     def eliminate_duplicates(self):
 
-        orbit = [(s,e) for s, e in zip(self.supercell_sites, self.elements)]
+        orbit = [(s, e) for s, e in zip(self.supercell_sites, self.elements)]
         count = collections.Counter(orbit)
 
         supercell_sites, elements = [], []
         for k, v in count.items():
-            multiplicity = round(v/len(k[0]))
+            multiplicity = round(v / len(k[0]))
             for i in range(multiplicity):
                 supercell_sites.append(k[0])
                 elements.append(k[1])
@@ -59,24 +60,27 @@ class OrbitAttr:
         return np.array(self.supercell_sites), np.array(self.elements)
 
     def count(self):
-        orbit = [(s,e) for s, e in zip(self.supercell_sites, self.elements)]
+        orbit = [(s, e) for s, e in zip(self.supercell_sites, self.elements)]
         return collections.Counter(orbit)
 
-class Cluster:
 
+class Cluster:
     """
     for single cluster orbit
     orbit_attr = clusters.clusters[i].find_orbit_supercell
                                     (sup, rotations, translations)
-                        
-    """   
-    def __init__(self, 
-                 idx=None, 
-                 n_body=None, 
-                 site_indices=None, 
-                 cell_indices=None, 
-                 ele_indices=None, 
-                 primitive_lattice=None):
+
+    """
+
+    def __init__(
+        self,
+        idx=None,
+        n_body=None,
+        site_indices=None,
+        cell_indices=None,
+        ele_indices=None,
+        primitive_lattice=None,
+    ):
 
         self.idx = idx
         self.n_body = n_body
@@ -94,7 +98,7 @@ class Cluster:
         self.sites_sym = None
         self.cells_sym = None
         self.orbit_attr_prim = None
-    
+
     def set_element_indices(self, ele_indices):
         self.ele_indices = ele_indices
 
@@ -105,37 +109,34 @@ class Cluster:
     def set_positions(self):
         self.cl_positions = []
         for s, c in zip(self.site_indices, self.cell_indices):
-            pos = self.prim.positions[:,s] + np.array(c)
+            pos = self.prim.positions[:, s] + np.array(c)
             self.cl_positions.append(pos)
         self.cl_positions = np.array(self.cl_positions).T
 
     def print(self):
-        print(' cluster', self.idx, ':', end=' ')
+        print(" cluster", self.idx, ":", end=" ")
         for site, cell in zip(self.site_indices, self.cell_indices):
-            print(cell, site, end=' ')
+            print(cell, site, end=" ")
         if self.ele_indices is not None:
-            print(' elements =', self.ele_indices, end='')
-        print('')
+            print(" elements =", self.ele_indices, end="")
+        print("")
 
     def apply_sym_operations(self, rotations, translations):
 
         if self.sites_sym is None and self.cells_sym is None:
-            res = apply_symmetric_operations(rotations,
-                                             translations,
-                                             self.cl_positions,
-                                             self.prim.positions)
+            res = apply_symmetric_operations(
+                rotations, translations, self.cl_positions, self.prim.positions
+            )
             self.sites_sym, self.cells_sym = np.array(res[0]), np.array(res[1])
 
         return self.sites_sym, self.cells_sym
 
-    def coordination_number(self,
-                            n_cells,
-                            rotations=None,
-                            translations=None):
+    def coordination_number(self, n_cells, rotations=None, translations=None):
 
         if self.orbit_attr_prim is None:
-            self.find_orbit_primitive_cell(rotations=rotations,
-                                           translations=translations)
+            self.find_orbit_primitive_cell(
+                rotations=rotations, translations=translations
+            )
 
         n_sites_prim = sum(self.prim.n_atoms)
         n_sites = n_sites_prim * n_cells
@@ -143,40 +144,47 @@ class Cluster:
         for k, v in self.orbit_attr_prim.items():
             begin = k * n_cells
             z = len(v.sites)
-            coord_numbers[begin:begin+n_cells] = z
+            coord_numbers[begin : begin + n_cells] = z
 
         return coord_numbers
 
-    def find_orbit_primitive_cell(self,
-                                  rotations=None,
-                                  translations=None,
-                                  distinguish_element=False):
+    def find_orbit_primitive_cell(
+        self, rotations=None, translations=None, distinguish_element=False
+    ):
 
         if self.orbit_attr_prim is not None:
             return self.orbit_attr_prim
 
         if self.sites_sym is None and self.cells_sym is None:
             if rotations is None or translations is None:
-                raise ValueError('find_orbit_primitive_cell: ' + \
-                                 'rotations and translations are required')
+                raise ValueError(
+                    "find_orbit_primitive_cell: "
+                    + "rotations and translations are required"
+                )
             self.apply_sym_operations(rotations, translations)
-    
+
         if distinguish_element == False:
             elements = [0] * 10
         else:
             elements = self.ele_indices
-    
+
         t1 = time.time()
         # time consuming (part1)
         orbit_all = set()
         for sites, cells in zip(self.sites_sym, self.cells_sym):
             for origin in cells.T:
                 cells_shift = cells.T - origin
-                cand = tuple(sorted(zip(sites,
-                                        cells_shift[:,0],
-                                        cells_shift[:,1],
-                                        cells_shift[:,2],
-                                        elements)))
+                cand = tuple(
+                    sorted(
+                        zip(
+                            sites,
+                            cells_shift[:, 0],
+                            cells_shift[:, 1],
+                            cells_shift[:, 2],
+                            elements,
+                        )
+                    )
+                )
                 orbit_all.add(cand)
 
         t2 = time.time()
@@ -188,7 +196,7 @@ class Cluster:
                     site = attr[0]
                     orbit_site[site].append(cl_cmpnt)
         t3 = time.time()
-    
+
         self.orbit_attr_prim = dict()
         for site, orbit in orbit_site.items():
             orbit_attr = OrbitAttr()
@@ -197,21 +205,27 @@ class Cluster:
             orbit_attr.optimize_type()
             self.orbit_attr_prim[site] = orbit_attr
         t4 = time.time()
-       #print(t2-t1,t3-t2,t4-t3)
 
-    def find_orbit_supercell(self, sup,
-                             rotations=None,
-                             translations=None,
-                             orbit=None,
-                             distinguish_element=False):
+    # print(t2-t1,t3-t2,t4-t3)
+
+    def find_orbit_supercell(
+        self,
+        sup,
+        rotations=None,
+        translations=None,
+        orbit=None,
+        distinguish_element=False,
+    ):
 
         if sup.plrep is None:
             sup.set_primitive_lattice_representation()
 
         t1 = time.time()
-        self.find_orbit_primitive_cell(rotations=rotations,
-                                       translations=translations,
-                                       distinguish_element=distinguish_element)
+        self.find_orbit_primitive_cell(
+            rotations=rotations,
+            translations=translations,
+            distinguish_element=distinguish_element,
+        )
         t2 = time.time()
 
         orbit_supercell = OrbitAttr()
@@ -222,10 +236,10 @@ class Cluster:
                     orbit_cells_plrep = orbit_attr.cells + site_obj.cell_plrep
                     #############
                     # time consuming part
-                    for sites, cells in zip(orbit_attr.sites,
-                                            orbit_cells_plrep):
-                        sup_sites = tuple([sup.identify_site_idx(s, c)
-                                          for s, c in zip(sites, cells)])
+                    for sites, cells in zip(orbit_attr.sites, orbit_cells_plrep):
+                        sup_sites = tuple(
+                            [sup.identify_site_idx(s, c) for s, c in zip(sites, cells)]
+                        )
                         orbit_supercell.supercell_sites.append(sup_sites)
                         key = (sites, tuple(cells.ravel()))
                         orbit_supercell.map_supercell_sites[key] = sup_sites
@@ -239,8 +253,7 @@ class Cluster:
                     orbit_cells_plrep = orbit_attr.cells + site_obj.cell_plrep
                     #############
                     # time consuming part
-                    for sites, cells in zip(orbit_attr.sites, 
-                                            orbit_cells_plrep):
+                    for sites, cells in zip(orbit_attr.sites, orbit_cells_plrep):
                         key = (sites, tuple(cells.ravel()))
                         orbit_supercell.supercell_sites.append(map_site[key])
                     #############
@@ -250,11 +263,12 @@ class Cluster:
         orbit_supercell.eliminate_incomplete()
 
         t3 = time.time()
-        #print(t2-t1, t3-t2)
+        # print(t2-t1, t3-t2)
         return orbit_supercell
 
+
 class ClusterSet:
-    
+
     def __init__(self, clusters, primitive_lattice=None, elements_lattice=None):
 
         self.clusters = clusters
@@ -289,40 +303,31 @@ class ClusterSet:
                 cl.sites_sym = noncolored_clusters[cl.idx].sites_sym
                 cl.cells_sym = noncolored_clusters[cl.idx].cells_sym
 
-    # required for efficiently computing cluster orbits in supercell 
-    def find_orbits_primitive(self, 
-                              noncolored_cluster_set=None, 
-                              cluster_ids=None,
-                              distinguish_element=True):
+    # required for efficiently computing cluster orbits in supercell
+    def find_orbits_primitive(
+        self, noncolored_cluster_set=None, cluster_ids=None, distinguish_element=True
+    ):
 
-        self.apply_sym_operations\
-            (noncolored_cluster_set=noncolored_cluster_set)
+        self.apply_sym_operations(noncolored_cluster_set=noncolored_cluster_set)
 
         if cluster_ids is not None:
             target_clusters = [self.clusters[i] for i in cluster_ids]
         else:
             target_clusters = self.clusters
 
-
         for cl in target_clusters:
-            cl.find_orbit_primitive_cell\
-                    (distinguish_element=distinguish_element)
+            cl.find_orbit_primitive_cell(distinguish_element=distinguish_element)
 
-    def find_orbits_supercell(self, 
-                              supercell, 
-                              hnf, 
-                              ids=None, 
-                              distinguish_element=True):
+    def find_orbits_supercell(self, supercell, hnf, ids=None, distinguish_element=True):
 
         sup = Supercell(st_prim=self.prim, hnf=hnf, st_supercell=supercell)
         sup.set_primitive_lattice_representation()
-        orbit_all = self.find_orbits_supercell_obj(sup, 
-                                                   ids=ids,
-                                                   distinguish_element=True)
+        orbit_all = self.find_orbits_supercell_obj(
+            sup, ids=ids, distinguish_element=True
+        )
         return orbit_all
 
-    def find_orbits_supercell_obj(self, sup, 
-                                  ids=None, distinguish_element=True):
+    def find_orbits_supercell_obj(self, sup, ids=None, distinguish_element=True):
 
         if ids is not None:
             target_clusters = [self.clusters[i] for i in ids]
@@ -335,13 +340,11 @@ class ClusterSet:
         orbit_all = []
         for cl in target_clusters:
             orbit_pre = orbit_set[cl.idx]
-            orbit_obj = cl.find_orbit_supercell\
-                                (sup, orbit=orbit_pre,
-                                 distinguish_element=distinguish_element)
+            orbit_obj = cl.find_orbit_supercell(
+                sup, orbit=orbit_pre, distinguish_element=distinguish_element
+            )
             orbit_all.append(orbit_obj.get_orbit_supercell())
             if orbit_set[cl.idx] is None:
                 orbit_set[cl.idx] = orbit_obj
 
         return orbit_all
-
-

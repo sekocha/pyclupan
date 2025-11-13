@@ -1,6 +1,6 @@
 """Class for calculating cluster functions."""
 
-import time
+# import time
 
 import numpy as np
 
@@ -46,7 +46,7 @@ def run_correlation(
 
     spins = lattice.to_spins(labelings)
 
-    t1 = time.time()
+    # t1 = time.time()
     orbit_all = []
     for cl in clusters:
         orbit = find_orbit(
@@ -59,19 +59,16 @@ def run_correlation(
             return_array=True,
         )
         orbit_all.append(orbit)
-    t2 = time.time()
+    # t2 = time.time()
 
     cluster_functions = []
     for cl in spin_basis_clusters:
         orbit = np.array(orbit_all[cl.cluster_id])
         coeffs = lattice.get_spin_polynomials(cl.spin_basis)
-        print(coeffs)
-        print(spins[:, orbit])
         cf = eval_cluster_functions(coeffs, spins[:, orbit])
         cluster_functions.append(cf)
     cluster_functions = np.array(cluster_functions).T
 
-    t3 = time.time()
-    print(t2 - t1, t3 - t2)
-    print(cluster_functions)
+    # t3 = time.time()
+    # print(t2 - t1, t3-t2)
     return cluster_functions
