@@ -4,28 +4,6 @@ import copy
 
 import numpy as np
 
-# @dataclass
-# class ClusterFunction:
-#    """Class for cluster function."""
-#    cons: np.ndarray
-#    spins: np.ndarray
-#
-#    def eval(self, spins_input: np.ndarray):
-#        """Evaluate cluster function value for spin."""
-#        return np.polyval(coeff, spin)
-#
-
-
-# def _eval_basis(coeffs: np.ndarray, spin: int):
-#    """Evaluate cluster function values."""
-#    return np.polyval(coeffs, spin)
-#
-#
-# def eval_basis_prod(coeffs_cl, spin_cl):
-#    """Evaluate cluster function values."""
-#    return np.prod([_eval_basis(c, s) for c, s in zip(coeffs_cl, spin_cl)])
-#
-
 
 def _inner_prod(coeffs1: np.ndarray, coeffs2: np.ndarray, spins: np.ndarray):
     """Calculate inner products between two polynomials."""
@@ -74,6 +52,8 @@ def define_spins(n_type: int):
         spin_array = [2, 1, 0, -1]
     elif n_type == 5:
         spin_array = [2, 1, 0, -1, 2]
+    elif n_type == 6:
+        spin_array = [3, 2, 1, 0, -1, 2]
     else:
         raise RuntimeError("Spin values not defined.")
 
@@ -82,7 +62,6 @@ def define_spins(n_type: int):
 
 def set_spins(element_lattice: list):
     """Define spin values."""
-
     spins_lattice, basis_set, basis_lattice = [], [], []
     basis_id = 0
     for ele in element_lattice:
@@ -99,3 +78,25 @@ def set_spins(element_lattice: list):
         basis_lattice.append(ids)
 
     return spins_lattice, basis_lattice, basis_set
+
+
+def eval_cluster_functions(coeffs: np.ndarray, spins_from_orbit: np.ndarray):
+    """Evaluate cluster functions.
+
+    Parameters
+    ----------
+    coeffs: Polynomial coefficients of spin polynomials for atom sites in cluster.
+            shape: (n_sites, cluster_order)
+    spins_from_orbit: Spin values of clusters in structures.
+            shape: (n_structure, orbit_size, cluster_order)
+
+    Return
+    ------
+    Cluster functions.
+        shape: (n_structure)
+    """
+    vals = np.zeros(spins_from_orbit.shape)
+    for i, c in enumerate(coeffs):
+        vals[:, :, i] = np.polyval(c, spins_from_orbit[:, :, i])
+    cf = np.average(np.prod(vals, axis=2), axis=1)
+    return cf

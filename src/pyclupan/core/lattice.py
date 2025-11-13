@@ -180,6 +180,11 @@ class Lattice:
             i += 1
         return spins_assigned
 
+    def get_spin_polynomials(self, basis_ids: np.ndarray):
+        """Return spin polynomial coefficients for given basis IDs."""
+        coeffs = [self._spin_poly[i] for i in basis_ids]
+        return np.array(coeffs)
+
     @property
     def basis_on_lattice(self):
         """Return basis IDs on lattice."""

@@ -24,7 +24,6 @@ def find_orbit_unitcell(
         positions_ref=unitcell.positions,
     )
 
-    # t1 = time.time()
     orbit = set()
     for sites, cells in zip(sites_sym, cells_sym):
         for origin in cells.T:
@@ -33,7 +32,6 @@ def find_orbit_unitcell(
                 to_sort = [(s, tuple(c)) for s, c in zip(sites, cells_shifted.T)]
                 orbit.add(tuple(sorted(to_sort)))
 
-    # t2 = time.time()
     orbit_sites = defaultdict(list)
     orbit_positions = defaultdict(list)
     for cl_info in orbit:
@@ -44,8 +42,6 @@ def find_orbit_unitcell(
                 fracs = unitcell.positions[:, sites] + cells
                 orbit_sites[site].append(sites)
                 orbit_positions[site].append(fracs)
-    # t3 = time.time()
-    # print(t2-t1, t3-t2, t3-t1, len(orbit_site[0]))
     return orbit_sites, orbit_positions
 
 
@@ -54,9 +50,11 @@ def find_orbit_supercell(
     supercell: PolymlpStructure,
     orbit_positions_unitcell: dict,
     map_unit_to_sup: dict,
+    return_array: bool = False,
 ):
     """Extend orbit for unitcell to orbit for supercell."""
-    orbit_sites = defaultdict(list)
+    orbit_sites = [] if return_array else defaultdict(list)
+
     supercell_matrix_inv = np.linalg.inv(supercell.axis) @ unitcell.axis
     for (site_unit, cell), site_sup in map_unit_to_sup.items():
         for unitcell_frac in orbit_positions_unitcell[site_unit]:
@@ -66,7 +64,10 @@ def find_orbit_supercell(
                 supercell,
                 supercell_matrix_inv=supercell_matrix_inv,
             )
-            orbit_sites[site_sup].append(sites)
+            if return_array:
+                orbit_sites.append(sites)
+            else:
+                orbit_sites[site_sup].append(sites)
 
     return orbit_sites
 
@@ -78,12 +79,17 @@ def find_orbit(
     rotations_unitcell: np.ndarray,
     translations_unitcell: np.ndarray,
     map_unit_to_sup: dict,
+    return_array: bool = False,
 ):
     """Find orbit for supercell using orbit for unitcell."""
     _, orbit_fracs = find_orbit_unitcell(
         cluster, unitcell, rotations_unitcell, translations_unitcell
     )
     orbit_sites = find_orbit_supercell(
-        unitcell, supercell, orbit_fracs, map_unit_to_sup
+        unitcell,
+        supercell,
+        orbit_fracs,
+        map_unit_to_sup,
+        return_array=return_array,
     )
     return orbit_sites
