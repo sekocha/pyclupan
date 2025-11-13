@@ -4,11 +4,8 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.derivative.init_utils import (
-    set_charges,
-    set_compositions,
-    set_elements_on_sublattices,
-)
+from pyclupan.core.lattice import set_elements_on_sublattices
+from pyclupan.derivative.init_utils import set_charges, set_compositions
 
 cwd = Path(__file__).parent
 

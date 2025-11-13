@@ -82,13 +82,13 @@ def test_fcc():
 def test_load_cluster():
     """Test load cluster.yaml"""
     filename = str(cwd) + "/pyclupan_cluster.yaml"
-    unitcell, clusters, el_clusters = load_cluster_yaml(filename)
+    unitcell, clusters, el_clusters, _ = load_cluster_yaml(filename)
     assert len(clusters) == 52
     assert len(el_clusters) == 467
 
     cl = el_clusters[-2]
     assert cl.cluster_id == 51
-    assert cl.element_cluster_id == 465
+    assert cl.colored_cluster_id == 465
     assert cl.sites_unitcell == (0, 0, 0, 0)
     assert cl.elements == (0, 1, 1, 1)
     cell_true = np.array([[0, -2, -1, -1], [0, 1, 1, 2], [0, 0, 1, -1]])

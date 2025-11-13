@@ -49,6 +49,24 @@ def _write_clusters(clusters: dict, file: Optional[str] = None):
                 print(file=f)
                 seq_id += 1
             seq_cl_id += 1
+
+    print("spin_basis_clusters:", file=f)
+    seq_id, seq_cl_id = 0, 0
+    for order, clusters_list in clusters.items():
+        for cl in clusters_list:
+            for basis in cl.spin_basis_combinations:
+                print("- serial_id: ", seq_id, file=f)
+                print("  cluster_id:", seq_cl_id, file=f)
+                print("  lattice_sites:", file=f)
+                print("    sites:   ", list(cl.sites_unitcell), file=f)
+                print("    basis:   ", list(basis), file=f)
+                print("    cells:   ", file=f)
+                for c in cl.cells_unitcell.T:
+                    print("    -", list(c), file=f)
+                print(file=f)
+                seq_id += 1
+            seq_cl_id += 1
+
     return clusters
 
 
@@ -100,7 +118,20 @@ def load_cluster_yaml(filename: str = "pyclupan_cluster.yaml"):
             cells_unitcell=np.array(lattice_sites["cells"]).T,
             elements=tuple(lattice_sites["elements"]),
             cluster_id=cl["cluster_id"],
-            element_cluster_id=cl["serial_id"],
+            colored_cluster_id=cl["serial_id"],
         )
         element_cluster_attrs.append(attr)
-    return lattice, cluster_attrs, element_cluster_attrs
+
+    spin_cluster_attrs = []
+    for cl in yaml_data["spin_basis_clusters"]:
+        lattice_sites = cl["lattice_sites"]
+        attr = ClusterAttr(
+            sites_unitcell=tuple(lattice_sites["sites"]),
+            cells_unitcell=np.array(lattice_sites["cells"]).T,
+            spin_basis=tuple(lattice_sites["basis"]),
+            cluster_id=cl["cluster_id"],
+            colored_cluster_id=cl["serial_id"],
+        )
+        spin_cluster_attrs.append(attr)
+
+    return (lattice, cluster_attrs, element_cluster_attrs, spin_cluster_attrs)

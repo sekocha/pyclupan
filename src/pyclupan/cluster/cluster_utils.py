@@ -20,8 +20,10 @@ class ClusterAttr:
     positions_supercell: Fractional coordinates of sites in reduced supercell.
     elements: Elements on sites.
     elements_combinations: Set of elements on sites.
+    spin_basis: Spin polynomial basis on sites.
+    spin_basis_combinations: Set of spin polynomial basis on sites.
     cluster_id: ID for distinguishing lattice site cluster.
-    element_cluster_id: ID for distinguishing cluster with element species.
+    colored_cluster_id: ID for distinguishing cluster with species.
     """
 
     sites_unitcell: Optional[tuple] = None
@@ -33,8 +35,11 @@ class ClusterAttr:
     elements: Optional[tuple] = None
     elements_combinations: Optional[tuple] = None
 
+    spin_basis: Optional[tuple] = None
+    spin_basis_combinations: Optional[tuple] = None
+
     cluster_id: Optional[int] = None
-    element_cluster_id: Optional[int] = None
+    colored_cluster_id: Optional[int] = None
 
     def positions(self, unitcell: PolymlpStructure):
         """Return fractional coordinates of cluster."""

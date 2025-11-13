@@ -12,12 +12,12 @@ cwd = Path(__file__).parent
 def test_fcc():
     """Test cluster orbit search in fcc."""
     filename = str(cwd) + "/pyclupan_cluster.yaml"
-    unitcell, clusters, _ = load_cluster_yaml(filename)
+    unitcell, clusters, _, _ = load_cluster_yaml(filename)
     rotations, translations = get_symmetry(unitcell)
 
     n_orbits = []
     for cl in clusters:
-        orbit_sites = find_orbit_unitcell(cl, unitcell, rotations, translations)
+        orbit_sites, _ = find_orbit_unitcell(cl, unitcell, rotations, translations)
         n_orbits.append(len(orbit_sites[0]))
     assert n_orbits == [
         1,
@@ -74,38 +74,41 @@ def test_fcc():
         24,
     ]
 
-    orbit_sites = find_orbit_unitcell(clusters[31], unitcell, rotations, translations)
+    orbit_sites, orbit_positions = find_orbit_unitcell(
+        clusters[31], unitcell, rotations, translations
+    )
     for orbit in orbit_sites[0]:
-        assert list(orbit.sites) == [0, 0, 0, 0]
+        assert list(orbit) == [0, 0, 0, 0]
 
-    assert list(orbit_sites[0][0].cells[0]) == [-1, 0, 0, 0]
-    assert list(orbit_sites[0][0].cells[1]) == [1, 0, 1, 1]
-    assert list(orbit_sites[0][0].cells[2]) == [0, 0, -1, 0]
+    positions = orbit_positions[0]
+    assert list(positions[0][0]) == [-1, 0, 0, 0]
+    assert list(positions[0][1]) == [1, 0, 1, 1]
+    assert list(positions[0][2]) == [0, 0, -1, 0]
 
-    assert list(orbit_sites[0][1].cells[0]) == [0, 1, 1, 1]
-    assert list(orbit_sites[0][1].cells[1]) == [0, -1, 0, 0]
-    assert list(orbit_sites[0][1].cells[2]) == [0, 0, -1, 0]
+    assert list(positions[1][0]) == [0, 1, 1, 1]
+    assert list(positions[1][1]) == [0, -1, 0, 0]
+    assert list(positions[1][2]) == [0, 0, -1, 0]
 
-    assert list(orbit_sites[0][2].cells[0]) == [-1, 0, 0, 0]
-    assert list(orbit_sites[0][2].cells[1]) == [0, -1, 0, 0]
-    assert list(orbit_sites[0][2].cells[2]) == [0, 0, -1, 0]
+    assert list(positions[2][0]) == [-1, 0, 0, 0]
+    assert list(positions[2][1]) == [0, -1, 0, 0]
+    assert list(positions[2][2]) == [0, 0, -1, 0]
 
-    assert list(orbit_sites[0][3].cells[0]) == [0, 0, 0, 1]
-    assert list(orbit_sites[0][3].cells[1]) == [-1, -1, 0, -1]
-    assert list(orbit_sites[0][3].cells[2]) == [0, 1, 0, 0]
+    assert list(positions[3][0]) == [0, 0, 0, 1]
+    assert list(positions[3][1]) == [-1, -1, 0, -1]
+    assert list(positions[3][2]) == [0, 1, 0, 0]
 
-    assert list(orbit_sites[0][4].cells[0]) == [-1, -1, -1, 0]
-    assert list(orbit_sites[0][4].cells[1]) == [0, 0, 1, 0]
-    assert list(orbit_sites[0][4].cells[2]) == [0, 1, 0, 0]
+    assert list(positions[4][0]) == [-1, -1, -1, 0]
+    assert list(positions[4][1]) == [0, 0, 1, 0]
+    assert list(positions[4][2]) == [0, 1, 0, 0]
 
-    assert list(orbit_sites[0][5].cells[0]) == [-1, 0, 0, 0]
-    assert list(orbit_sites[0][5].cells[1]) == [0, -1, 0, 0]
-    assert list(orbit_sites[0][5].cells[2]) == [1, 1, 0, 1]
+    assert list(positions[5][0]) == [-1, 0, 0, 0]
+    assert list(positions[5][1]) == [0, -1, 0, 0]
+    assert list(positions[5][2]) == [1, 1, 0, 1]
 
-    assert list(orbit_sites[0][6].cells[0]) == [0, 0, 0, 1]
-    assert list(orbit_sites[0][6].cells[1]) == [0, 0, 1, 0]
-    assert list(orbit_sites[0][6].cells[2]) == [-1, 0, -1, -1]
+    assert list(positions[6][0]) == [0, 0, 0, 1]
+    assert list(positions[6][1]) == [0, 0, 1, 0]
+    assert list(positions[6][2]) == [-1, 0, -1, -1]
 
-    assert list(orbit_sites[0][7].cells[0]) == [0, 0, 0, 1]
-    assert list(orbit_sites[0][7].cells[1]) == [0, 0, 1, 0]
-    assert list(orbit_sites[0][7].cells[2]) == [0, 1, 0, 0]
+    assert list(positions[7][0]) == [0, 0, 0, 1]
+    assert list(positions[7][1]) == [0, 0, 1, 0]
+    assert list(positions[7][2]) == [0, 1, 0, 0]

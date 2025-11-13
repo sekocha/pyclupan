@@ -76,13 +76,18 @@ class Lattice:
             elements=elements,
         )
         self._cell = cell
+        self._active_sites = None
+        self._reduced_cell = None
 
         self._active_lattice = [
             i for i, e in enumerate(self._elements_on_lattice) if len(e) > 1
         ]
+        self._set_spins()
 
-        self._active_sites = None
-        self._reduced_cell = None
+    def _set_spins(self):
+        """Set spin values and point cluster functions."""
+        spin_info = set_spins(self._elements_on_lattice)
+        self._spins_on_lattice, self._basis_on_lattice, self._spin_poly = spin_info
 
     @property
     def cell(self):
@@ -93,6 +98,16 @@ class Lattice:
     def cell(self, c: PolymlpStructure):
         """Set cell."""
         self._cell = c
+
+    @property
+    def axis(self):
+        """Return lattice axis."""
+        return self._cell.axis
+
+    @property
+    def positions(self):
+        """Return lattice sites in fractional coordinates."""
+        return self._cell.positions
 
     @property
     def types(self):
@@ -127,11 +142,8 @@ class Lattice:
         from pyclupan.core.pypolymlp_utils import ReducedCell
 
         reduced = ReducedCell(self._cell.axis, method="delaunay")
-        return reduced.reduce_structure(self._cell)
-
-    def set_spins(self):
-        """Set spin values and point cluster functions."""
-        set_spins(self._elements_on_lattice)
+        self._reduced_cell = reduced.reduce_structure(self._cell)
+        return self._reduced_cell
 
     def save(self, file: Optional[str] = None):
         """Save lattice."""
@@ -151,3 +163,29 @@ class Lattice:
         if isinstance(file, str):
             f.close()
         return self
+
+    def to_spins(self, elements: np.ndarray):
+        """Convert elements (labelings) to spins."""
+        if elements.shape[1] != sum(self._cell.n_atoms):
+            raise RuntimeError("Size of given elements not consistent with lattice.")
+
+        # TODO: Test
+        spins_assigned = np.zeros(elements.shape, dtype=int)
+        i = 0
+        for ele, spins in zip(self._elements_on_lattice, self._spins_on_lattice):
+            begin = sum(self._cell.n_atoms[:i])
+            end = begin + self._cell.n_atoms[i]
+            for e, s in zip(ele, spins):
+                spins_assigned[:, begin:end][elements[:, begin:end] == e] = s
+            i += 1
+        return spins_assigned
+
+    @property
+    def basis_on_lattice(self):
+        """Return basis IDs on lattice."""
+        return self._basis_on_lattice
+
+    @property
+    def spin_polynomials(self):
+        """Return spin polynomial functions."""
+        return self._spin_poly

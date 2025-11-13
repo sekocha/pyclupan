@@ -219,8 +219,8 @@ class ClusterSearch:
             perm[np.where(perm_cluster == site)] = i
         return perm
 
-    def _find_element_combinations(self, cluster_sites: tuple):
-        """Find possible element combinations."""
+    def _find_combinations(self, cluster_sites: tuple):
+        """Find possible element and spin basis combinations."""
         lattice_types = self._lattice_supercell.types
         cl_sites = np.array(cluster_sites)
         perm = self._extract_cluster_sites_permutation(cl_sites)
@@ -231,17 +231,26 @@ class ClusterSearch:
         for c in candidates:
             c_rep = np.unique(np.array(c)[perm], axis=0)[0]
             element_combs.add(tuple(c_rep))
-        return sorted(element_combs)
 
-    def search_with_elements(self):
-        """Search clusters with distinguishing elements."""
+        basis_lattice = self._lattice_supercell.basis_on_lattice
+        basis_combs = set()
+        basis = [basis_lattice[lattice_types[s]] for s in cl_sites]
+        candidates = itertools.product(*basis)
+        for c in candidates:
+            c_rep = np.unique(np.array(c)[perm], axis=0)[0]
+            basis_combs.add(tuple(c_rep))
+        return sorted(element_combs), sorted(basis_combs)
+
+    def search_with_colors(self):
+        """Search clusters with distinguishing elements and spin basis."""
         if self._enum_clusters is None:
             raise RuntimeError("Run search() first.")
 
         for order, clusters in self._enum_clusters.items():
             for cl in clusters:
                 sites = cl.sites_supercell
-                cl.elements_combinations = self._find_element_combinations(sites)
+                res = self._find_combinations(sites)
+                cl.elements_combinations, cl.spin_basis_combinations = res
         return self
 
     def represent_in_unitcell(self, tol: float = 1e-14):
@@ -277,7 +286,7 @@ class ClusterSearch:
     def run(self, max_order: int = 4, cutoffs: tuple = (6.0, 6.0, 6.0)):
         """Search clusters and get required attributes."""
         self.search(max_order=max_order, cutoffs=cutoffs)
-        self.search_with_elements()
+        self.search_with_colors()
         self.represent_in_unitcell()
         return self
 
@@ -326,7 +335,6 @@ def run_cluster(
         cell=unitcell,
         occupation=occupation,
         elements=elements,
-        verbose=verbose,
     )
     cs = ClusterSearch(lattice, verbose=verbose)
     cs.run(max_order=max_order, cutoffs=cutoffs)

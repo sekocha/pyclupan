@@ -27,14 +27,15 @@ def run_correlation(
     labelings: Element labelings in supercell.
     cluster_yaml: Name of output file for cluster search results.
     """
-    lattice, clusters, _ = load_cluster_yaml(cluster_yaml)
+    lattice, clusters, _, spin_basis_clusters = load_cluster_yaml(cluster_yaml)
     if not is_cell_equal(unitcell, lattice.cell):
         raise RuntimeError("Unitcell in cluster.yaml is not equal to given unitcell.")
 
     supercell = supercell_reduced(unitcell, supercell_matrix=supercell_matrix)
+    lattice.cell = supercell
     supercell_matrix = supercell.supercell_matrix
-    map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
 
+    map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
     rotations, translations = get_symmetry(unitcell)
     t1 = time.time()
     orbit_all = []
@@ -50,5 +51,13 @@ def run_correlation(
         orbit_all.append(orbit)
     t2 = time.time()
     print(t2 - t1)
+
+    print(labelings)
+    spins = lattice.to_spins(labelings)
+    print(spins)
+
+    for cl in spin_basis_clusters:
+        orbit = orbit_all[cl.cluster_id]
+    print(lattice.spin_polynomials)
 
     return None
