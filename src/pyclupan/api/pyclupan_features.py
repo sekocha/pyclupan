@@ -4,8 +4,11 @@ from typing import Optional, Union
 
 import numpy as np
 
-from pyclupan.core.pypolymlp_utils import Poscar
-from pyclupan.features.run_correlation import run_correlation_from_structures
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
+from pyclupan.features.run_correlation import (
+    run_correlation,
+    run_correlation_from_structures,
+)
 
 
 class PyclupanFeatures:
@@ -43,16 +46,33 @@ class PyclupanFeatures:
 
         return self
 
-    def eval_cluster_functions(self):
+    def eval_cluster_functions(
+        self,
+        unitcell: Optional[PolymlpStructure] = None,
+        supercell_matrix: Optional[np.ndarray] = None,
+        labelings: Optional[np.ndarray] = None,
+    ):
         """Evaluate cluster functions from structures."""
-        if self._structures is None:
-            raise RuntimeError("Structures are required.")
-        if self._element_labels is None:
-            raise RuntimeError("Labels for element strings are required.")
+        if labelings is None:
+            if self._structures is None:
+                raise RuntimeError("Structures are required.")
+            if self._element_labels is None:
+                raise RuntimeError("Labels for element strings are required.")
 
-        cluster_functions = run_correlation_from_structures(
-            structures=self._structures,
-            element_labels=self._element_labels,
+            cluster_functions = run_correlation_from_structures(
+                structures=self._structures,
+                element_labels=self._element_labels,
+                cluster_yaml=self._cluster_yaml,
+            )
+            return cluster_functions
+
+        if supercell_matrix is None:
+            raise RuntimeError("Supercell matrix is required.")
+
+        cluster_functions = run_correlation(
+            unitcell=unitcell,
+            supercell_matrix=supercell_matrix,
+            labelings=labelings,
             cluster_yaml=self._cluster_yaml,
         )
         return cluster_functions
