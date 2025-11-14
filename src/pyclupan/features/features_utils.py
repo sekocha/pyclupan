@@ -1,0 +1,26 @@
+"""Utility functions for calculating features."""
+
+import numpy as np
+
+from pyclupan.core.cell_utils import get_matching_positions
+from pyclupan.core.lattice import Lattice
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, supercell
+
+
+def element_strings_to_labeling(elements: list, element_labels: dict):
+    """Convert elements in structure to labeling."""
+    labeling = np.zeros(len(elements), dtype=int)
+    for ele, label in element_labels.items():
+        labeling[np.array(elements) == ele] = label
+    return labeling
+
+
+def structure_to_lattice(st: PolymlpStructure, lattice_unitcell: Lattice):
+    """Find lattice attributes in derivative supercell structure."""
+    if st.supercell_matrix is None:
+        raise RuntimeError("Supercell matrix attribute is required.")
+
+    sup = supercell(lattice_unitcell.cell, st.supercell_matrix)
+    lattice_supercell = lattice_unitcell.lattice_supercell(sup)
+    labelings_order = get_matching_positions(sup.positions, st.positions)
+    return lattice_supercell, labelings_order

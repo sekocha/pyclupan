@@ -1,5 +1,6 @@
 """Utility functions for cells."""
 
+import copy
 from typing import Literal, Optional
 
 import numpy as np
@@ -8,6 +9,21 @@ import pyclupan.core.pypolymlp_utils as pypolymlp_utils
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, ReducedCell
 
 supercell = pypolymlp_utils.supercell
+
+
+def reduced(
+    st: PolymlpStructure,
+    method: Literal["niggli", "delaunay"] = "delaunay",
+    return_transformation: bool = False,
+):
+    """Return structure with reduced axis."""
+    reduced = ReducedCell(st.axis, method=method)
+    st_reduced = copy.deepcopy(st)
+    st_reduced.axis = reduced.reduced_axis
+    st_reduced.positions = reduced.transform_fr_coords(st.positions)
+    if return_transformation:
+        return st_reduced, reduced.transformation_matrix
+    return st_reduced
 
 
 def supercell_reduced(
@@ -50,6 +66,8 @@ def get_matching_positions(
     import scipy.spatial.distance as distance
 
     sites = np.where(distance.cdist(positions.T, positions_ref.T) < tol)[1]
+    if sites.shape[0] != positions.shape[1]:
+        raise RuntimeError("Any positions are inconsitent with reference positions.")
     return sites
 
 
