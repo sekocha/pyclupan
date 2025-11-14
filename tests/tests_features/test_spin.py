@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.features.spin_polynomial import gram_schmidt
+from pyclupan.core.spin import gram_schmidt
 
 cwd = Path(__file__).parent
 
