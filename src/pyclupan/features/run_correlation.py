@@ -31,12 +31,15 @@ def calc_correlation(
     verbose: bool = False,
 ):
     """Calculate cluster functions without loading cluster yaml file."""
+    if not lattice_supercell.is_active_size(labelings):
+        raise RuntimeError("Size of given labelings not consistent with lattice.")
+    if not lattice_supercell.is_active_element(labelings):
+        raise RuntimeError("Some of given labelings are not on active lattices.")
+
     unitcell = lattice_unitcell.cell
     supercell = lattice_supercell.cell
     map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
     rotations, translations = get_symmetry(unitcell)
-
-    spins = lattice_supercell.to_spins(labelings)
 
     # t1 = time.time()
     orbit_all = []
@@ -50,12 +53,14 @@ def calc_correlation(
             map_unit_to_sup,
             return_array=True,
         )
+        orbit = lattice_supercell.to_active_site_rep(orbit)
         orbit_all.append(orbit)
     # t2 = time.time()
 
+    spins = lattice_supercell.to_spins(labelings)
     cluster_functions = []
     for cl in spin_basis_clusters:
-        orbit = np.array(orbit_all[cl.cluster_id])
+        orbit = orbit_all[cl.cluster_id]
         coeffs = lattice_supercell.get_spin_polynomials(cl.spin_basis)
         cf = eval_cluster_functions(coeffs, spins[:, orbit])
         cluster_functions.append(cf)
@@ -83,9 +88,13 @@ def run_correlation_from_structures(
 
         supercell, tmat = reduced(st, return_transformation=True)
         supercell.supercell_matrix = supercell_matrix @ tmat
-        lattice_supercell, labelings_order = structure_to_lattice(supercell, lattice)
-
         labeling = element_strings_to_labeling(supercell.elements, element_labels)
+
+        lattice_supercell, labelings_order = structure_to_lattice(
+            supercell,
+            lattice,
+            only_active=True,
+        )
         labelings = np.array([labeling])[:, labelings_order]
 
         cf = calc_correlation(

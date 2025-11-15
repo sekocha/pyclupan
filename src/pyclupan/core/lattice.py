@@ -77,11 +77,15 @@ class Lattice:
             elements=elements,
         )
         self._cell = cell
-        self._active_sites = None
         self._reduced_cell = None
+        self._active_sites = None
+        self._map_full_to_active_rep = None
 
         self._active_lattice = [
             i for i, e in enumerate(self._elements_on_lattice) if len(e) > 1
+        ]
+        self._active_elements = [
+            e2 for e in self._elements_on_lattice if len(e) > 1 for e2 in e
         ]
         self._set_spins()
 
@@ -135,6 +139,80 @@ class Lattice:
         return self._active_sites
 
     @property
+    def map_full_to_active_rep(self):
+        """Return mapping full site ID to active site ID."""
+        if self._map_full_to_active_rep is not None:
+            return self._map_full_to_active_rep
+
+        self._map_full_to_active_rep = np.array([None for _ in self._cell.types])
+        for i, s in enumerate(self.active_sites):
+            self._map_full_to_active_rep[s] = i
+        return self._map_full_to_active_rep
+
+    def to_active_site_rep(self, sites: np.ndarray):
+        """Convert full sites to active site representation."""
+        return self.map_full_to_active_rep[sites].astype(int)
+
+    def is_active_size(self, elements: np.ndarray):
+        """Check if size of given elements, labelings, and spin is appropriate."""
+        if elements.shape[1] != self.active_sites.shape[0]:
+            return False
+        return True
+
+    def is_active_element(self, elements: np.ndarray):
+        """Check if labelings are composed of active elements."""
+        return np.all(np.isin(elements, self._active_elements))
+
+    def to_spins(self, elements: np.ndarray):
+        """Convert elements (labelings) to spins.
+
+        elements: Elements (labelings) converted to spins.
+        """
+        if not self.is_active_size(elements):
+            raise RuntimeError("Size of given elements not consistent with lattice.")
+
+        # TODO: Implemnet Test
+        spins_assigned = np.zeros(elements.shape, dtype=int)
+        begin = 0
+        for ele, spins, n in zip(
+            self._elements_on_lattice, self._spins_on_lattice, self._cell.n_atoms
+        ):
+            if len(spins) > 1:
+                end = begin + n
+                for e, s in zip(ele, spins):
+                    spins_assigned[:, begin:end][elements[:, begin:end] == e] = s
+                begin = end
+        return spins_assigned
+
+    def lattice_supercell(self, supercell: PolymlpStructure):
+        """Return Lattice instance for supercell representation."""
+        lattice_supercell = copy.deepcopy(self)
+        lattice_supercell.cell = supercell
+        lattice_supercell._reduced_cell = None
+        lattice_supercell._active_sites = None
+        lattice_supercell._map_full_to_active_rep = None
+
+        if len(self._cell.n_atoms) != len(supercell.n_atoms):
+            raise RuntimeError("Number of sublattices in supercell is not consistent.")
+
+        return lattice_supercell
+
+    def get_spin_polynomials(self, basis_ids: np.ndarray):
+        """Return spin polynomial coefficients for given basis IDs."""
+        coeffs = [self._spin_poly[i] for i in basis_ids]
+        return np.array(coeffs)
+
+    @property
+    def basis_on_lattice(self):
+        """Return basis IDs on lattice."""
+        return self._basis_on_lattice
+
+    @property
+    def spin_polynomials(self):
+        """Return spin polynomial functions."""
+        return self._spin_poly
+
+    @property
     def reduced_cell(self):
         """Return reduced cell."""
         if self._reduced_cell is not None:
@@ -164,46 +242,3 @@ class Lattice:
         if isinstance(file, str):
             f.close()
         return self
-
-    def to_spins(self, elements: np.ndarray):
-        """Convert elements (labelings) to spins."""
-        if elements.shape[1] != sum(self._cell.n_atoms):
-            raise RuntimeError("Size of given elements not consistent with lattice.")
-
-        # TODO: Test
-        spins_assigned = np.zeros(elements.shape, dtype=int)
-        i = 0
-        for ele, spins in zip(self._elements_on_lattice, self._spins_on_lattice):
-            begin = sum(self._cell.n_atoms[:i])
-            end = begin + self._cell.n_atoms[i]
-            for e, s in zip(ele, spins):
-                spins_assigned[:, begin:end][elements[:, begin:end] == e] = s
-            i += 1
-        return spins_assigned
-
-    def lattice_supercell(self, supercell: PolymlpStructure):
-        """Return Lattice instance for supercell representation."""
-        lattice_supercell = copy.deepcopy(self)
-        lattice_supercell.cell = supercell
-        lattice_supercell._active_sites = None
-        lattice_supercell._reduced_cell = None
-
-        if len(self._cell.n_atoms) != len(supercell.n_atoms):
-            raise RuntimeError("Number of sublattices in supercell is not consistent.")
-
-        return lattice_supercell
-
-    def get_spin_polynomials(self, basis_ids: np.ndarray):
-        """Return spin polynomial coefficients for given basis IDs."""
-        coeffs = [self._spin_poly[i] for i in basis_ids]
-        return np.array(coeffs)
-
-    @property
-    def basis_on_lattice(self):
-        """Return basis IDs on lattice."""
-        return self._basis_on_lattice
-
-    @property
-    def spin_polynomials(self):
-        """Return spin polynomial functions."""
-        return self._spin_poly

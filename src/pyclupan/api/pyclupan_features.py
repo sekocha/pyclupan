@@ -53,26 +53,28 @@ class PyclupanFeatures:
         labelings: Optional[np.ndarray] = None,
     ):
         """Evaluate cluster functions from structures."""
-        if labelings is None:
-            if self._structures is None:
-                raise RuntimeError("Structures are required.")
-            if self._element_labels is None:
-                raise RuntimeError("Labels for element strings are required.")
+        if labelings is not None:
+            if unitcell is None:
+                raise RuntimeError("Unitcell is required.")
+            if supercell_matrix is None:
+                raise RuntimeError("Supercell matrix is required.")
 
-            cluster_functions = run_correlation_from_structures(
-                structures=self._structures,
-                element_labels=self._element_labels,
+            cluster_functions = run_correlation(
+                unitcell=unitcell,
+                supercell_matrix=supercell_matrix,
+                labelings=labelings,
                 cluster_yaml=self._cluster_yaml,
             )
             return cluster_functions
 
-        if supercell_matrix is None:
-            raise RuntimeError("Supercell matrix is required.")
+        if self._structures is None:
+            raise RuntimeError("Structures are required.")
+        if self._element_labels is None:
+            raise RuntimeError("Labels for element strings are required.")
 
-        cluster_functions = run_correlation(
-            unitcell=unitcell,
-            supercell_matrix=supercell_matrix,
-            labelings=labelings,
+        cluster_functions = run_correlation_from_structures(
+            structures=self._structures,
+            element_labels=self._element_labels,
             cluster_yaml=self._cluster_yaml,
         )
         return cluster_functions

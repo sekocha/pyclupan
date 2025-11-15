@@ -4,37 +4,9 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.core.lattice import set_elements_on_sublattices
 from pyclupan.derivative.init_utils import set_charges, set_compositions
 
 cwd = Path(__file__).parent
-
-
-def test_elements_on_sublattices():
-    """Test set_elements_on_sublattices."""
-    n_sites = [1]
-    elements = [[0, 1]]
-    elements_lattice = set_elements_on_sublattices(n_sites)
-    assert elements == elements_lattice
-
-    occupation = [[0], [0]]
-    elements_lattice = set_elements_on_sublattices(n_sites, occupation=occupation)
-    assert elements == elements_lattice
-
-    n_sites = [1, 1, 3]
-    elements = [[0], [1], [2, 3]]
-    elements_lattice = set_elements_on_sublattices(n_sites, elements=elements)
-    assert elements == elements_lattice
-
-    elements = [[0], [1], [2, 3]]
-    occupation = [[0], [1], [2], [2]]
-    elements_lattice = set_elements_on_sublattices(n_sites, occupation=occupation)
-    assert elements == elements_lattice
-
-    elements = [[0, 1], [0, 1, 2, 3], [4, 5, 6]]
-    occupation = [[0, 1], [0, 1], [1], [1], [2], [2], [2]]
-    elements_lattice = set_elements_on_sublattices(n_sites, occupation=occupation)
-    assert elements == elements_lattice
 
 
 def test_compositions_single_lattice():
