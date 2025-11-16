@@ -171,7 +171,6 @@ class Lattice:
         if not self.is_active_size(elements):
             raise RuntimeError("Size of given elements not consistent with lattice.")
 
-        # TODO: Implemnet Test
         spins_assigned = np.zeros(elements.shape, dtype=int)
         begin = 0
         for ele, spins, n in zip(
