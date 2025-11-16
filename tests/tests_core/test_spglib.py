@@ -5,7 +5,12 @@ from pathlib import Path
 import numpy as np
 
 from pyclupan.core.pypolymlp_utils import Poscar, supercell
-from pyclupan.core.spglib_utils import get_permutation, get_rotations, get_symmetry
+from pyclupan.core.spglib_utils import (
+    apply_symmetry_operations,
+    get_permutation,
+    get_rotations,
+    get_symmetry,
+)
 
 cwd = Path(__file__).parent
 
@@ -82,3 +87,21 @@ def test_permutation():
     _, perm_lt = get_permutation(sup, superperiodic=True, hnf=hnf)
     perm_lt_true = np.array([[0, 1, 2, 3], [3, 0, 1, 2], [2, 3, 0, 1], [1, 2, 3, 0]])
     np.testing.assert_equal(perm_lt, perm_lt_true)
+
+
+def test_apply_symmetry_operations():
+    """Test apply_symmetry_operations."""
+    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
+    rotations, translations = get_symmetry(unitcell)
+
+    positions = np.array([[0, 0, 1], [0, 1, 2]]).T
+    fracs, cells = apply_symmetry_operations(
+        rotations,
+        translations,
+        positions,
+    )
+    np.testing.assert_allclose(fracs, 0.0, atol=1e-8)
+    cells_true1 = np.array([[0, 0], [0, 1], [1, 2]])
+    cells_true2 = np.array([[0, 1], [-1, -3], [0, 0]])
+    np.testing.assert_equal(cells[0], cells_true1)
+    np.testing.assert_equal(cells[-1], cells_true2)
