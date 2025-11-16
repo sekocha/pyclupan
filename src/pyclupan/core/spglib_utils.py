@@ -53,7 +53,7 @@ def get_permutation(
 
     if superperiodic:
         if hnf is None:
-            raise RuntimeError("HNF required.")
+            raise RuntimeError("HNF required if superperiodic = True.")
         lt_ids = _get_lattice_translations(rotations, translations, hnf)
         return permutation, permutation[lt_ids]
 
