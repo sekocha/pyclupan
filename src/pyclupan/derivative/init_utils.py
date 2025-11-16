@@ -7,37 +7,6 @@ from typing import Optional
 import numpy as np
 from scipy.sparse.csgraph import connected_components
 
-# def set_elements_on_sublattices(
-#     n_sites: list,
-#     occupation: Optional[list] = None,
-#     elements: Optional[list] = None,
-# ):
-#     """Initialize elements on sublattices.
-#
-#     n_sites: Number of lattice sites for primitive cell.
-#     occupation: Lattice IDs occupied by elements.
-#                 Example: [[0], [1], [2], [2]].
-#     elements: Element IDs on lattices.
-#               Example: [[0],[1],[2, 3]].
-#     """
-#     if occupation is None and elements is None:
-#         elements_lattice = [[0, 1] for n in n_sites]
-#     elif elements is not None:
-#         elements_lattice = elements
-#     elif occupation is not None:
-#         max_lattice_id = max([oc2 for oc1 in occupation for oc2 in oc1])
-#         elements_lattice = [[] for i in range(max_lattice_id + 1)]
-#         for e, oc1 in enumerate(occupation):
-#             for oc2 in oc1:
-#                 elements_lattice[oc2].append(e)
-#         elements_lattice = [sorted(e1) for e1 in elements_lattice]
-#
-#     if len(n_sites) != len(elements_lattice):
-#         raise RuntimeError(
-#             "Inconsistent numbers of sublattices in n_sites and elements_lattice."
-#         )
-#     return elements_lattice
-
 
 def _check_composition_bounds(comps: list):
     """Check if composition bounds are included between 0 and 1."""

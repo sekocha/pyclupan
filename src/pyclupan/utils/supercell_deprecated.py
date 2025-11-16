@@ -141,15 +141,3 @@ class Supercell:
             self.map_plrep[attr] = self.map_plrep[attr_rev]
 
         return self.map_plrep[attr]
-
-
-if __name__ == "__main__":
-
-    axis = np.array([[1, 1, 0], [1, 0, 1], [0, 1, 1]])
-    positions = np.array([[0, 0.75], [0, 0.75], [0, 0.75]])
-    n_atoms = [1, 1]
-
-    hnf = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
-
-    axis1, positions1, n_atoms1 = supercell(hnf, axis, positions, n_atoms)
-    st = Structure(axis1, positions1, n_atoms1)
