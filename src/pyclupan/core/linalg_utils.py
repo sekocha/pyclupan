@@ -87,10 +87,10 @@ def get_nonequivalent_hnf(
 
 
 def snf(mat: np.ndarray):
-    """Calculating Smith normal form.
+    """Calculate Smith normal form.
 
-    S = U * matrix * V
-    matrix = U^(-1) * S * V^(-1)
+    SNF = U @ matrix @ V
+    matrix = U^(-1) @ SNF @ V^(-1)
     """
     from smithnormalform import matrix, snfproblem, z
 
@@ -106,4 +106,4 @@ def snf(mat: np.ndarray):
         if S[i][i] < 0:
             trans[i, i] = -1
             S[i][i] *= -1
-    return np.array(S), np.dot(trans, np.array(U)), np.array(V)
+    return np.array(S), trans @ np.array(U), np.array(V)

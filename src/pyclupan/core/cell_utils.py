@@ -1,6 +1,7 @@
 """Utility functions for cells."""
 
 import copy
+import itertools
 from typing import Literal, Optional
 
 import numpy as np
@@ -27,13 +28,13 @@ def reduced(
 
 
 def supercell_reduced(
-    st: PolymlpStructure,
+    unitcell: PolymlpStructure,
     supercell_matrix: np.ndarray,
     method: Literal["niggli", "delaunay"] = "delaunay",
 ):
     """Construct supercell for a given supercell matrix."""
 
-    st_sup = supercell(st, supercell_matrix)
+    st_sup = supercell(unitcell, supercell_matrix)
     reduced = ReducedCell(st_sup.axis, method=method)
     st_sup.axis = reduced.reduced_axis
     st_sup.positions = reduced.transform_fr_coords(st_sup.positions)
@@ -116,3 +117,49 @@ def unitcell_reps_to_supercell_reps(
     _, positions_sup = decompose_fraction(positions_sup)
     sites = get_matching_positions(positions_sup, supercell.positions)
     return sites
+
+
+def supercell_pyclupan(unitcell: PolymlpStructure, supercell_matrix: np.ndarray):
+    """Construct supercell for a given supercell matrix.
+
+    Algorithm
+    ---------
+    1. Calculate supercell basis, A @ H, where H is supercell_matrix.
+    2. Calculate Smith normal form, S = U @ H @ V.
+    3. Calculate fractional coordinates in another supercell basis A @ H @ V.
+       Using the new basis, the lattice is isomorphic to
+       group Z_S[0,0] + Z_S[1,1] + Z_S[2,2].
+
+       Lattice points of unitcell are given by integers of r = S @ z.
+          A @ H @ V @ z = A @ [U^(-1)] @ S @ z
+          (z: fractional coordinates in basis A @ H @ V)
+       Fractional coordinates in A @ H supercell are calculated as V @ S^(-1) @ r.
+    """
+    from pyclupan.core.linalg_utils import snf
+
+    S, U, V = snf(supercell_matrix)
+    axis = unitcell.axis @ supercell_matrix
+
+    coord_int = itertools.product(*[range(S[0, 0]), range(S[1, 1]), range(S[2, 2])])
+    plattice_H = [V @ (np.array(c) / np.diag(S)) for c in coord_int]
+
+    positions_H = np.linalg.inv(supercell_matrix) @ unitcell.positions
+    positions_new = []
+    for pos, lattice in itertools.product(*[positions_H.T, plattice_H]):
+        _, frac = decompose_fraction(pos + lattice)
+        positions_new.append(frac)
+    positions_new = np.array(positions_new).T
+
+    n_expand = S[0, 0] * S[1, 1] * S[2, 2]
+    n_atoms = [n * n_expand for n in unitcell.n_atoms]
+    types = [i for i, n in enumerate(n_atoms) for _ in range(n)]
+    elements = [unitcell.elements[i] for i in types]
+
+    st_supercell = PolymlpStructure(
+        axis=axis,
+        positions=positions_new,
+        n_atoms=n_atoms,
+        types=types,
+        elements=elements,
+    )
+    return st_supercell
