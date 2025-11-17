@@ -5,19 +5,32 @@ import copy
 import numpy as np
 
 
-def _inner_prod(coeffs1: np.ndarray, coeffs2: np.ndarray, spins: np.ndarray):
+def _polyval(coeffs: np.ndarray, spins: np.ndarray, orders: np.ndarray):
+    """Evaluate values of polynomial function."""
+    values = np.zeros(len(orders))
+    for c, order in zip(coeffs, orders):
+        values += c * np.power(spins, order)
+    return values
+
+
+def _inner_prod(
+    coeffs1: np.ndarray,
+    coeffs2: np.ndarray,
+    spins: np.ndarray,
+    orders: list,
+):
     """Calculate inner products between two polynomials."""
-    return np.mean(np.polyval(coeffs1, spins) * np.polyval(coeffs2, spins))
+    return np.mean(_polyval(coeffs1, spins, orders) * _polyval(coeffs2, spins, orders))
 
 
-def _normalize(coeffs: np.ndarray, spins: np.ndarray):
+def _normalize(coeffs: np.ndarray, spins: np.ndarray, orders: list):
     """Normalize polynomial coefficients."""
-    prod = np.mean(np.square(np.polyval(coeffs, spins)))
+    prod = np.mean(np.square(_polyval(coeffs, spins, orders)))
     coeffs_normalized = coeffs / np.sqrt(prod)
     return np.array(coeffs_normalized)
 
 
-def gram_schmidt(spins: np.ndarray):
+def gram_schmidt(spins: np.ndarray, orders: list):
     """Construct orthogonal point functions from spin values using Gram-Schmidt.
 
     Return
@@ -34,8 +47,8 @@ def gram_schmidt(spins: np.ndarray):
     for i, w in enumerate(start):
         update = copy.deepcopy(w)
         for j in range(i):
-            update -= _inner_prod(cons[j], w, spins) * cons[j]
-        update = _normalize(update, spins)
+            update -= _inner_prod(cons[j], w, spins, orders) * cons[j]
+        update = _normalize(update, spins, orders)
         cons.append(update)
     return np.array(cons)
 
@@ -62,20 +75,31 @@ def define_spins(n_type: int):
 
 def set_spins(element_lattice: list):
     """Define spin values."""
+    active_elements = [e2 for e1 in element_lattice if len(e1) > 1 for e2 in e1]
+    basis_size = len(active_elements)
+
     spins_lattice, basis_set, basis_lattice = [], [], []
     basis_id = 0
+    begin_order = 0
     for ele in element_lattice:
         spins_sublattice = define_spins(len(ele))
         spins_lattice.append(spins_sublattice)
 
         ids = []
         if len(ele) > 1:
-            for basis in gram_schmidt(spins_sublattice):
-                if not np.allclose(basis[:-1], 0.0) or not np.isclose(basis[-1], 1.0):
-                    basis_set.append(basis)
-                    ids.append(basis_id)
-                    basis_id += 1
+            end_order = begin_order + len(ele)
+            orders = list(range(begin_order, end_order))
+            basis_local = np.zeros((len(ele), basis_size))
+            basis_local[:, begin_order:end_order] = gram_schmidt(
+                spins_sublattice, orders=orders
+            )
+            for basis in basis_local:
+                basis_set.append(basis)
+                ids.append(basis_id)
+                basis_id += 1
+            begin_order = end_order
         basis_lattice.append(ids)
+    basis_set = np.array(basis_set)
 
     return spins_lattice, basis_lattice, basis_set
 
