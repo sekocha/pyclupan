@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import io
 import os
 from dataclasses import dataclass
 from typing import Optional, Union
@@ -36,6 +37,7 @@ class Derivatives:
         """Post init method."""
         sup_red = supercell_reduced(self.lattice_unitcell.cell, self.supercell_matrix)
         self.lattice_supercell = self.lattice_unitcell.lattice_supercell(sup_red)
+        self._sample = None
 
     @property
     def active_sites(self):
@@ -67,82 +69,95 @@ class Derivatives:
         """Return supercell."""
         return self.lattice_supercell.cell
 
-    #    @property
-    #    def complete_labelings(self):
-    #        """Return complete labelings for both active and inactive sites."""
-    #        labelings = np.zeros((self.n_labelings, self.n_total_sites), dtype=np.uint8)
-    #        labelings[:, self.active_sites] = self.active_labelings
-    #        if len(self.inactive_sites) > 0:
-    #            labelings[:, self.inactive_sites] = self.inactive_labeling
-    #        return labelings
-    #
-    #    @complete_labelings.setter
-    #    def complete_labelings(self, labelings: np.array):
-    #        """Set complete labelings for both active and inactive sites."""
-    #        if labelings is not None:
-    #            self.active_labelings = labelings[:, self.active_sites]
-    #            self.n_labelings = self.active_labelings.shape[0]
-    #
-    #    def get_complete_labeling(self, idx: int):
-    #        """Return a single complete labeling for given id."""
-    #        labeling = np.zeros(self.n_total_sites, dtype=np.uint8)
-    #        labeling[self.active_sites] = self.active_labelings[idx]
-    #        if len(self.inactive_sites) > 0:
-    #            labeling[self.inactive_sites] = self.inactive_labeling
-    #        return labeling
-    #
     def all(self):
-        """Sample all derivative structures."""
-        self._samples = np.arange(self.n_labelings, dtype=int)
-        return self
+        """Sample all labelings."""
+        self._sample = np.arange(self.n_labelings, dtype=int)
+        return self._sample
 
     def random(self, n_samples: int = 100):
-        """Sample derivative structures randomly."""
+        """Sample labelings randomly."""
         candidates = np.arange(self.n_labelings, dtype=int)
-        self._samples = np.random.choice(candidates, size=n_samples, replace=False)
-        return self
+        self._sample = np.random.choice(candidates, size=n_samples, replace=False)
+        return self._sample
 
-    def save(self, path: str = "poscars", elements: tuple = ("Al", "Cu")):
+    @property
+    def sample(self):
+        """Return IDs of sampled labelings."""
+        return self._sample
+
+    @sample.setter
+    def sample(self, s: np.ndarray):
+        """Setter IDs of sampled labelings."""
+        self._sample = np.array(s)
+
+    @property
+    def sample_ids(self):
+        """Return complete labelings from both active and inactive labelings."""
+        if self._sample is None:
+            raise RuntimeError("Sampled labelings not found.")
+        return [(self.supercell_size, self.supercell_id, i) for i in self._sample]
+
+    def _get_complete_labelings(self, active_labelings: np.ndarray):
+        """Return complete labelings from both active and inactive labelings."""
+        n_site = active_labelings.shape[1] + len(self.inactive_labeling)
+        n_labelings = active_labelings.shape[0]
+        labelings = np.zeros((n_labelings, n_site), dtype=np.uint8)
+        labelings[:, self.active_sites] = active_labelings
+        if len(self.inactive_sites) > 0:
+            labelings[:, self.inactive_sites] = self.inactive_labeling
+        return labelings
+
+    @property
+    def sampled_active_labelings(self):
+        """Return active labelings."""
+        if self._sample is None:
+            raise RuntimeError("Sampled labelings not found.")
+        return self.active_labelings[self._sample]
+
+    @property
+    def sampled_complete_labelings(self):
+        """Return complete labelings from both active and inactive labelings."""
+        if self._sample is None:
+            raise RuntimeError("Sampled labelings not found.")
+        return self._get_complete_labelings(self.sampled_active_labelings)
+
+    def save(self, element_strings: tuple, path: str = "poscars"):
         """Save derivative structures sampled."""
-        if self._samples is None:
-            raise RuntimeError("Sampled structures are not found.")
-
-        if len(self.elements) != len(elements):
-            raise RuntimeError("Number of element strings is not compatible.")
+        if self._sample is None:
+            raise RuntimeError("Sampled labelings not found.")
 
         os.makedirs(path, exist_ok=True)
-        sup = self.supercell
+        for ids, labeling in zip(self.sample_ids, self.sampled_complete_labelings):
+            filename = "poscar-" + "-".join([str(i) for i in ids])
+            sup = copy.deepcopy(self.supercell)
+            sup.types = labeling
+            sup.elements = list(np.array(element_strings)[sup.types])
+            sup = sup.reorder()
+            write_poscar_file(sup, filename=path + "/" + filename)
+        return self
 
-        filenames = []
-        prefix = "-".join(["POSCAR", str(self.supercell_size), str(self.supercell_id)])
-        elements = np.array(elements)
-        for i, sample_id in enumerate(self._samples):
-            filename = prefix + "-" + str(sample_id).zfill(5)
-            sup_copy = copy.deepcopy(sup)
-            sup_copy.types = self.get_complete_labeling(sample_id)
-            sup_copy.elements = elements[sup_copy.types]
-            sup_copy = sup_copy.reorder()
-            write_poscar_file(sup_copy, filename=path + "/" + filename)
-            filenames.append(filename)
+    def write_attrs(self, file: Union[str, io.IOBase]):
+        """Save attributes of derivative structures sampled."""
+        if isinstance(file, str):
+            f = open(file, "w")
+        elif isinstance(file, io.IOBase):
+            f = file
+        else:
+            raise RuntimeError("file is not str or io.IOBase")
 
-        active_labelings = self.active_labelings[self._samples]
-        return (
-            self.supercell_size,
-            self.hnf,
-            self.supercell_id,
-            filenames,
-            active_labelings,
-        )
-
-    @property
-    def samples(self):
-        """Return sample structures."""
-        return self._samples
-
-    @property
-    def n_structures(self):
-        """Return number of derivative structures."""
-        return self.n_labelings
+        print("- supercell_matrix:", file=f)
+        print("  -", list(self.supercell_matrix[0]), file=f)
+        print("  -", list(self.supercell_matrix[1]), file=f)
+        print("  -", list(self.supercell_matrix[2]), file=f)
+        print("  inactive_labeling:", list(self.inactive_labeling), file=f)
+        print("  active_labelings:", file=f)
+        for labeling in self.sampled_active_labelings:
+            print("  -", list(labeling), file=f)
+        print("  id:", file=f)
+        for ids in self.sample_ids:
+            print("  -", "-".join([str(i) for i in ids]), file=f)
+        print(file=f)
+        return self
 
 
 @dataclass
@@ -158,7 +173,7 @@ class DerivativesSet:
 
     def __post_init__(self):
         """Post init method."""
-        self._cnt = np.array([derivs.n_labelings for derivs in self.derivatives_set])
+        self._sample = None
 
     def __iter__(self):
         """Iter method."""
@@ -185,6 +200,22 @@ class DerivativesSet:
             self.derivatives_set.extend(ds)
         return self
 
+    @property
+    def unitcell(self):
+        """Return unitcell."""
+        return self[0].lattice_unitcell.cell
+
+    @property
+    def n_labelings(self):
+        """Return list of numbers of labelings."""
+        return np.array([d.n_labelings for d in self])
+
+    def all(self):
+        """Sample all derivative structures for each HNF."""
+        self._sample = [d.all() for d in self]
+        return self._sample
+
+    # TODO
     def _choose_cell(self, n_samples: int = 100, prob: np.ndarray = None):
         """Choose HNF ids randomly."""
         candidates = np.arange(len(self.derivatives_set), dtype=int)
@@ -205,12 +236,7 @@ class DerivativesSet:
             n_samples_all[key] += cnt
         return n_samples_all
 
-    def all(self):
-        """Sample all derivative structures for all HNFs."""
-        for derivs in self.derivatives_set:
-            derivs.all()
-        return self
-
+    # TODO
     def uniform(self, n_samples: int = 100):
         """Sample derivative structures randomly from uniformly-sampled HNFs."""
         if n_samples >= np.sum(self._cnt):
@@ -222,6 +248,7 @@ class DerivativesSet:
             derivs.random(n_samples=n)
         return self
 
+    # TODO
     def random(self, n_samples: int = 100):
         """Sample derivative structures randomly."""
         if n_samples >= np.sum(self._cnt):
@@ -233,45 +260,25 @@ class DerivativesSet:
             derivs.random(n_samples=n)
         return self
 
-    def save(self, path: str = "poscars", elements: tuple = ("Al", "Cu")):
+    def save(self, element_strings: tuple, path: str = "poscars"):
         """Save derivative structures sampled."""
         os.makedirs(path, exist_ok=True)
-        deriv_info = []
-        for derivs in self.derivatives_set:
-            if derivs.samples is not None:
-                sampled_info = derivs.save(path=path, elements=elements)
-                deriv_info.append(sampled_info)
+        filename = "pyclupan_sample_attrs.yaml"
+        with open(path + "/" + filename, "w") as f:
+            d_rep = self[0]
+            save_cell(d_rep.unitcell, tag="unitcell", file=f)
 
-        derivs = self.derivatives_set[0]
-        with open(path + "/pyclupan_samples.yaml", "w") as f:
-            save_cell(derivs.unitcell, tag="unitcell", file=f)
-            print("derivative_structures:", file=f)
-            for info in deriv_info:
-                sup_size, hnf, sup_id, filenames, active_labelings = info
-                print("- id: ", sup_id, file=f)
-                print("  supercell_size: ", sup_size, file=f)
-                print("  HNF:", file=f)
-                print("  -   ", hnf[0], file=f)
-                print("  -   ", hnf[1], file=f)
-                print("  -   ", hnf[2], file=f)
-                print("  active_sites: ", file=f)
-                print("  active_labelings:", file=f)
-                for active in active_labelings:
-                    print("  -", list(active), file=f)
-                print("  structure_files:", file=f)
-                for fname in filenames:
-                    print("  -", fname, file=f)
-                print(file=f)
+            print("element_strings:", list(element_strings), file=f)
+            print("elements:", file=f)
+            for ele in d_rep.lattice_unitcell.elements_on_lattice:
+                print("-", ele, file=f)
+            print(file=f)
 
-    @property
-    def n_structures(self):
-        """Return number of total derivative structures."""
-        return np.sum(self._cnt)
-
-    @property
-    def sampled_indices(self):
-        """Return indices of sampled structures."""
-        return [derivs.samples for derivs in self.derivatives_set]
+            print("sampled_labelings:", file=f)
+            for d in self:
+                d.write_attrs(file=f)
+                d.save(element_strings, path=path)
+        return self
 
 
 def load_derivative_yaml(filename: str = "pyclupan_derivatives.yaml"):
@@ -288,7 +295,7 @@ def load_derivative_yaml(filename: str = "pyclupan_derivatives.yaml"):
             supercell_matrix=np.array(d["HNF"]),
             supercell_id=int(d["id"]),
             active_labelings=np.array(d["active_labelings"]),
-            inactive_labeling=d["inactive_labeling"],
+            inactive_labeling=np.array(d["inactive_labeling"]),
         )
         derivs_all.append(derivs)
 

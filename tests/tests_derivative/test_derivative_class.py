@@ -34,8 +34,15 @@ def test_derivatives_classes():
         np.testing.assert_equal(d.inactive_sites, [])
         assert d.supercell_size == 4
     np.testing.assert_equal(ds_set[0].active_sites, [0, 1, 2])
+    np.testing.assert_equal(ds_set.n_labelings, [2, 2, 2, 3, 3, 3, 3, 3, 2, 2])
 
     axis_true = np.array([[0.0, 2.0, 2.0], [2.0, 0.0, 2.0], [2.0, 2.0, 0.0]])
     np.testing.assert_allclose(ds_set[0].unitcell.axis, axis_true)
+    np.testing.assert_allclose(ds_set.unitcell.axis, axis_true)
     axis_true = np.array([[-2.0, 0.0, -4.0], [2.0, -2.0, -4.0], [-0.0, -2.0, 4.0]])
     np.testing.assert_allclose(ds_set[0].supercell.axis, axis_true)
+
+    ds_set.all()
+    assert list(ds_set[5].sample) == [0, 1, 2]
+    assert list(ds_set[7].sample) == [0, 1, 2]
+    assert list(ds_set[9].sample) == [0, 1]
