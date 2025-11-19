@@ -79,14 +79,14 @@ class Lattice:
         self._cell = cell
         self._reduced_cell = None
         self._active_sites = None
+        self._inactive_sites = None
         self._map_full_to_active_rep = None
 
-        self._active_lattice = [
-            i for i, e in enumerate(self._elements_on_lattice) if len(e) > 1
-        ]
-        self._active_elements = [
-            e2 for e in self._elements_on_lattice if len(e) > 1 for e2 in e
-        ]
+        elements = self._elements_on_lattice
+        self._active_lattice = [i for i, e in enumerate(elements) if len(e) > 1]
+        self._inactive_lattice = [i for i, e in enumerate(elements) if len(e) == 1]
+        self._active_elements = [e2 for e in elements if len(e) > 1 for e2 in e]
+        self._inactive_elements = [e2 for e in elements if len(e) == 1 for e2 in e]
         self._set_spins()
 
     def _set_spins(self):
@@ -139,6 +139,20 @@ class Lattice:
         return self._active_sites
 
     @property
+    def inactive_sites(self):
+        """Return inactive sites."""
+        if self._inactive_sites is not None:
+            return self._inactive_sites
+
+        n_sites = self._cell.n_atoms
+        self._inactive_sites = []
+        for lattice_id in self._inactive_lattice:
+            begin = sum(n_sites[:lattice_id])
+            self._active_sites.extend(list(range(begin, begin + n_sites[lattice_id])))
+        self._inactive_sites = np.array(self._inactive_sites)
+        return self._inactive_sites
+
+    @property
     def map_full_to_active_rep(self):
         """Return mapping full site ID to active site ID."""
         if self._map_full_to_active_rep is not None:
@@ -189,6 +203,7 @@ class Lattice:
         lattice_supercell.cell = supercell
         lattice_supercell._reduced_cell = None
         lattice_supercell._active_sites = None
+        lattice_supercell._inactive_sites = None
         lattice_supercell._map_full_to_active_rep = None
 
         if len(self._cell.n_atoms) != len(supercell.n_atoms):

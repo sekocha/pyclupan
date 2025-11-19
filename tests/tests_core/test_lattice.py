@@ -86,6 +86,7 @@ def test_lattice_binary_fcc():
 
     assert lattice_supercell.elements_on_lattice == elements
     assert list(lattice_supercell.active_sites) == [0, 1, 2]
+    assert list(lattice_supercell.inactive_sites) == []
     assert list(lattice_supercell.map_full_to_active_rep) == [0, 1, 2]
     assert lattice_supercell.is_active_size(labelings) == True
     assert lattice_supercell.is_active_element(labelings) == True
