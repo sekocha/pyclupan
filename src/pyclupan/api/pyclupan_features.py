@@ -5,6 +5,11 @@ from typing import Optional, Union
 import numpy as np
 
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
+from pyclupan.derivative.sample_utils import (
+    DerivativesSet,
+    load_derivative_yaml,
+    load_sample_attrs_yaml,
+)
 from pyclupan.features.run_correlation import (
     run_correlation,
     run_correlation_from_structures,
@@ -18,6 +23,7 @@ class PyclupanFeatures:
         """Init method."""
         self._cluster_yaml = cluster_yaml
         self._structures = None
+        self._derivative_set = DerivativesSet([])
 
     def load_poscars(
         self,
@@ -46,6 +52,26 @@ class PyclupanFeatures:
 
         return self
 
+    def load_sample_attrs_yaml(self, filename: str = "pyclupan_samples_attrs.yaml"):
+        """Load pyclupan_samples_attrs.yaml file.
+
+        Parameter
+        ---------
+        filename: Name of pyclupan_samples_attrs.yaml file.
+        """
+        self._derivative_set.append(load_sample_attrs_yaml(filename))
+        return self
+
+    def load_derivative_yaml(self, filename: str = "pyclupan_derivatives.yaml"):
+        """Load pyclupan_derivatives.yaml file.
+
+        Parameter
+        ---------
+        filename: Name of pyclupan_derivatives.yaml file.
+        """
+        self._derivative_set.append(load_derivative_yaml(filename))
+        return self
+
     def eval_cluster_functions(
         self,
         unitcell: Optional[PolymlpStructure] = None,
@@ -65,6 +91,19 @@ class PyclupanFeatures:
                 labelings=labelings,
                 cluster_yaml=self._cluster_yaml,
             )
+            return cluster_functions
+
+        elif len(self._derivative_set) > 0:
+            cluster_functions = []
+            for d in self._derivative_set:
+                cf = run_correlation(
+                    unitcell=d.unitcell,
+                    supercell_matrix=d.supercell_matrix,
+                    labelings=d.active_labelings,
+                    cluster_yaml=self._cluster_yaml,
+                )
+                cluster_functions.extend(cf)
+            cluster_functions = np.array(cluster_functions)
             return cluster_functions
 
         if self._structures is None:

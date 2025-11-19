@@ -130,6 +130,7 @@ def run_correlation(
     cluster_functions: Cluster functions for labelings.
         shape: (n_labeling, n_features)
     """
+    # TODO: labelings must be active?
     lattice, clusters, _, spin_basis_clusters = load_cluster_yaml(cluster_yaml)
     if not is_cell_equal(unitcell, lattice.cell):
         raise RuntimeError("Unitcell in cluster.yaml is not equal to given unitcell.")

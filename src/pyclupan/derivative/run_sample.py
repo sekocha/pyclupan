@@ -1,6 +1,6 @@
 """Functions for sampling derivative structures."""
 
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 import numpy as np
 
@@ -10,7 +10,8 @@ from pyclupan.derivative.sample_utils import DerivativesSet, load_derivative_yam
 def run_sampling_derivatives(
     files: Union[str, list],
     element_strings: Optional[tuple] = None,
-    verbose: bool = False,
+    n_samples: int = 100,
+    method: Literal["all", "uniform", "random"] = "uniform",
 ):
     """Enumerate derivative structures.
 
@@ -26,13 +27,11 @@ def run_sampling_derivatives(
             ds = load_derivative_yaml(f)
             ds_set.append(ds)
 
-    samples = ds_set.all()
-    print(samples)
-    samples = ds_set.uniform(n_samples=10)
-    print(samples)
-    samples = ds_set.random(n_samples=10)
-    print(samples)
-    ds_set.save(element_strings)
+    if method == "all":
+        _ = ds_set.all()
+    elif method == "uniform":
+        _ = ds_set.uniform(n_samples=n_samples)
+    elif method == "random":
+        _ = ds_set.random(n_samples=n_samples)
 
-    # ds_set.random()
-    # ds_set.labeling_ids
+    ds_set.save(element_strings)

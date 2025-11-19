@@ -1,11 +1,14 @@
 """Functions for saving and loading yaml files for derivative structures."""
 
-import numpy as np
-import yaml
+# import numpy as np
+# import yaml
 
-from pyclupan.core.pypolymlp_utils import load_cell, save_cell
-from pyclupan.derivative.derivative_utils import Derivatives, DerivativesSet
-from pyclupan.zdd.pyclupan_zdd import PyclupanZdd
+# from pyclupan.core.pypolymlp_utils import load_cell, save_cell
+from pyclupan.core.pypolymlp_utils import save_cell
+
+# from pyclupan.derivative.derivative_utils import Derivatives, DerivativesSet
+# from pyclupan.zdd.pyclupan_zdd import PyclupanZdd
+from pyclupan.derivative.derivative_utils import DerivativesSet
 
 
 def _write_list_no_space(a: list, file):
@@ -66,35 +69,35 @@ def write_derivative_yaml(
     return filename
 
 
-def load_derivative_yaml(filename: str = "derivative.yaml", verbose: bool = False):
-    """Load labelings of derivative structures."""
-    data = yaml.safe_load(open(filename))
-    unitcell = load_cell(yaml_data=data, tag="unitcell")
-    n_cells = data["zdd"]["n_cells"]
-    one_of_k_rep = data["zdd"]["one_of_k"]
-    element_orbit = [
-        [d["elements"], d["elements_dd"]] for d in data["zdd"]["element_sets"]
-    ]
-    elements_lattice = [e[0] for e in element_orbit]
-
-    zdd = PyclupanZdd(verbose=verbose)
-    zdd.unitcell = unitcell
-    zdd.initialize_zdd(
-        supercell_size=n_cells,
-        elements_lattice=elements_lattice,
-        one_of_k_rep=one_of_k_rep,
-    )
-
-    derivs_all = []
-    for d in data["derivative_structures"]:
-        derivs = Derivatives(
-            zdd_lattice=zdd.zdd_lattice,
-            unitcell=unitcell,
-            hnf=np.array(d["HNF"]),
-            active_labelings=np.array(d["active_labelings"]),
-            inactive_labeling=d["inactive_labeling"],
-            supercell_id=int(d["id"]),
-        )
-        derivs_all.append(derivs)
-
-    return DerivativesSet(derivs_all)
+# def load_derivative_yaml(filename: str = "derivative.yaml", verbose: bool = False):
+#     """Load labelings of derivative structures."""
+#     data = yaml.safe_load(open(filename))
+#     unitcell = load_cell(yaml_data=data, tag="unitcell")
+#     n_cells = data["zdd"]["n_cells"]
+#     one_of_k_rep = data["zdd"]["one_of_k"]
+#     element_orbit = [
+#         [d["elements"], d["elements_dd"]] for d in data["zdd"]["element_sets"]
+#     ]
+#     elements_lattice = [e[0] for e in element_orbit]
+#
+#     zdd = PyclupanZdd(verbose=verbose)
+#     zdd.unitcell = unitcell
+#     zdd.initialize_zdd(
+#         supercell_size=n_cells,
+#         elements_lattice=elements_lattice,
+#         one_of_k_rep=one_of_k_rep,
+#     )
+#
+#     derivs_all = []
+#     for d in data["derivative_structures"]:
+#         derivs = Derivatives(
+#             zdd_lattice=zdd.zdd_lattice,
+#             unitcell=unitcell,
+#             hnf=np.array(d["HNF"]),
+#             active_labelings=np.array(d["active_labelings"]),
+#             inactive_labeling=d["inactive_labeling"],
+#             supercell_id=int(d["id"]),
+#         )
+#         derivs_all.append(derivs)
+#
+#     return DerivativesSet(derivs_all)

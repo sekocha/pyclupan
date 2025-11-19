@@ -294,3 +294,23 @@ def load_derivative_yaml(filename: str = "pyclupan_derivatives.yaml"):
         derivs_all.append(derivs)
 
     return DerivativesSet(derivs_all)
+
+
+def load_sample_attrs_yaml(filename: str = "pyclupan_sample_attrs.yaml"):
+    """Load sampled labelings of derivative structures."""
+    data = yaml.safe_load(open(filename))
+    unitcell = load_cell(yaml_data=data, tag="unitcell")
+    elements_lattice = data["elements"]
+    lattice = Lattice(unitcell, elements=elements_lattice)
+
+    derivs_all = []
+    for d in data["sampled_labelings"]:
+        derivs = Derivatives(
+            lattice_unitcell=lattice,
+            supercell_matrix=np.array(d["supercell_matrix"]),
+            active_labelings=np.array(d["active_labelings"]),
+            inactive_labeling=np.array(d["inactive_labeling"]),
+        )
+        derivs_all.append(derivs)
+
+    return DerivativesSet(derivs_all)
