@@ -26,7 +26,12 @@ def run_sampling_derivatives(
             ds = load_derivative_yaml(f)
             ds_set.append(ds)
 
-    ds_set.all()
+    samples = ds_set.all()
+    print(samples)
+    samples = ds_set.uniform(n_samples=10)
+    print(samples)
+    samples = ds_set.random(n_samples=10)
+    print(samples)
     ds_set.save(element_strings)
 
     # ds_set.random()

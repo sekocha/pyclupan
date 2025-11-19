@@ -22,8 +22,8 @@ def test_derivatives_classes():
     for f in files:
         ds = load_derivative_yaml(f)
         ds_set.append(ds)
-
     assert len(ds_set) == 10
+
     for d in ds_set[:3]:
         np.testing.assert_equal(d.active_sites, [0, 1, 2])
         np.testing.assert_equal(d.inactive_sites, [])

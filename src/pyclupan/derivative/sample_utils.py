@@ -78,6 +78,7 @@ class Derivatives:
         """Sample labelings randomly."""
         candidates = np.arange(self.n_labelings, dtype=int)
         self._sample = np.random.choice(candidates, size=n_samples, replace=False)
+        self._sample = np.sort(self._sample)
         return self._sample
 
     @property
@@ -188,6 +189,7 @@ class DerivativesSet:
         self.derivatives_set[index] = value
 
     def __len__(self):
+        """Len method."""
         return len(self.derivatives_set)
 
     def append(self, ds: Union[list, tuple, Derivatives, DerivativesSet]):
@@ -211,54 +213,46 @@ class DerivativesSet:
         return np.array([d.n_labelings for d in self])
 
     def all(self):
-        """Sample all derivative structures for each HNF."""
+        """Sample all labelings for each HNF."""
         self._sample = [d.all() for d in self]
         return self._sample
 
-    # TODO
+    def uniform(self, n_samples: int = 100):
+        """Sample labelings randomly from uniformly-sampled HNFs."""
+        if n_samples >= np.sum(self.n_labelings):
+            self._samples = self.all()
+            return self._sample
+
+        n_samples_cell = self._choose_cell(n_samples=n_samples)
+        self._sample = [d.random(n_samples=n) for d, n in zip(self, n_samples_cell)]
+        return self._sample
+
+    def random(self, n_samples: int = 100):
+        """Sample labeling randomly."""
+        if n_samples >= np.sum(self.n_labelings):
+            self._samples = self.all()
+            return self._sample
+
+        n_samples_cell = self._choose_cell(n_samples=n_samples, prob=self.n_labelings)
+        self._sample = [d.random(n_samples=n) for d, n in zip(self, n_samples_cell)]
+        return self._sample
+
     def _choose_cell(self, n_samples: int = 100, prob: np.ndarray = None):
-        """Choose HNF ids randomly."""
-        candidates = np.arange(len(self.derivatives_set), dtype=int)
-        icells = np.random.choice(candidates, size=n_samples, replace=True, p=prob)
-        key, cnt = np.unique(icells, return_counts=True)
+        """Choose supercell id randomly."""
+        n_labelings = self.n_labelings
+        n_samples_all = np.zeros(len(self), dtype=int)
+        n_resamples = n_samples
+        while n_resamples > 0:
+            ids_full = np.where(n_samples_all >= n_labelings)[0]
+            n_samples_all[ids_full] = n_labelings[ids_full]
 
-        n_samples_all = np.zeros(len(self.derivatives_set), dtype=int)
-        n_samples_all[key] = cnt
-        while np.any(n_samples_all > self._cnt):
-            ids_full = np.where(n_samples_all > self._cnt)[0]
-            ids = np.where(n_samples_all < self._cnt)[0]
-            n_samples_all[ids_full] = self._cnt[ids_full]
             n_resamples = n_samples - np.sum(n_samples_all)
-
-            p = None if prob is None else prob[ids]
+            ids = np.where(n_samples_all < n_labelings)[0]
+            p = None if prob is None else prob[ids] / np.sum(prob[ids])
             icells = np.random.choice(ids, size=n_resamples, replace=True, p=p)
             key, cnt = np.unique(icells, return_counts=True)
             n_samples_all[key] += cnt
         return n_samples_all
-
-    # TODO
-    def uniform(self, n_samples: int = 100):
-        """Sample derivative structures randomly from uniformly-sampled HNFs."""
-        if n_samples >= np.sum(self._cnt):
-            self.all()
-            return self
-
-        n_samples_cell = self._choose_cell(n_samples=n_samples)
-        for n, derivs in zip(n_samples_cell, self.derivatives_set):
-            derivs.random(n_samples=n)
-        return self
-
-    # TODO
-    def random(self, n_samples: int = 100):
-        """Sample derivative structures randomly."""
-        if n_samples >= np.sum(self._cnt):
-            self.all()
-            return self
-
-        n_samples_cell = self._choose_cell(n_samples=n_samples, p=self._cnt)
-        for n, derivs in zip(n_samples_cell, self.derivatives_set):
-            derivs.random(n_samples=n)
-        return self
 
     def save(self, element_strings: tuple, path: str = "poscars"):
         """Save derivative structures sampled."""
