@@ -5,7 +5,7 @@ from typing import Optional, Union
 import numpy as np
 
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
-from pyclupan.derivative.sample_utils import (
+from pyclupan.derivative.derivative_utils import (
     DerivativesSet,
     load_derivative_yaml,
     load_sample_attrs_yaml,

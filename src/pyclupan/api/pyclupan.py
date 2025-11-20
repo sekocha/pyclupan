@@ -17,6 +17,8 @@ class Pyclupan:
 
         self._unitcell = None
         self._derivs_set = None
+        self._zdd = None
+
         self._clusters = None
 
     def load_poscar(self, poscar: str = "POSCAR") -> PolymlpStructure:
@@ -112,7 +114,7 @@ class Pyclupan:
         if self._unitcell is None:
             raise RuntimeError("Unitcell not found.")
 
-        self._derivs_set = run_derivatives(
+        self._derivs_set, self._zdd = run_derivatives(
             self._unitcell,
             occupation=occupation,
             elements=elements,
@@ -136,9 +138,16 @@ class Pyclupan:
         ---------
         filename: YAML file for saving derivative structures.
         """
-        from pyclupan.derivative.derivative_io import write_derivative_yaml
+        from pyclupan.derivative.derivative_utils import write_derivative_yaml
 
-        fname_output = write_derivative_yaml(self._derivs_set, filename=filename)
+        if self._derivs_set is None:
+            raise RuntimeError("Derivative structures not found.")
+
+        fname_output = write_derivative_yaml(
+            self._derivs_set,
+            self._zdd,
+            filename=filename,
+        )
         if self._verbose:
             if fname_output is None:
                 print("No result file is not generated.", flush=True)
@@ -154,7 +163,7 @@ class Pyclupan:
         ---------
         filename: YAML file for derivative structures.
         """
-        from pyclupan.derivative.derivative_io import load_derivative_yaml
+        from pyclupan.derivative.derivative_utils import load_derivative_yaml
 
         self._derivs_set = load_derivative_yaml(filename=filename)
         return self
@@ -172,6 +181,9 @@ class Pyclupan:
         -------
         TODO: ***
         """
+        if self._derivs_set is None:
+            raise RuntimeError("Derivative structures not found.")
+
         if method == "all":
             self._derivs_set.all()
         elif method == "uniform":

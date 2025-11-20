@@ -5,10 +5,14 @@ from typing import Optional
 
 import numpy as np
 
-from pyclupan.core.lattice import set_elements_on_sublattices
+from pyclupan.core.lattice import Lattice
 from pyclupan.core.linalg_utils import get_nonequivalent_hnf
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
-from pyclupan.derivative.derivative_utils import Derivatives, DerivativesSet
+from pyclupan.derivative.derivative_utils import (
+    Derivatives,
+    DerivativesSet,
+    get_complete_labelings,
+)
 from pyclupan.derivative.init_utils import set_charges, set_compositions
 from pyclupan.derivative.labelings_utils import (
     eliminate_superperiodic_labelings,
@@ -62,11 +66,8 @@ def run_derivatives(
     if hnf is not None:
         supercell_size = round(np.linalg.det(hnf))
 
-    elements_lattice = set_elements_on_sublattices(
-        n_sites=unitcell.n_atoms,
-        occupation=occupation,
-        elements=elements,
-    )
+    lattice_unitcell = Lattice(unitcell, occupation=occupation, elements=elements)
+    elements_lattice = lattice_unitcell.elements_on_lattice
 
     n_sites_supercell = [n * supercell_size for n in unitcell.n_atoms]
     comp, comp_lb, comp_ub = set_compositions(
@@ -122,37 +123,44 @@ def run_derivatives(
             verbose=verbose,
         )
         if labelings.shape[0] > 0:
+            # Eliminate superperiodic labelings.
+            if not superperiodic:
+                # TODO: Refactor ZDD classes.
+                site_perm_lt = zdd.site_permutations_lattice_translations
+                active_sites = zdd.zdd_lattice.site_attrs_set.active_sites
+                inactive_sites = zdd.zdd_lattice.site_attrs_set.inactive_sites
+                complete_labelings = get_complete_labelings(
+                    labelings,
+                    inactive_labeling,
+                    active_sites,
+                    inactive_sites,
+                )
+                complete_labelings = eliminate_superperiodic_labelings(
+                    complete_labelings,
+                    site_perm_lt,
+                )
+                labelings = complete_labelings[:, active_sites]
+                if verbose:
+                    prefix = "n_str (superperiodic)     :"
+                    print(prefix, complete_labelings.shape[0], flush=True)
+
             derivs = Derivatives(
-                zdd_lattice=zdd.zdd_lattice,
-                unitcell=unitcell,
-                hnf=hnf,
+                lattice_unitcell=lattice_unitcell,
+                supercell_matrix=hnf,
+                supercell_id=supercell_id,
                 active_labelings=labelings,
                 inactive_labeling=inactive_labeling,
                 comp=comp,
                 comp_lb=comp_lb,
                 comp_ub=comp_ub,
-                supercell_id=supercell_id,
             )
-            # Eliminate superperiodic labelings.
-            if not superperiodic:
-                site_perm_lt = zdd.site_permutations_lattice_translations
-                derivs.complete_labelings = eliminate_superperiodic_labelings(
-                    derivs.complete_labelings,
-                    site_perm_lt,
-                )
-                if verbose:
-                    print(
-                        "n_str (superperiodic)      :",
-                        derivs.active_labelings.shape[0],
-                        flush=True,
-                    )
-            n_derivs += derivs.active_labelings.shape[0]
+            n_derivs += derivs.n_labelings
             derivs_all.append(derivs)
 
     if verbose:
         print("Number of derivative structures:", n_derivs, flush=True)
 
-    return DerivativesSet(derivs_all)
+    return DerivativesSet(derivs_all), zdd
 
 
 def enum_derivatives(

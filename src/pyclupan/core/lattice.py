@@ -148,7 +148,7 @@ class Lattice:
         self._inactive_sites = []
         for lattice_id in self._inactive_lattice:
             begin = sum(n_sites[:lattice_id])
-            self._active_sites.extend(list(range(begin, begin + n_sites[lattice_id])))
+            self._inactive_sites.extend(list(range(begin, begin + n_sites[lattice_id])))
         self._inactive_sites = np.array(self._inactive_sites)
         return self._inactive_sites
 

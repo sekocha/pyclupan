@@ -17,6 +17,7 @@ class PyclupanZdd:
         """Init method."""
         self._verbose = verbose
         self._unitcell = None
+        self._supercell = None
         self._elements_lattice = None
         self._one_of_k_rep = None
         self._hnf = None
@@ -78,9 +79,9 @@ class PyclupanZdd:
         from pyclupan.core.spglib_utils import get_permutation
 
         self._hnf = supercell_matrix
-        sup = supercell(self._unitcell, supercell_matrix)
+        self._supercell = supercell(self._unitcell, supercell_matrix)
         self._site_perm, self._site_perm_lt = get_permutation(
-            sup, superperiodic=True, hnf=supercell_matrix
+            self._supercell, superperiodic=True, hnf=supercell_matrix
         )
         return self
 
@@ -93,6 +94,11 @@ class PyclupanZdd:
     def unitcell(self, cell):
         """Set unit cell."""
         self._unitcell = cell
+
+    @property
+    def supercell(self):
+        """Return supercell."""
+        return self._supercell
 
     @property
     def supercell_size(self):

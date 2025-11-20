@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.derivative.sample_utils import DerivativesSet, load_derivative_yaml
+from pyclupan.derivative.derivative_utils import DerivativesSet, load_derivative_yaml
 
 cwd = Path(__file__).parent
 

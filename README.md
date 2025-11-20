@@ -15,7 +15,7 @@ The code also enables the enumeration of nonequivalent substitutional derivative
 - pyyaml
 - setuptools
 
-- pypolymlp
+- pypolymlp >= 0.16.0
 - spglib
 - phonopy
 - openmp (recommended)

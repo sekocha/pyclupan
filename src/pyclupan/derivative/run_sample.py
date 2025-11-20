@@ -4,7 +4,7 @@ from typing import Literal, Optional, Union
 
 import numpy as np
 
-from pyclupan.derivative.sample_utils import DerivativesSet, load_derivative_yaml
+from pyclupan.derivative.derivative_utils import DerivativesSet, load_derivative_yaml
 
 
 def run_sampling_derivatives(
