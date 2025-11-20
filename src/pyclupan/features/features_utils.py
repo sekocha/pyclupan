@@ -50,4 +50,5 @@ def load_cluster_functions_hdf5(filename: str = "pyclupan_features.hdf5"):
     with h5py.File(filename, "r") as hdf5_file:
         cluster_functions = hdf5_file["cluster_functions"][:]
         ids = hdf5_file["ids"][:]
+    ids = [i.decode("utf-8") for i in ids]
     return cluster_functions, ids

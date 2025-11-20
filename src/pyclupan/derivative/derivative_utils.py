@@ -154,12 +154,15 @@ class Derivatives:
 
         os.makedirs(path, exist_ok=True)
         for ids, labeling in zip(self.sample_ids, self.sampled_complete_labelings):
-            filename = "poscar-" + get_structure_id(*ids)
+            structure_id = get_structure_id(*ids)
+            filename = "poscar-" + structure_id
             sup = copy.deepcopy(self.supercell)
             sup.types = labeling
             sup.elements = list(np.array(element_strings)[sup.types])
             sup = sup.reorder()
-            write_poscar_file(sup, filename=path + "/" + filename)
+
+            header = "pyclupan: " + structure_id
+            write_poscar_file(sup, filename=path + "/" + filename, header=header)
         return self
 
     def write_attrs(self, file: Union[str, io.IOBase]):
