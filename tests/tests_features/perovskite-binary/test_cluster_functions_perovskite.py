@@ -10,13 +10,37 @@ from pyclupan.core.pypolymlp_utils import Poscar
 cwd = Path(__file__).parent
 
 
-def test_eval_cluster_functions():
+def test_eval_cluster_functions_from_derivatives():
     """Test eval_cluster_functions."""
-    element_labels = {"Sr": 0, "Ti": 1, "O": 2, "V": 3}
+    pyclupan = PyclupanFeatures(cluster_yaml=str(cwd) + "/pyclupan_cluster.yaml")
+    pyclupan.load_derivative_yaml(str(cwd) + "/pyclupan_derivatives.yaml")
+    cluster_functions = pyclupan.eval_cluster_functions()
+
+    cf_true = np.array(
+        [
+            1.0,
+            1.0,
+            1.0,
+            0.333333,
+            0.333333,
+            1.0,
+            0.333333,
+            -0.333333,
+            0.333333,
+            0.333333,
+            -0.333333,
+        ]
+    )
+    np.testing.assert_allclose(cluster_functions[:, 3], cf_true, atol=1e-6)
+
+
+def test_eval_cluster_functions_from_poscars():
+    """Test eval_cluster_functions."""
+    element_strings = ("Sr", "Ti", "O", "V")
     features = PyclupanFeatures(str(cwd) + "/pyclupan_cluster.yaml")
     features.load_poscars(
         [str(cwd) + "/derivative-1", str(cwd) + "/derivative-2"],
-        element_string_labels=element_labels,
+        element_strings=element_strings,
     )
     cluster_functions = features.eval_cluster_functions()
     cf_true = np.array(
