@@ -6,7 +6,7 @@ import copy
 import io
 import os
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import yaml
@@ -14,7 +14,6 @@ import yaml
 from pyclupan.core.cell_utils import supercell_reduced
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import load_cell, save_cell, write_poscar_file
-from pyclupan.zdd.pyclupan_zdd import PyclupanZdd
 
 
 def get_structure_id(supercell_size: int, supercell_id: int, structure_id: int):
@@ -309,7 +308,7 @@ def _write_list_no_space(a: list, file):
 
 def write_derivative_yaml(
     derivs_set: DerivativesSet,
-    zdd: PyclupanZdd,
+    zdd: Any,
     filename: str = "derivatives.yaml",
 ):
     """Save labelings of derivative structures to yaml file."""
