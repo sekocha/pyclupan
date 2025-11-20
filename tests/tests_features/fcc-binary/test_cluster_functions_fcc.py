@@ -10,12 +10,27 @@ from pyclupan.core.pypolymlp_utils import Poscar
 cwd = Path(__file__).parent
 
 
-def test_eval_cluster_functions():
-    """Test eval_cluster_functions."""
-    element_labels = {"Ag": 0, "Au": 1}
+def test_eval_cluster_functions_from_derivatives():
+    """Test eval_cluster_functions using files for derivative structures."""
+    features = PyclupanFeatures(cluster_yaml=str(cwd) + "/pyclupan_cluster.yaml")
+    features.load_sample_attrs_yaml(str(cwd) + "/pyclupan_sample_attrs.yaml")
+    cluster_functions = features.eval_cluster_functions()
+    np.testing.assert_allclose(cluster_functions[0, 1], 0.3333333333333, atol=1e-8)
+    np.testing.assert_allclose(cluster_functions[1, 1], -0.111111111111, atol=1e-8)
+
+    features.clear_structures()
+    features.load_derivative_yaml(str(cwd) + "/pyclupan_derivatives_3.yaml")
+    cluster_functions = features.eval_cluster_functions()
+    np.testing.assert_allclose(cluster_functions[0, 1], 0.3333333333333, atol=1e-8)
+    np.testing.assert_allclose(cluster_functions[1, 1], -0.111111111111, atol=1e-8)
+
+
+def test_eval_cluster_functions_from_poscars():
+    """Test eval_cluster_functions using POSCAR files."""
+    element_strings = ("Ag", "Au")
     features = PyclupanFeatures(cluster_yaml=str(cwd) + "/pyclupan_cluster.yaml")
     features.load_poscars([str(cwd) + "/derivative-1", str(cwd) + "/derivative-2"])
-    features.element_string_labels = element_labels
+    features.element_strings = element_strings
     cluster_functions = features.eval_cluster_functions()
 
     cf_calc1 = cluster_functions[0, :10]
@@ -27,7 +42,7 @@ def test_eval_cluster_functions():
 
 
 def test_eval_cluster_functions_from_labelings():
-    """Test eval_cluster_functions"""
+    """Test eval_cluster_functions using given labelings."""
     features = PyclupanFeatures(cluster_yaml=str(cwd) + "/pyclupan_cluster.yaml")
 
     unitcell = Poscar(str(cwd) + "/fcc-primitive").structure

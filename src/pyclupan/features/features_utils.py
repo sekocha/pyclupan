@@ -7,10 +7,10 @@ from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, supercell
 
 
-def element_strings_to_labeling(elements: list, element_labels: dict):
+def element_strings_to_labeling(elements: list, element_strings: tuple):
     """Convert elements in structure to labeling."""
     labeling = np.zeros(len(elements), dtype=int)
-    for ele, label in element_labels.items():
+    for label, ele in enumerate(element_strings):
         labeling[np.array(elements) == ele] = label
     return labeling
 

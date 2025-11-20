@@ -73,7 +73,7 @@ def calc_correlation(
 
 def run_correlation_from_structures(
     structures: list[PolymlpStructure],
-    element_labels: dict,
+    element_strings: tuple,
     cluster_yaml: str = "pyclupan_cluster.yaml",
     verbose: bool = False,
 ):
@@ -88,7 +88,7 @@ def run_correlation_from_structures(
 
         supercell, tmat = reduced(st, return_transformation=True)
         supercell.supercell_matrix = supercell_matrix @ tmat
-        labeling = element_strings_to_labeling(supercell.elements, element_labels)
+        labeling = element_strings_to_labeling(supercell.elements, element_strings)
 
         lattice_supercell, labelings_order = structure_to_lattice(
             supercell,

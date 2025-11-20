@@ -20,23 +20,34 @@ class PyclupanFeatures:
     """API class for calculating features."""
 
     def __init__(self, cluster_yaml: str = "pyclupan_cluster.yaml"):
-        """Init method."""
+        """Init method.
+        Parameter
+        ---------
+        cluster_yaml: Pyclupan result file for cluster attributes.
+        """
         self._cluster_yaml = cluster_yaml
+        self.clear_structures()
+
+    def clear_structures(self):
+        """Clear structures and labelings to be evaluated."""
         self._structures = None
         self._derivative_set = DerivativesSet([])
+        return self
 
     def load_poscars(
         self,
         poscars: Union[str, list, tuple, np.ndarray],
-        element_string_labels: Optional[dict] = None,
+        element_strings: Optional[tuple] = None,
     ):
         """Load POSCAR files used for evaluating features.
 
         Parameter
         ---------
         poscars: POSCAR file or List of POSCAR files.
-        element_string_labels: Dictionary of element string and label integer.
-            (e. g.) element_labels = {"Ag": 0, "Au": 1}
+        element_strings: Element strings.
+            The location index corresponds to label integer.
+            For example, element_strings are ("Ag", "Au"),
+            labels 0 and 1 indicate elements Ag and Au, respectively.
         """
         if isinstance(poscars, str):
             self._structures = [Poscar(poscars).structure]
@@ -47,8 +58,8 @@ class PyclupanFeatures:
                 "Parameter in load_poscars must be string or array-like."
             )
 
-        if element_string_labels is not None:
-            self._element_labels = element_string_labels
+        if element_strings is not None:
+            self._element_strings = element_strings
 
         return self
 
@@ -58,6 +69,8 @@ class PyclupanFeatures:
         Parameter
         ---------
         filename: Name of pyclupan_samples_attrs.yaml file.
+            If other files are alreadly loaded, the file will be appended
+            to the existing dataset.
         """
         self._derivative_set.append(load_sample_attrs_yaml(filename))
         return self
@@ -68,6 +81,8 @@ class PyclupanFeatures:
         Parameter
         ---------
         filename: Name of pyclupan_derivatives.yaml file.
+            If other files are alreadly loaded, the file will be appended
+            to the existing dataset.
         """
         self._derivative_set.append(load_derivative_yaml(filename))
         return self
@@ -108,28 +123,30 @@ class PyclupanFeatures:
 
         if self._structures is None:
             raise RuntimeError("Structures are required.")
-        if self._element_labels is None:
+        if self._element_strings is None:
             raise RuntimeError("Labels for element strings are required.")
 
         cluster_functions = run_correlation_from_structures(
             structures=self._structures,
-            element_labels=self._element_labels,
+            element_strings=self._element_strings,
             cluster_yaml=self._cluster_yaml,
         )
         return cluster_functions
 
     @property
-    def element_string_labels(self):
-        """Return labels for element strings."""
-        return self._element_labels
+    def element_strings(self):
+        """Return element strings."""
+        return self._element_strings
 
-    @element_string_labels.setter
-    def element_string_labels(self, element_labels: dict):
-        """Set labels for element strings.
+    @element_strings.setter
+    def element_strings(self, element_strings: tuple):
+        """Set element strings.
 
         Parameter
         ---------
-        element_string_labels: Dictionary of element string and label integer.
-            (e. g.) element_labels = {"Ag": 0, "Au": 1}
+        element_strings: Element strings.
+            The location index corresponds to label integer.
+            For example, element_strings are ("Ag", "Au"),
+            labels 0 and 1 indicate elements Ag and Au, respectively.
         """
-        self._element_labels = element_labels
+        self._element_strings = element_strings
