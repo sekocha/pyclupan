@@ -61,6 +61,7 @@ class PyclupanFeatures:
                 "Parameter in load_poscars must be string or array-like."
             )
 
+        self._structure_ids = poscars
         if element_strings is not None:
             self._element_strings = element_strings
 
