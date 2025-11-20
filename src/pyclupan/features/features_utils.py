@@ -1,5 +1,6 @@
 """Utility functions for calculating features."""
 
+import h5py
 import numpy as np
 
 from pyclupan.core.cell_utils import get_matching_positions
@@ -31,3 +32,22 @@ def structure_to_lattice(
     if only_active:
         labelings_order = labelings_order[lattice_supercell.active_sites]
     return lattice_supercell, labelings_order
+
+
+def save_cluster_functions_hdf5(
+    cluster_functions: np.ndarray,
+    ids: list,
+    filename: str = "pyclupan_features.hdf5",
+):
+    """Save cluster functions in HDF5 format."""
+    with h5py.File(filename, "w") as hdf5_file:
+        hdf5_file.create_dataset("cluster_functions", data=cluster_functions)
+        hdf5_file.create_dataset("ids", data=ids)
+
+
+def load_cluster_functions_hdf5(filename: str = "pyclupan_features.hdf5"):
+    """Load cluster functions in HDF5 format."""
+    with h5py.File(filename, "r") as hdf5_file:
+        cluster_functions = hdf5_file["cluster_functions"][:]
+        ids = hdf5_file["ids"][:]
+    return cluster_functions, ids

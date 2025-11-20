@@ -122,7 +122,7 @@ def run_correlation(
     ----------
     unitcell: Unitcell.
     supercell_matrix: Supercell matrix.
-    labelings: Element labelings in supercell.
+    labelings: Element labelings in supercell. Only active labelings should be given.
     cluster_yaml: Name of output file for cluster search results.
 
     Return
@@ -130,7 +130,6 @@ def run_correlation(
     cluster_functions: Cluster functions for labelings.
         shape: (n_labeling, n_features)
     """
-    # TODO: labelings must be active?
     lattice, clusters, _, spin_basis_clusters = load_cluster_yaml(cluster_yaml)
     if not is_cell_equal(unitcell, lattice.cell):
         raise RuntimeError("Unitcell in cluster.yaml is not equal to given unitcell.")

@@ -16,6 +16,11 @@ from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import load_cell, save_cell, write_poscar_file
 
 
+def get_structure_id(supercell_size: int, supercell_id: int, structure_id: int):
+    """Return structure ID."""
+    return "-".join((str(supercell_size), str(supercell_id), str(structure_id)))
+
+
 @dataclass
 class Derivatives:
     """Dataclass for derivative structures.
@@ -30,6 +35,7 @@ class Derivatives:
     supercell_id: int = 0
     active_labelings: Optional[np.ndarray] = None
     inactive_labeling: Optional[np.ndarray] = None
+    structure_ids: Optional[list] = None
 
     lattice_supercell: Optional[Lattice] = None
 
@@ -129,7 +135,7 @@ class Derivatives:
 
         os.makedirs(path, exist_ok=True)
         for ids, labeling in zip(self.sample_ids, self.sampled_complete_labelings):
-            filename = "poscar-" + "-".join([str(i) for i in ids])
+            filename = "poscar-" + get_structure_id(*ids)
             sup = copy.deepcopy(self.supercell)
             sup.types = labeling
             sup.elements = list(np.array(element_strings)[sup.types])
@@ -156,7 +162,7 @@ class Derivatives:
             print("  -", list(labeling), file=f)
         print("  id:", file=f)
         for ids in self.sample_ids:
-            print("  -", "-".join([str(i) for i in ids]), file=f)
+            print("  -", get_structure_id(*ids), file=f)
         print(file=f)
         return self
 
@@ -284,12 +290,17 @@ def load_derivative_yaml(filename: str = "pyclupan_derivatives.yaml"):
 
     derivs_all = []
     for d in data["derivative_structures"]:
+        ids = [
+            get_structure_id(data["zdd"]["n_cells"], d["id"], i)
+            for i in range(d["n_labelings"])
+        ]
         derivs = Derivatives(
             lattice_unitcell=lattice,
             supercell_matrix=np.array(d["HNF"]),
             supercell_id=int(d["id"]),
             active_labelings=np.array(d["active_labelings"]),
             inactive_labeling=np.array(d["inactive_labeling"]),
+            structure_ids=ids,
         )
         derivs_all.append(derivs)
 
@@ -310,6 +321,7 @@ def load_sample_attrs_yaml(filename: str = "pyclupan_sample_attrs.yaml"):
             supercell_matrix=np.array(d["supercell_matrix"]),
             active_labelings=np.array(d["active_labelings"]),
             inactive_labeling=np.array(d["inactive_labeling"]),
+            structure_ids=d["id"],
         )
         derivs_all.append(derivs)
 

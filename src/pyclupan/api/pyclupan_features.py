@@ -10,6 +10,7 @@ from pyclupan.derivative.sample_utils import (
     load_derivative_yaml,
     load_sample_attrs_yaml,
 )
+from pyclupan.features.features_utils import save_cluster_functions_hdf5
 from pyclupan.features.run_correlation import (
     run_correlation,
     run_correlation_from_structures,
@@ -27,6 +28,8 @@ class PyclupanFeatures:
         """
         self._cluster_yaml = cluster_yaml
         self.clear_structures()
+        self._cluster_functions = None
+        self._structure_ids = None
 
     def clear_structures(self):
         """Clear structures and labelings to be evaluated."""
@@ -100,16 +103,18 @@ class PyclupanFeatures:
             if supercell_matrix is None:
                 raise RuntimeError("Supercell matrix is required.")
 
-            cluster_functions = run_correlation(
+            self._cluster_functions = run_correlation(
                 unitcell=unitcell,
                 supercell_matrix=supercell_matrix,
                 labelings=labelings,
                 cluster_yaml=self._cluster_yaml,
             )
-            return cluster_functions
+            self._structure_ids = [str(i).zfill(5) for i, l in enumerate(labelings)]
+            return self._cluster_functions
 
         elif len(self._derivative_set) > 0:
-            cluster_functions = []
+            self._cluster_functions = []
+            self._structure_ids = []
             for d in self._derivative_set:
                 cf = run_correlation(
                     unitcell=d.unitcell,
@@ -117,21 +122,33 @@ class PyclupanFeatures:
                     labelings=d.active_labelings,
                     cluster_yaml=self._cluster_yaml,
                 )
-                cluster_functions.extend(cf)
-            cluster_functions = np.array(cluster_functions)
-            return cluster_functions
+                self._cluster_functions.extend(cf)
+                self._structure_ids.extend(d.structure_ids)
+            self._cluster_functions = np.array(self._cluster_functions)
+            return self._cluster_functions
 
         if self._structures is None:
             raise RuntimeError("Structures are required.")
         if self._element_strings is None:
             raise RuntimeError("Labels for element strings are required.")
 
-        cluster_functions = run_correlation_from_structures(
+        self._cluster_functions = run_correlation_from_structures(
             structures=self._structures,
             element_strings=self._element_strings,
             cluster_yaml=self._cluster_yaml,
         )
-        return cluster_functions
+        return self._cluster_functions
+
+    def save(self, filename: str = "pyclupan_features.hdf5"):
+        """Save features in HDF5 format."""
+        if self._cluster_functions is None:
+            raise RuntimeError("Cluster functions not found.")
+
+        save_cluster_functions_hdf5(
+            self._cluster_functions,
+            ids=self._structure_ids,
+            filename=filename,
+        )
 
     @property
     def element_strings(self):
@@ -150,3 +167,8 @@ class PyclupanFeatures:
             labels 0 and 1 indicate elements Ag and Au, respectively.
         """
         self._element_strings = element_strings
+
+    @property
+    def cluster_functions(self):
+        """Return cluster functions."""
+        return self._cluster_functions
