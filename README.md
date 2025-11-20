@@ -22,6 +22,7 @@ The code also enables the enumeration of nonequivalent substitutional derivative
 
 [Optional]
 - graphillion
+- scikit-learn
 
 
 ## How to install pyclupan
