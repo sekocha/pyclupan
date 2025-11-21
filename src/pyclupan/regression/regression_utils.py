@@ -34,3 +34,19 @@ def check_data(
     X = np.array([features[ix] for ix, iy in enumerate(order_y) if iy is not None])
     y = np.array([energies[iy] for iy in order_y if iy is not None])
     return X, y
+
+
+def save_eci(
+    coeffs: np.array,
+    intercept: float,
+    filename: str = "pyclupan_eci.yaml",
+    tol: float = 1e-12,
+):
+    """Save interactions to file."""
+    with open(filename, "w") as f:
+        print("intercept:", intercept, file=f)
+        print("eci:", file=f)
+        for i, c in enumerate(coeffs):
+            if np.abs(c) > tol:
+                print("- id   :", i, file=f)
+                print("  coeff:", c, file=f)

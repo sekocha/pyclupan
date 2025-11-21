@@ -3,7 +3,7 @@
 from typing import Optional
 
 from pyclupan.features.features_utils import load_cluster_functions_hdf5
-from pyclupan.regression.regression_utils import check_data, load_energy_dat
+from pyclupan.regression.regression_utils import check_data, load_energy_dat, save_eci
 from pyclupan.regression.solvers import solver_lasso, solver_ridge
 
 
@@ -23,9 +23,7 @@ class PyclupanRegression:
         self._x = None
         self._y = None
 
-        self._feature_ids = None
-        self._coeffs = None
-        self._intercept = None
+        self._model = None
 
     def load_features(self, features_hdf5: str = "pyclupan_features.hdf5"):
         """Load feature data used as predictors.
@@ -92,28 +90,41 @@ class PyclupanRegression:
     def run_ridge(self):
         """Run Ridge solver."""
         self._check_regression_data()
-        coeffs, intercept = solver_ridge(
+        self._model = solver_ridge(
             x=self._x,
             y=self._y,
             alphas=(1e-5, 1e-4, 1e-3, 1e-2, 1e-1),
         )
+        return self
 
     def run_lasso(self):
         """Run Lasso solver."""
         self._check_regression_data()
-        solver_lasso(x=self._x, y=self._y)
+        self._model = solver_lasso(x=self._x, y=self._y, verbose=self._verbose)
+        return self
+
+    def save(self, filename: str = "pyclupan_eci.yaml"):
+        """Save coefficients and intercept."""
+        save_eci(self.coeffs, self.intercept, filename=filename)
+        return self
+
+    @property
+    def model(self):
+        """Return CE model."""
+        return self._model
 
     @property
     def coeffs(self):
         """Return coefficents."""
-        return self._coeffs
+        return self._model.coeffs
 
     @property
     def intercept(self):
         """Return intercept."""
-        return self._intercept
+        return self._model.intercept
 
-    @property
-    def feature_ids(self):
-        """Return feature IDs corresponding to coefficients."""
-        return self._feature_ids
+
+#     @property
+#     def feature_ids(self):
+#         """Return feature IDs corresponding to coefficients."""
+#         return self._feature_ids
