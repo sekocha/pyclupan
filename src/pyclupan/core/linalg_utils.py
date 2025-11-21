@@ -46,15 +46,6 @@ def enumerate_hnf(n: int):
     return np.array(hnf_array)
 
 
-def _is_unimodular(M: np.ndarray, tol: float = 1e-10):
-    """Check whether matrix is unimodular."""
-    if np.isclose(np.linalg.det(M), 1.0):
-        diff = M - np.round(M)
-        if np.linalg.norm(diff) < tol:
-            return True
-    return False
-
-
 def get_nonequivalent_hnf(
     n: int,
     st: PolymlpStructure,
@@ -68,21 +59,24 @@ def get_nonequivalent_hnf(
     """
     hnf_array = enumerate_hnf(n)
     hnfinv_array = np.array([np.linalg.inv(hnf) for hnf in hnf_array])
+    det_hnfinv = np.linalg.det(hnfinv_array)
 
     rotations = get_rotations(st, symprec=symprec)
-    dots = np.array([rotations @ hnf for hnf in hnf_array])
+    RHs = np.array([rotations @ hnf for hnf in hnf_array])
+    det_RHs = np.linalg.det(RHs)
 
     n_hnf = len(hnf_array)
     reps = np.arange(n_hnf, dtype=int)
-    # time consuming part
     for i1, i2 in itertools.combinations(range(n_hnf), 2):
         if reps[i1] == i1 and reps[i2] == i2:
-            for d in dots[i2]:
-                if _is_unimodular(hnfinv_array[i1] @ d):
-                    reps[i2] = i1
-                    break
+            det1 = np.isclose(det_hnfinv[i1] * det_RHs[i2], 1.0)
+            dots = (hnfinv_array[i1] @ RHs[i2, det1]).reshape((-1, 9))
+            norm_diff = np.linalg.norm(dots - np.round(dots), axis=1)
+            if np.any(norm_diff < tol):
+                reps[i2] = i1
 
-    nonequiv_hnfs = hnf_array[np.unique(reps)]
+    reps = np.array([i for i, j in enumerate(reps) if i == j])
+    nonequiv_hnfs = hnf_array[reps]
     return nonequiv_hnfs
 
 
