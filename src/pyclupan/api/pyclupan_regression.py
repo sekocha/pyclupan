@@ -87,20 +87,32 @@ class PyclupanRegression:
             raise RuntimeError("Observation data not found.")
         return self
 
-    def run_ridge(self):
+    def run_ridge(self, alphas: tuple = (1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1)):
         """Run Ridge solver."""
+        if self._verbose:
+            print("Use Ridge solver.", flush=True)
+
         self._check_regression_data()
         self._model = solver_ridge(
             x=self._x,
             y=self._y,
-            alphas=(1e-5, 1e-4, 1e-3, 1e-2, 1e-1),
+            alphas=alphas,
+            verbose=self._verbose,
         )
         return self
 
-    def run_lasso(self):
+    def run_lasso(self, alphas: tuple = (1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1)):
         """Run Lasso solver."""
+        if self._verbose:
+            print("Use Lasso solver.", flush=True)
+
         self._check_regression_data()
-        self._model = solver_lasso(x=self._x, y=self._y, verbose=self._verbose)
+        self._model = solver_lasso(
+            x=self._x,
+            y=self._y,
+            alphas=alphas,
+            verbose=self._verbose,
+        )
         return self
 
     def save(self, filename: str = "pyclupan_eci.yaml"):
@@ -122,9 +134,3 @@ class PyclupanRegression:
     def intercept(self):
         """Return intercept."""
         return self._model.intercept
-
-
-#     @property
-#     def feature_ids(self):
-#         """Return feature IDs corresponding to coefficients."""
-#         return self._feature_ids
