@@ -36,6 +36,8 @@ class PyclupanRegression:
         """
         res = load_cluster_functions_hdf5(features_hdf5)
         self._features, self._structure_ids_x = res
+        if self._verbose:
+            print("Load features:", self._features.shape, flush=True)
         return self
 
     def load_energies(
@@ -56,6 +58,9 @@ class PyclupanRegression:
             self._structure_ids_y, self._energies = load_energy_dat(energy_dat)
         else:
             raise RuntimeError("Energy data not found.")
+
+        if self._verbose:
+            print("Load energies:", self._energies.shape, flush=True)
         return self
 
     def _check_data(self):

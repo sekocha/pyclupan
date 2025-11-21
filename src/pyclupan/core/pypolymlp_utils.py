@@ -8,6 +8,7 @@ import pypolymlp.utils.yaml_utils as yaml_utils
 PolymlpStructure = data_format.PolymlpStructure
 
 Poscar = interface_vasp.Poscar
+Vasprun = interface_vasp.Vasprun
 write_poscar_file = vasp_utils.write_poscar_file
 
 save_cell = yaml_utils.save_cell

@@ -1,31 +1,26 @@
-#!/usr/bin/env python 
-import numpy as np
-import sys, os
+#!/usr/bin/env python
 import argparse
-import joblib
 import copy
-import time
 import math
+import os
+import sys
+import time
 
+import joblib
+import numpy as np
 from mlptools.common.structure import Structure
 
+from pyclupan.cluster.cluster import Cluster, ClusterSet
+from pyclupan.common.io.io_alias import parse_clusters_yaml, parse_derivatives
 from pyclupan.common.io.yaml import Yaml
-from pyclupan.common.io.io_alias import parse_clusters_yaml
-from pyclupan.common.io.io_alias import parse_derivatives
 from pyclupan.common.supercell import Supercell
-
-from pyclupan.cluster.cluster import Cluster
-from pyclupan.cluster.cluster import ClusterSet
-from pyclupan.derivative.derivative import DSSet
-from pyclupan.derivative.derivative import DSSample
-
-from pyclupan.features.features_common import sample_from_ds
-from pyclupan.features.features_common import compute_orbits
-from pyclupan.features.features_common import Features
+from pyclupan.derivative.derivative import DSSample, DSSet
+from pyclupan.features.features_common import Features, compute_orbits, sample_from_ds
 from pyclupan.features.spin_polynomial import gram_schmidt
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../c++/lib')
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../c++/lib")
 import pyclupancpp
+
 
 def set_spins(element_orbit):
 
@@ -38,13 +33,13 @@ def set_spins(element_orbit):
         if len(ele) == 1:
             spin_array = [-1000]
         elif len(ele) == 2:
-            spin_array = [1,-1]
+            spin_array = [1, -1]
         elif len(ele) == 3:
-            spin_array = [1,0,-1]
+            spin_array = [1, 0, -1]
         elif len(ele) == 4:
-            spin_array = [2,1,0,-1]
+            spin_array = [2, 1, 0, -1]
         elif len(ele) == 5:
-            spin_array = [2,1,0,-1,2]
+            spin_array = [2, 1, 0, -1, 2]
 
         for i, s in enumerate(spin_array):
             spins[ele[i]] = s
@@ -53,8 +48,9 @@ def set_spins(element_orbit):
             n_lattice += 1
             for i, basis in enumerate(gram_schmidt(spin_array)):
                 basis_id = ele[i]
-                if np.allclose(basis[:-1], np.zeros(basis.shape[0]-1)) \
-                    and math.isclose(basis[-1], 1.0):
+                if np.allclose(
+                    basis[:-1], np.zeros(basis.shape[0] - 1)
+                ) and math.isclose(basis[-1], 1.0):
                     eliminate_basis_id.add(basis_id)
                 else:
                     cons[ele[i]] = basis
@@ -69,6 +65,7 @@ def set_spins(element_orbit):
 
     return spins, normal, cons, eliminate_basis_id
 
+
 def compute_binary(features_array, spins):
 
     for f in features_array:
@@ -79,13 +76,14 @@ def compute_binary(features_array, spins):
 
         correlation = []
         for sites in f.orbits:
-           spin_cl = labelings_spin[:,sites]
-           ave = np.average(np.prod(spin_cl, axis=2), axis=1)
-           correlation.append(ave)
+            spin_cl = labelings_spin[:, sites]
+            ave = np.average(np.prod(spin_cl, axis=2), axis=1)
+            correlation.append(ave)
         correlation = np.array(correlation).T
         f.set_features(correlation)
 
     return features_array
+
 
 def compute_n_ary(features_array, spins, cons_list):
 
@@ -98,28 +96,25 @@ def compute_n_ary(features_array, spins, cons_list):
         site_cls = [sites_cl for sites_cl, _ in f.orbits]
         cons_id_cls = [cons_id_cl for _, cons_id_cl in f.orbits]
 
-        cfobj = pyclupancpp.ComputeCF(labelings_spin, 
-                                      site_cls, 
-                                      cons_id_cls, 
-                                      cons_list)
+        cfobj = pyclupancpp.ComputeCF(labelings_spin, site_cls, cons_id_cls, cons_list)
         correlations = cfobj.get_values()
         f.set_features(correlations)
 
     return features_array
 
+
 def get_n_atoms(features_array, n_type):
-    
+
     n_atoms_all = []
     for f in features_array:
-        n_atoms_f = [np.count_nonzero(f.labelings == e, axis=1) 
-                    for e in range(n_type)]
+        n_atoms_f = [np.count_nonzero(f.labelings == e, axis=1) for e in range(n_type)]
         n_atoms_all.append(np.array(n_atoms_f).T)
     n_atoms_all = np.vstack(n_atoms_all)
 
     return n_atoms_all
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # Examples:
     #
@@ -128,104 +123,104 @@ if __name__ == '__main__':
     #
 
     ps = argparse.ArgumentParser()
-    ps.add_argument('--derivative',
-                    type=str,
-                    nargs='*',
-                    default=['derivative-all.pkl'],
-                    help='Location of DSSet pkl files')
-    ps.add_argument('--clusters_yaml',
-                    type=str,
-                    default='clusters.yaml',
-                    help='Location of clusters.yaml')
-    ps.add_argument('--poscars',
-                    type=str,
-                    nargs='*',
-                    default=None,
-                    help='POSCARs')
-    ps.add_argument('--n_cell_ub',
-                    type=int,
-                    default=None,
-                    help='Maximum number of cells')
-    ps.add_argument('--yaml',
-                    action='store_true',
-                    help='generating yaml file')
+    ps.add_argument(
+        "--derivative",
+        type=str,
+        nargs="*",
+        default=["derivative-all.pkl"],
+        help="Location of DSSet pkl files",
+    )
+    ps.add_argument(
+        "--clusters_yaml",
+        type=str,
+        default="clusters.yaml",
+        help="Location of clusters.yaml",
+    )
+    ps.add_argument("--poscars", type=str, nargs="*", default=None, help="POSCARs")
+    ps.add_argument(
+        "--n_cell_ub", type=int, default=None, help="Maximum number of cells"
+    )
+    ps.add_argument("--yaml", action="store_true", help="generating yaml file")
     args = ps.parse_args()
 
     # common part in computing other features
-    print(' parsing clusters.yaml ...')
+    print(" parsing clusters.yaml ...")
     clusters, clusters_ele = parse_clusters_yaml(args.clusters_yaml)
 
-    print(' parsing derivative-all.pkl ...')
+    print(" parsing derivative-all.pkl ...")
     ds_samp = parse_derivatives(args.derivative)
     prim = ds_samp.get_primitive_cell()
 
-    print(' building structure list ...')
-    features_array = sample_from_ds(ds_samp, 
-                                    poscars=args.poscars, 
-                                    n_cell_ub=args.n_cell_ub)
+    print(" building structure list ...")
+    features_array = sample_from_ds(
+        ds_samp, poscars=args.poscars, n_cell_ub=args.n_cell_ub
+    )
     # common part (end)
 
     # setting spins and cluster functions
     spins, normal, cons, eliminate_basis_id = set_spins(ds_samp.element_orbit)
-    cons_list = [[] for i in range(max(cons.keys())+1)]
+    cons_list = [[] for i in range(max(cons.keys()) + 1)]
     for k, v in cons.items():
         cons_list[k] = v
 
     if normal == True:
-        print(' computing cluster orbits (in prim. cell) ...')
+        print(" computing cluster orbits (in prim. cell) ...")
         clusters.find_orbits_primitive(distinguish_element=False)
-        print(' computing cluster orbits (in supercells) ...')
+        print(" computing cluster orbits (in supercells) ...")
         for f in features_array:
             orbits = compute_orbits(ds_samp, f.n_cell, f.s_id, clusters)
             orbits = [sites for sites, _ in orbits]
             f.set_orbits(orbits)
 
-        print(' computing correlation functions in structures (labelings) ...')
+        print(" computing correlation functions in structures (labelings) ...")
         n_total = sum([f.labelings.shape[0] for f in features_array])
-        print('   - total number of structures =', n_total)
+        print("   - total number of structures =", n_total)
 
         t1 = time.time()
         features_array = compute_binary(features_array, spins)
         t2 = time.time()
 
-    else: 
+    else:
         active = []
         for cl in clusters_ele.clusters:
             if len(eliminate_basis_id & set(cl.ele_indices)) == 0:
                 active.append(cl)
         clusters_ele = ClusterSet(active)
 
-        print(' computing cluster orbits (in prim. cell) ...')
+        print(" computing cluster orbits (in prim. cell) ...")
         clusters.apply_sym_operations()
-        clusters_ele.find_orbits_primitive(noncolored_cluster_set=clusters,
-                                           distinguish_element=True)
-        print(' computing cluster orbits (in supercells) ...')
+        clusters_ele.find_orbits_primitive(
+            noncolored_cluster_set=clusters, distinguish_element=True
+        )
+        print(" computing cluster orbits (in supercells) ...")
         for f in features_array:
             orbits = compute_orbits(ds_samp, f.n_cell, f.s_id, clusters_ele)
             f.set_orbits(orbits)
 
-        print(' computing products of cluster functions',
-              'in structures (labelings) ...')
+        print(
+            " computing products of cluster functions", "in structures (labelings) ..."
+        )
         n_total = sum([f.labelings.shape[0] for f in features_array])
-        print('   - total number of structures =', n_total)
+        print("   - total number of structures =", n_total)
 
         t1 = time.time()
         features_array = compute_n_ary(features_array, spins, cons_list)
         t2 = time.time()
-                   
-    correlation_all = np.vstack([f.features for f in features_array])
-    target_ids = [(f.n_cell, f.s_id, l_id) 
-                  for f in features_array for l_id in f.labeling_ids]
 
-    print('   - (n_structures, n_clusters) =', correlation_all.shape)
-    print('   - elapsed time               =', f'{t2-t1:.2f}', '(s)')
-    
-    # to output number of atoms 
+    correlation_all = np.vstack([f.features for f in features_array])
+    target_ids = [
+        (f.n_cell, f.s_id, l_id) for f in features_array for l_id in f.labeling_ids
+    ]
+
+    print("   - (n_structures, n_clusters) =", correlation_all.shape)
+    print("   - elapsed time               =", f"{t2-t1:.2f}", "(s)")
+
+    # to output number of atoms
     n_type = max([e2 for e1 in ds_samp.element_orbit for e2 in e1]) + 1
 
     n_atoms_all = get_n_atoms(features_array, n_type)
 
-    print(' generating output files ...')
+    print(" generating output files ...")
     if normal == True:
         clusters_out = clusters
         cons_out = None
@@ -233,21 +228,22 @@ if __name__ == '__main__':
         clusters_out = clusters_ele
         cons_out = cons
 
-    joblib.dump((clusters_out, target_ids, correlation_all, n_atoms_all), 
-                'correlations.pkl', compress=3)
+    joblib.dump(
+        (clusters_out, target_ids, correlation_all, n_atoms_all),
+        "correlations.pkl",
+        compress=3,
+    )
     if args.yaml:
         yaml = Yaml()
-        yaml.write_correlations_yaml(clusters_out, 
-                                     target_ids, 
-                                     correlation_all,
-                                     n_atoms_all,
-                                     cons=cons_out)
- 
+        yaml.write_correlations_yaml(
+            clusters_out, target_ids, correlation_all, n_atoms_all, cons=cons_out
+        )
+
 
 # computing correlation functions (slow but correct)
 
-#normal = True
-#for i, f in enumerate(features_array):
+# normal = True
+# for i, f in enumerate(features_array):
 #    labelings = f.labelings
 #    for ele, s in spins.items():
 #        condition = f.labelings == ele
@@ -262,8 +258,8 @@ if __name__ == '__main__':
 #            correlations.append(corr)
 #        print(correlations)
 
-#normal = False
-#for i, f in enumerate(features_array):
+# normal = False
+# for i, f in enumerate(features_array):
 #    labelings = f.labelings
 #    for ele, s in spins.items():
 #        condition = f.labelings == ele
@@ -282,5 +278,4 @@ if __name__ == '__main__':
 #            corr /= spin_cl.shape[0]
 #            correlations_l.append(corr)
 #        correlations.append(correlations_l)
-# 
-
+#
