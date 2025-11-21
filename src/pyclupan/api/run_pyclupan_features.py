@@ -5,6 +5,7 @@ import signal
 
 import numpy as np
 
+from pyclupan.api.api_utils import print_credit
 from pyclupan.api.pyclupan_features import PyclupanFeatures
 
 
@@ -54,6 +55,7 @@ def run():
     if args.poscars is None and args.derivatives is None and args.samples is None:
         raise RuntimeError("Structure files are required.")
 
+    print_credit()
     np.set_printoptions(legacy="1.21")
     clupan = PyclupanFeatures(args.cluster)
     if args.derivatives:

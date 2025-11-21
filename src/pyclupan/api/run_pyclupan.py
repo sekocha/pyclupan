@@ -5,6 +5,7 @@ import signal
 
 import numpy as np
 
+from pyclupan.api.api_utils import print_credit
 from pyclupan.api.pyclupan import Pyclupan
 
 
@@ -105,6 +106,7 @@ def run():
 
     args = parser.parse_args()
 
+    print_credit()
     np.set_printoptions(legacy="1.21")
     clupan = Pyclupan(verbose=True)
 
