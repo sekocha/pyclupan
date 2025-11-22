@@ -69,4 +69,4 @@ def run():
         clupan.load_poscars(args.poscars, element_strings=args.element_strings)
 
     clupan.eval_cluster_functions()
-    clupan.save(filename="pyclupan_features.hdf5")
+    clupan.save_features(filename="pyclupan_features.hdf5")

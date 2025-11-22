@@ -216,6 +216,11 @@ class Lattice:
         coeffs = [self._spin_poly[i] for i in basis_ids]
         return np.array(coeffs)
 
+    #     @property
+    #     def get_endmembers(self):
+    #         """Return endmembers and their labelings."""
+    #         elements = self._elements_on_lattice
+
     @property
     def basis_on_lattice(self):
         """Return basis IDs on lattice."""

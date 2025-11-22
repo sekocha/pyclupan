@@ -14,12 +14,21 @@ class CEmodel:
     cluster_ids: Optional[np.ndarray] = None
     rmse: Optional[float] = None
 
+    def eval(self, cluster_functions: np.ndarray):
+        """Evaluate energies."""
+        if cluster_functions.shape[1] != self.coeffs.shape[0]:
+            raise RuntimeError("Inconsistent dimension of cluster functions and ECIs.")
 
-def find_matching_ids(ids: str, ids_ref: str):
+        energies = cluster_functions @ self.coeffs
+        energies += self.intercept
+        return energies
+
+
+def find_matching_ids(ids: np.ndarray, ids_ref: np.ndarray):
     """Find matching of two ID sets."""
     order = []
     for i in ids_ref:
-        match = np.where(ids == i)[0]
+        match = np.where(np.array(ids) == i)[0]
         if len(match) == 0:
             order.append(None)
         else:
@@ -68,7 +77,7 @@ def load_ecis(filename: str = "pyclupan_ecis.yaml"):
     """Load interaction."""
     data = yaml.safe_load(open(filename))
     intercept = data["intercept"]
-    cluster_ids = [d["id"] for d in data["eci"]]
-    coeffs = [d["coeff"] for d in data["eci"]]
+    cluster_ids = np.array([d["id"] for d in data["eci"]]).astype(int)
+    coeffs = np.array([d["coeff"] for d in data["eci"]])
     model = CEmodel(coeffs, intercept, cluster_ids=cluster_ids)
     return model

@@ -16,6 +16,7 @@ from pyclupan.features.run_correlation import (
     run_correlation,
     run_correlation_from_structures,
 )
+from pyclupan.prediction.formation_energy_utils import get_formation_energies
 from pyclupan.regression.regression_utils import load_ecis
 
 
@@ -28,6 +29,7 @@ class PyclupanCalc:
         verbose: bool = False,
     ):
         """Init method.
+
         Parameter
         ---------
         clusters_yaml: Pyclupan result file for cluster attributes.
@@ -36,12 +38,12 @@ class PyclupanCalc:
 
         cluster_res = load_clusters_yaml(clusters_yaml)
         self._lattice, self._clusters, _, self._spin_clusters = cluster_res
-        self.clear_structures()
 
         self._cluster_functions = None
         self._structure_ids = None
-
         self._model = None
+
+        self.clear_structures()
 
     def clear_structures(self):
         """Clear structures and labelings to be evaluated."""
@@ -54,12 +56,14 @@ class PyclupanCalc:
         return self
 
     def load_ecis(self, filename: str = "pyclupan_ecis.yaml"):
-        """Load effective cluster interactions."""
+        """Load effective cluster interactions.
+
+        Parameter
+        ---------
+        filename: File of ECIs from regression.
+        """
         self._model = load_ecis(filename)
         self._spin_clusters = [self._spin_clusters[i] for i in self._model.cluster_ids]
-        for cl in self._spin_clusters:
-            print(cl)
-
         return self
 
     def load_poscars(
@@ -69,8 +73,8 @@ class PyclupanCalc:
     ):
         """Load POSCAR files used for evaluating features.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         poscars: POSCAR file or List of POSCAR files.
         element_strings: Element strings.
             The location index corresponds to label integer.
@@ -124,8 +128,8 @@ class PyclupanCalc:
     ):
         """Set labelings.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         unitcell: Unitcell.
         supercell_matrix: Supercell matrix.
         labelings: Labelings for active sites.
@@ -202,7 +206,43 @@ class PyclupanCalc:
             print("Evaluating cluster functions from structures.", flush=True)
         return self._eval_cluster_functions_from_structures()
 
-    def save(self, filename: str = "pyclupan_features.hdf5"):
+    def eval_energies(self):
+        """Evaluate energies."""
+        if self._model is None:
+            raise RuntimeError("CE model not found.")
+
+        if self._cluster_functions is None:
+            self.eval_cluster_functions()
+
+        energies = self._model.eval(self._cluster_functions)
+        return energies
+
+    def eval_formation_energies(
+        self,
+        chemical_comps_end_members: Optional[np.ndarray] = None,
+    ):
+        """Evaluate formation energies.
+
+        Parameters
+        ----------
+        chemical_comps_end_members: Chemical compositions for end members.
+            shape=(n_end_members, n_type),
+            Each row corresponds to number of atoms for each end member.
+            For example, if SnO and SnO2 are endmembers that are used
+            to define the composition, this array should be given as
+            chemical_comps_end_members = [[1, 1], [1, 2]].
+        """
+        get_formation_energies(
+            self._lattice,
+            chemical_comps_end_members=chemical_comps_end_members,
+        )
+        # if chemical_comps_end_members is None:
+        #     elements = self._lattice.elements_on_lattice
+        #     if len(elements) == 1:
+        #         chemical_comps_end_members = np.eye(len(elements[0]))
+        # print(chemical_comps_end_members)
+
+    def save_features(self, filename: str = "pyclupan_features.hdf5"):
         """Save features in HDF5 format."""
         if self._cluster_functions is None:
             raise RuntimeError("Cluster functions not found.")
@@ -212,6 +252,7 @@ class PyclupanCalc:
             ids=self._structure_ids,
             filename=filename,
         )
+        return self
 
     @property
     def element_strings(self):
