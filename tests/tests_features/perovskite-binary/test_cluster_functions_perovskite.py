@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.api.pyclupan_features import PyclupanFeatures
+from pyclupan.api.pyclupan_calc import PyclupanCalc
 from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
@@ -12,8 +12,8 @@ cwd = Path(__file__).parent
 
 def test_eval_cluster_functions_from_derivatives():
     """Test eval_cluster_functions."""
-    pyclupan = PyclupanFeatures(cluster_yaml=str(cwd) + "/pyclupan_cluster.yaml")
-    pyclupan.load_derivative_yaml(str(cwd) + "/pyclupan_derivatives.yaml")
+    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
+    pyclupan.load_derivatives_yaml(str(cwd) + "/pyclupan_derivatives.yaml")
     cluster_functions = pyclupan.eval_cluster_functions()
 
     cf_true = np.array(
@@ -37,7 +37,7 @@ def test_eval_cluster_functions_from_derivatives():
 def test_eval_cluster_functions_from_poscars():
     """Test eval_cluster_functions."""
     element_strings = ("Sr", "Ti", "O", "V")
-    features = PyclupanFeatures(str(cwd) + "/pyclupan_cluster.yaml")
+    features = PyclupanCalc(str(cwd) + "/pyclupan_clusters.yaml")
     features.load_poscars(
         [str(cwd) + "/derivative-1", str(cwd) + "/derivative-2"],
         element_strings=element_strings,
@@ -72,7 +72,7 @@ def test_eval_cluster_functions_from_poscars():
 
 def test_eval_cluster_functions_from_labelings():
     """Test eval_cluster_functions"""
-    features = PyclupanFeatures(str(cwd) + "/pyclupan_cluster.yaml")
+    features = PyclupanCalc(str(cwd) + "/pyclupan_clusters.yaml")
     unitcell = Poscar(str(cwd) + "/perovskite-unitcell").structure
     hnf = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 2]])
     labelings = np.array(
@@ -81,11 +81,12 @@ def test_eval_cluster_functions_from_labelings():
             [2, 3, 3, 3, 2, 3],
         ]
     )
-    cluster_functions = features.eval_cluster_functions(
+    features.set_labelings(
         unitcell=unitcell,
         supercell_matrix=hnf,
         labelings=labelings,
     )
+    cluster_functions = features.eval_cluster_functions()
     cf_true = np.array(
         [
             [

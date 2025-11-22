@@ -3,7 +3,7 @@
 from typing import Optional
 
 from pyclupan.features.features_utils import load_cluster_functions_hdf5
-from pyclupan.regression.regression_utils import check_data, load_energy_dat, save_eci
+from pyclupan.regression.regression_utils import check_data, load_energy_dat, save_ecis
 from pyclupan.regression.solvers import solver_lasso, solver_ridge
 
 
@@ -115,9 +115,9 @@ class PyclupanRegression:
         )
         return self
 
-    def save(self, filename: str = "pyclupan_eci.yaml"):
+    def save(self, filename: str = "pyclupan_ecis.yaml"):
         """Save coefficients and intercept."""
-        save_eci(self.coeffs, self.intercept, filename=filename)
+        save_ecis(self.coeffs, self.intercept, filename=filename)
         return self
 
     @property

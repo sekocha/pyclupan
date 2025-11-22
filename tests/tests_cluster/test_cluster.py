@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from pyclupan.api.pyclupan import Pyclupan
-from pyclupan.cluster.cluster_io import load_cluster_yaml
+from pyclupan.cluster.cluster_io import load_clusters_yaml
 
 cwd = Path(__file__).parent
 
@@ -79,10 +79,10 @@ def test_fcc():
     assert n_combs_all == [3, 24, 119, 72]
 
 
-def test_load_cluster():
-    """Test load cluster.yaml"""
-    filename = str(cwd) + "/pyclupan_cluster.yaml"
-    unitcell, clusters, el_clusters, _ = load_cluster_yaml(filename)
+def test_load_clusters():
+    """Test load clusters.yaml"""
+    filename = str(cwd) + "/pyclupan_clusters.yaml"
+    unitcell, clusters, el_clusters, _ = load_clusters_yaml(filename)
     assert len(clusters) == 52
     assert len(el_clusters) == 467
 

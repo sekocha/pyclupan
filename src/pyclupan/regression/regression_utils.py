@@ -48,7 +48,7 @@ def load_energy_dat(energy_dat: str):
     return ids, energies
 
 
-def save_eci(
+def save_ecis(
     coeffs: np.array,
     intercept: float,
     filename: str = "pyclupan_eci.yaml",
@@ -64,7 +64,7 @@ def save_eci(
                 print("  coeff:", c, file=f)
 
 
-def load_eci(filename: str = "pyclupan_eci.yaml"):
+def load_ecis(filename: str = "pyclupan_ecis.yaml"):
     """Load interaction."""
     data = yaml.safe_load(open(filename))
     intercept = data["intercept"]

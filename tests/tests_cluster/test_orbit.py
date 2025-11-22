@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pyclupan.cluster.cluster_io import load_cluster_yaml
+from pyclupan.cluster.cluster_io import load_clusters_yaml
 from pyclupan.core.spglib_utils import get_symmetry
 from pyclupan.features.orbit_utils import find_orbit_unitcell
 
@@ -11,8 +11,8 @@ cwd = Path(__file__).parent
 
 def test_fcc():
     """Test cluster orbit search in fcc."""
-    filename = str(cwd) + "/pyclupan_cluster.yaml"
-    unitcell, clusters, _, _ = load_cluster_yaml(filename)
+    filename = str(cwd) + "/pyclupan_clusters.yaml"
+    unitcell, clusters, _, _ = load_clusters_yaml(filename)
     rotations, translations = get_symmetry(unitcell)
 
     n_orbits = []

@@ -4,14 +4,14 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.derivative.derivative_utils import DerivativesSet, load_derivative_yaml
+from pyclupan.derivative.derivative_utils import DerivativesSet, load_derivatives_yaml
 
 cwd = Path(__file__).parent
 
 
 def test_derivatives_classes():
     """Test Derivatives and DerivativesSet."""
-    ds_set = load_derivative_yaml(str(cwd) + "/pyclupan_derivatives_3.yaml")
+    ds_set = load_derivatives_yaml(str(cwd) + "/pyclupan_derivatives_3.yaml")
     assert len(ds_set) == 3
 
     files = [
@@ -20,7 +20,7 @@ def test_derivatives_classes():
     ]
     ds_set = DerivativesSet([])
     for f in files:
-        ds = load_derivative_yaml(f)
+        ds = load_derivatives_yaml(f)
         ds_set.append(ds)
     assert len(ds_set) == 10
 

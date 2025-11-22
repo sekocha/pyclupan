@@ -138,12 +138,12 @@ class Pyclupan:
         ---------
         filename: YAML file for saving derivative structures.
         """
-        from pyclupan.derivative.derivative_utils import write_derivative_yaml
+        from pyclupan.derivative.derivative_utils import write_derivatives_yaml
 
         if self._derivs_set is None:
             raise RuntimeError("Derivative structures not found.")
 
-        fname_output = write_derivative_yaml(
+        fname_output = write_derivatives_yaml(
             self._derivs_set,
             self._zdd,
             filename=filename,
@@ -163,9 +163,9 @@ class Pyclupan:
         ---------
         filename: YAML file for derivative structures.
         """
-        from pyclupan.derivative.derivative_utils import load_derivative_yaml
+        from pyclupan.derivative.derivative_utils import load_derivatives_yaml
 
-        self._derivs_set = load_derivative_yaml(filename=filename)
+        self._derivs_set = load_derivatives_yaml(filename=filename)
         return self
 
     def sample_derivatives(

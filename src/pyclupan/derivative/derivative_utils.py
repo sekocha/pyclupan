@@ -309,7 +309,7 @@ def _write_list_no_space(a: list, file):
     print(*list(a), sep=",", end="]\n", file=file)
 
 
-def write_derivative_yaml(
+def write_derivatives_yaml(
     derivs_set: DerivativesSet,
     zdd: Any,
     filename: str = "derivatives.yaml",
@@ -361,7 +361,7 @@ def write_derivative_yaml(
     return filename
 
 
-def load_derivative_yaml(filename: str = "pyclupan_derivatives.yaml"):
+def load_derivatives_yaml(filename: str = "pyclupan_derivatives.yaml"):
     """Load labelings of derivative structures."""
     data = yaml.safe_load(open(filename))
     unitcell = load_cell(yaml_data=data, tag="unitcell")

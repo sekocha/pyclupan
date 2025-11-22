@@ -91,8 +91,8 @@ def save_cluster_yaml(
     f.close()
 
 
-def load_cluster_yaml(filename: str = "pyclupan_cluster.yaml"):
-    """Load cluster.yaml."""
+def load_clusters_yaml(filename: str = "pyclupan_clusters.yaml"):
+    """Load pyclupan_clusters.yaml."""
     yaml_data = yaml.safe_load(open(filename))
     unitcell = load_cell(yaml_data=yaml_data, tag="lattice_cell")
     elements_lattice = yaml_data["elements_on_lattice"]

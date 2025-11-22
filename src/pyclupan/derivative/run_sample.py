@@ -4,7 +4,7 @@ from typing import Literal, Optional, Union
 
 import numpy as np
 
-from pyclupan.derivative.derivative_utils import DerivativesSet, load_derivative_yaml
+from pyclupan.derivative.derivative_utils import DerivativesSet, load_derivatives_yaml
 
 
 def run_sampling_derivatives(
@@ -20,11 +20,11 @@ def run_sampling_derivatives(
     TODO: Make docstrings.
     """
     if isinstance(files, str):
-        ds_set = load_derivative_yaml(files)
+        ds_set = load_derivatives_yaml(files)
     elif isinstance(files, (list, tuple, np.ndarray)):
         ds_set = DerivativesSet([])
         for f in files:
-            ds = load_derivative_yaml(f)
+            ds = load_derivatives_yaml(f)
             ds_set.append(ds)
 
     if method == "all":

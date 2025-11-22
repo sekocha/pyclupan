@@ -2,9 +2,11 @@
 
 # import time
 
+from typing import Optional
+
 import numpy as np
 
-from pyclupan.cluster.cluster_io import load_cluster_yaml
+from pyclupan.cluster.cluster_io import load_clusters_yaml
 from pyclupan.core.cell_utils import (
     get_unitcell_reps,
     is_cell_equal,
@@ -71,14 +73,40 @@ def calc_correlation(
     return cluster_functions
 
 
+def _check_cluster_attrs(
+    clusters_yaml: str = "pyclupan_cluster.yaml",
+    lattice: Optional[Lattice] = None,
+    clusters: Optional[list] = None,
+    spin_basis_clusters: Optional[list] = None,
+):
+    """Check cluster attributes."""
+    if lattice is None:
+        lattice, clusters, _, spin_basis_clusters = load_clusters_yaml(clusters_yaml)
+        return lattice, clusters, spin_basis_clusters
+
+    if clusters is None:
+        raise RuntimeError("Cluster attributes required.")
+    if spin_basis_clusters is None:
+        raise RuntimeError("Spin-basis cluster attributes required.")
+    return lattice, clusters, spin_basis_clusters
+
+
 def run_correlation_from_structures(
     structures: list[PolymlpStructure],
     element_strings: tuple,
-    cluster_yaml: str = "pyclupan_cluster.yaml",
+    clusters_yaml: str = "pyclupan_cluster.yaml",
+    lattice: Optional[Lattice] = None,
+    clusters: Optional[list] = None,
+    spin_basis_clusters: Optional[list] = None,
     verbose: bool = False,
 ):
     """Calculate cluster functions from derivative structure."""
-    lattice, clusters, _, spin_basis_clusters = load_cluster_yaml(cluster_yaml)
+    lattice, clusters, spin_basis_clusters = _check_cluster_attrs(
+        clusters_yaml,
+        lattice=lattice,
+        clusters=clusters,
+        spin_basis_clusters=spin_basis_clusters,
+    )
 
     cluster_functions = []
     for st in structures:
@@ -113,7 +141,10 @@ def run_correlation(
     unitcell: PolymlpStructure,
     supercell_matrix: np.ndarray,
     labelings: np.ndarray,
-    cluster_yaml: str = "pyclupan_cluster.yaml",
+    clusters_yaml: str = "pyclupan_cluster.yaml",
+    lattice: Optional[Lattice] = None,
+    clusters: Optional[list] = None,
+    spin_basis_clusters: Optional[list] = None,
     verbose: bool = False,
 ):
     """Calculate cluster functions.
@@ -123,14 +154,20 @@ def run_correlation(
     unitcell: Unitcell.
     supercell_matrix: Supercell matrix.
     labelings: Element labelings in supercell. Only active labelings should be given.
-    cluster_yaml: Name of output file for cluster search results.
+    clusters_yaml: Name of output file for cluster search results.
 
     Return
     ------
     cluster_functions: Cluster functions for labelings.
         shape: (n_labeling, n_features)
     """
-    lattice, clusters, _, spin_basis_clusters = load_cluster_yaml(cluster_yaml)
+    lattice, clusters, spin_basis_clusters = _check_cluster_attrs(
+        clusters_yaml,
+        lattice=lattice,
+        clusters=clusters,
+        spin_basis_clusters=spin_basis_clusters,
+    )
+
     if not is_cell_equal(unitcell, lattice.cell):
         raise RuntimeError("Unitcell in cluster.yaml is not equal to given unitcell.")
 
