@@ -112,3 +112,6 @@ def test_fcc():
     assert list(positions[7][0]) == [0, 0, 0, 1]
     assert list(positions[7][1]) == [0, 0, 1, 0]
     assert list(positions[7][2]) == [0, 1, 0, 0]
+
+
+# TODO: orbit in supercell

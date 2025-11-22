@@ -17,21 +17,17 @@ def test_composition():
     comp = Composition(chemical_comps_end_members=chemical_comps_end_members)
 
     val, _ = comp.get_composition([3, 4])
-    print(val)
     np.testing.assert_allclose(val, [2 / 3, 1 / 3], atol=1e-8)
     val, _ = comp.get_compositions([[3, 4], [2, 3], [4, 5]])
     np.testing.assert_allclose(
         val, [[2 / 3, 1 / 3], [1 / 2, 1 / 2], [3 / 4, 1 / 4]], atol=1e-8
     )
-    print(val)
 
     comp.energies_end_members = [0.1, 0.2]
     e_f = comp.compute_formation_energy(0.3, [3, 4])
     np.testing.assert_allclose(e_f, -1 / 30, atol=1e-8)
-    print(e_f)
 
     energies = [0.3, -0.4, 0.5]
     n_atoms_array = [[3, 4], [2, 3], [4, 5]]
     e_f = comp.compute_formation_energies(energies, n_atoms_array)
-    print(e_f)
     np.testing.assert_allclose(e_f, [-1 / 30, -0.35, 0.0], atol=1e-8)
