@@ -1,0 +1,29 @@
+"""Tests of utility functions for calculating features."""
+
+from pathlib import Path
+
+import numpy as np
+
+from pyclupan.features.features_utils import (
+    element_strings_to_labeling,
+    load_cluster_functions_hdf5,
+)
+
+cwd = Path(__file__).parent
+
+
+def test_element_strings_to_labeling():
+    """Test element_strings_to_labeling."""
+    elements = ["Ag", "Ag", "Ag", "Au", "Au"]
+    labeling = element_strings_to_labeling(elements, element_strings=("Ag", "Au"))
+    np.testing.assert_equal(labeling, [0, 0, 0, 1, 1])
+
+
+def test_load_cluster_functions_hdf5():
+    """Test load_cluster_functions_hdf5."""
+    cfs, ids = load_cluster_functions_hdf5(str(cwd) + "/pyclupan_features.hdf5")
+    np.testing.assert_allclose(cfs[2][3], 0.0, atol=1e-8)
+    np.testing.assert_allclose(cfs[10][34], 0.5, atol=1e-8)
+    assert ids[0] == "2-0-0"
+    assert ids[1] == "2-1-0"
+    assert ids[2] == "3-0-0"

@@ -12,6 +12,7 @@ def run_sampling_derivatives(
     element_strings: Optional[tuple] = None,
     n_samples: int = 100,
     method: Literal["all", "uniform", "random"] = "uniform",
+    save_poscars: bool = True,
 ):
     """Enumerate derivative structures.
 
@@ -34,4 +35,6 @@ def run_sampling_derivatives(
     elif method == "random":
         _ = ds_set.random(n_samples=n_samples)
 
-    ds_set.save(element_strings)
+    if save_poscars:
+        ds_set.save(element_strings)
+    return ds_set
