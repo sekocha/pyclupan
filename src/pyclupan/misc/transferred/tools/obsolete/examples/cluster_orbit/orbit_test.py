@@ -1,29 +1,27 @@
 #!/usr/bin/env python
-import numpy as np
 import time
 
+import numpy as np
 from mlptools.common.structure import Structure
 
+from pyclupan.cluster.cluster import Cluster, ClusterSet
+from pyclupan.common.io.yaml import Yaml
 from pyclupan.common.supercell import Supercell
 from pyclupan.common.symmetry import get_symmetry
-from pyclupan.common.io.yaml import Yaml
-from pyclupan.cluster.cluster import Cluster, ClusterSet
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     yaml = Yaml()
-    clusters, clusters_ele = yaml.parse_clusters_yaml(filename='clusters.yaml')
+    clusters, clusters_ele = yaml.parse_clusters_yaml(filename="clusters.yaml")
     st_prim = yaml.get_primitive_cell()
 
-    H = [[1,0,0],
-         [0,2,0],
-         [0,2,5]]
+    H = [[1, 0, 0], [0, 2, 0], [0, 2, 5]]
     n_cells = 10
 
     sup = Supercell(st_prim=st_prim, hnf=H)
     st_sup = sup.get_supercell()
     sup.set_primitive_lattice_representation()
-    
+
     t1 = time.time()
 
     rotations, translations = get_symmetry(st_prim)
@@ -44,11 +42,11 @@ if __name__ == '__main__':
     for cl in clusters.clusters:
         orbit = cl.find_orbit_supercell(sup)
         orbit_set.append(orbit)
-        #CN = cl.coordination_number(n_cells)
+        # CN = cl.coordination_number(n_cells)
 
     t4 = time.time()
 
-    print('-----')
+    print("-----")
     for cl in clusters_ele.clusters:
         cl.find_orbit_primitive_cell(distinguish_element=True)
 
@@ -59,13 +57,9 @@ if __name__ == '__main__':
 
     for cl in clusters_ele.clusters:
         orbit_pre = orbit_set[cl.idx]
-        orbit = cl.find_orbit_supercell(sup,
-                                        orbit=orbit_pre,
-                                        distinguish_element=True)
+        orbit = cl.find_orbit_supercell(sup, orbit=orbit_pre, distinguish_element=True)
         if orbit_set[cl.idx] is None:
             orbit_set[cl.idx] = orbit
-        #print(np.array(orbit.supercell_sites).shape)
+        # print(np.array(orbit.supercell_sites).shape)
     t6 = time.time()
-    print(t2-t1, t3-t2, t4-t3, t5-t4, t6-t5)
-
-
+    print(t2 - t1, t3 - t2, t4 - t3, t5 - t4, t6 - t5)

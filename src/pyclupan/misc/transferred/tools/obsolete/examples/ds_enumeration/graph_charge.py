@@ -1,100 +1,105 @@
 #!/usr/bin/env python
-import numpy as np
-import os, sys
 import argparse
-import time
-
+import os
 import signal
+import sys
+import time
 import warnings
 
+import numpy as np
 from mlptools.common.readvasp import Poscar
 from mlptools.common.structure import Structure
 
 from pyclupan.common.supercell import supercell
-from pyclupan.dd.dd_supercell import DDSupercell
 from pyclupan.dd.dd_enumeration import DDEnumeration
+from pyclupan.dd.dd_supercell import DDSupercell
 
-#from pyclupan.common.normal_form import get_nonequivalent_hnf
+# from pyclupan.common.normal_form import get_nonequivalent_hnf
 
-#from ddtools.labeling import nonequivalent_labelings, graphs_to_labelings
+# from ddtools.labeling import nonequivalent_labelings, graphs_to_labelings
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    warnings.simplefilter('ignore')
+    warnings.simplefilter("ignore")
 
     ps = argparse.ArgumentParser()
-    ps.add_argument('-p',
-                    '--poscar',
-                    type=str,
-                    default='POSCAR',
-                    help='poscar file for primitive cell')
+    ps.add_argument(
+        "-p",
+        "--poscar",
+        type=str,
+        default="POSCAR",
+        help="poscar file for primitive cell",
+    )
     args = ps.parse_args()
 
-#    ps.add_argument('-l','--lattice',type=int,nargs='*',default=[0],\
-#        help='sublattice index for substitution')
-#    ps.add_argument('-c','--comp',type=float,nargs='*',default=None,\
-#        help='composition [comp (type 0): c[0], comp (type 1): 1 - c[0]]')
-#    ps.add_argument('--incomplete',action='store_true',\
-#        help='Including incomplete structures (valid if comp == None)')
-#    ps.add_argument('--swap',action='store_true',\
-#        help='Including swapped structures (valid if comp == None)')
-#    ps.add_argument('--hnf',type=int, nargs=9, default=None,
-#        help='Hermite normal form')
-#    ps.add_argument('--index',type=int, default=None,
-#        help='Determinant of Hermite normal form (valid if hnf == None)')
-#    ps.add_argument('--output_structure',action='store_true',\
-#        help='Generating poscars and structure.pkl')
+    #    ps.add_argument('-l','--lattice',type=int,nargs='*',default=[0],\
+    #        help='sublattice index for substitution')
+    #    ps.add_argument('-c','--comp',type=float,nargs='*',default=None,\
+    #        help='composition [comp (type 0): c[0], comp (type 1): 1 - c[0]]')
+    #    ps.add_argument('--incomplete',action='store_true',\
+    #        help='Including incomplete structures (valid if comp == None)')
+    #    ps.add_argument('--swap',action='store_true',\
+    #        help='Including swapped structures (valid if comp == None)')
+    #    ps.add_argument('--hnf',type=int, nargs=9, default=None,
+    #        help='Hermite normal form')
+    #    ps.add_argument('--index',type=int, default=None,
+    #        help='Determinant of Hermite normal form (valid if hnf == None)')
+    #    ps.add_argument('--output_structure',action='store_true',\
+    #        help='Generating poscars and structure.pkl')
 
     axis, positions, n_atoms, _, _ = Poscar(args.poscar).get_structure()
 
-    H = np.array([[1,0,0], [0,1,0], [0,0,8]])
+    H = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 8]])
     axis_s, positions_s, n_atoms_s = supercell(H, axis, positions, n_atoms)
     st_s = Structure(axis_s, positions_s, n_atoms_s)
 
-    dd_sup = DDSupercell(axis_s, H, axis, 
-                         positions=positions_s,
-                         n_sites=n_atoms_s,
-                         n_elements=5,
-                         occupation=[[0],[1],[1],[2],[2]],
-                         one_of_k_rep=True,
-                         inactive_elements=[4])
+    dd_sup = DDSupercell(
+        axis_s,
+        H,
+        axis,
+        positions=positions_s,
+        n_sites=n_atoms_s,
+        n_elements=5,
+        occupation=[[0], [1], [1], [2], [2]],
+        one_of_k_rep=True,
+        inactive_elements=[4],
+    )
 
-    comp = [None, None, None, 5/6, 1/6]
+    comp = [None, None, None, 5 / 6, 1 / 6]
     comp_lb = [None for i in range(n_elements)]
     comp_ub = [None for i in range(n_elements)]
-    charge = [2,2,3,-2,0]
+    charge = [2, 2, 3, -2, 0]
 
     dd_enum = DDEnumeration(dd_sup, structure=st_s)
     gs_all = dd_enum.one_of_k()
-    print(' number of structures (one-of-k)        =', gs_all.len())
+    print(" number of structures (one-of-k)        =", gs_all.len())
 
     gs_charge = dd_enum.charge_balance(charge, comp=comp)
     gs_all &= gs_charge
-    print(' number of structures (charge balanced) =', gs_all.len())
+    print(" number of structures (charge balanced) =", gs_all.len())
 
     if comp.count(None) != len(comp):
         gs_comp = dd_enum.composition(comp)
         gs_all &= gs_comp
-        print(' number of structures (composition)     =', gs_all.len())
+        print(" number of structures (composition)     =", gs_all.len())
 
-    if comp_lb.count(None) != len(comp_lb) \
-        or comp_ub.count(None) != len(comp_ub):
+    if comp_lb.count(None) != len(comp_lb) or comp_ub.count(None) != len(comp_ub):
         gs_comp = dd_enum.composition_range(comp_lb, comp_ub)
         gs_all &= gs_comp
-        print(' number of structures (composition)     =', gs_all.len())
+        print(" number of structures (composition)     =", gs_all.len())
 
     t1 = time.time()
     gs_noneq = dd_enum.nonequivalent_permutations()
     gs_all &= gs_noneq
     t2 = time.time()
-    print(' number of structures (nonequiv.)       =', gs_all.len())
-    print(' elapsed time (nonequiv.)       =', t2-t1)
+    print(" number of structures (nonequiv.)       =", gs_all.len())
+    print(" elapsed time (nonequiv.)       =", t2 - t1)
 
     labelings = dd_sup.convert_graphs_to_labelings(gs_all)
     t3 = time.time()
-    print(' elapsed time (labeling)        =', t3-t2)
+    print(" elapsed time (labeling)        =", t3 - t2)
 
 
 ###def labelings_to_structures(uniq, st):
@@ -140,7 +145,7 @@ if __name__ == '__main__':
 ###    permutation_map = [uniq_map.index(v) for k, v in sorted(hnfmap.items())]
 ###    return nonequiv_permutation, nonequiv_permutation_lt, permutation_map
 ###
-###           
+###
 ###
 ####    if hnf is not None:
 ####        hnf_array = [hnf]
