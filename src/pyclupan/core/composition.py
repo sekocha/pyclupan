@@ -103,3 +103,8 @@ class Composition:
     def compositions(self):
         """Return compositions."""
         return self._comp
+
+    @property
+    def compositions_endmembers(self):
+        """Return compositions of endmembers."""
+        return np.eye(self._composition_axis.shape[1])

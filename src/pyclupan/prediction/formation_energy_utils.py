@@ -3,6 +3,7 @@
 from typing import Optional
 
 import numpy as np
+from scipy.spatial import ConvexHull
 
 from pyclupan.core.composition import Composition
 from pyclupan.core.lattice import Lattice
@@ -59,7 +60,6 @@ def get_formation_energies(
     ----------
     energies: Energies per unitcell.
     """
-    n_cells = np.sum(n_atoms_array, axis=1) / np.sum(lattice.cell.n_atoms)
     if structures is None and labelings is None:
         raise RuntimeError("structures or labelings required.")
 
@@ -106,8 +106,36 @@ def get_formation_energies(
     comp = Composition(chemical_comps_end_members)
     comp.energies_end_members = model.eval(cluster_functions)
 
+    n_cells = np.sum(n_atoms_array, axis=1) / np.sum(lattice.cell.n_atoms)
     formation_energies = comp.compute_formation_energies(
         energies * n_cells, n_atoms_array
     )
     compositions = comp.compositions
+
+    compositions = np.vstack([compositions, comp.compositions_endmembers])
+    fe_end = np.zeros(comp.compositions_endmembers.shape[0])
+    formation_energies = np.concatenate([formation_energies, fe_end])
+
     return formation_energies, compositions
+
+
+def find_convex_hull(compositions: np.ndarray, formation_energies: np.ndarray):
+    """Find convex hull of formation energies."""
+    if compositions.shape[0] != formation_energies.shape[0]:
+        raise RuntimeError("Inconsistent sizes of compositions and energies.")
+
+    d_target = np.hstack([compositions[:, 1:], formation_energies.reshape((-1, 1))])
+    ch = ConvexHull(d_target)
+    v_convex = np.unique(ch.simplices)
+
+    compositions_convex = compositions[v_convex]
+    formation_energies_convex = formation_energies[v_convex]
+    lower_convex = formation_energies_convex < 1e-10
+
+    convex_data = np.hstack(
+        [
+            compositions_convex[lower_convex],
+            formation_energies_convex[lower_convex].reshape((-1, 1)),
+        ]
+    )
+    return convex_data
