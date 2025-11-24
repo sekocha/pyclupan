@@ -24,6 +24,8 @@ class Composition:
 
         self._energies_end = None
 
+        self._comp = None
+
     def get_composition(self, n_atoms: np.ndarray):
         """Return composition.
 
@@ -35,8 +37,8 @@ class Composition:
             raise RuntimeError("The composition not in the given compositional space.")
 
         partition = self._composition_axis_inv @ n_atoms
-        comp = partition / np.sum(partition)
-        return comp, partition
+        self._comp = partition / np.sum(partition)
+        return self._comp, partition
 
     def get_compositions(self, n_atoms_array: np.ndarray):
         """Return compositions.
@@ -52,15 +54,18 @@ class Composition:
 
         partition = self._composition_axis_inv @ n_atoms
         partition = partition.T
-        comp = partition / np.sum(partition, axis=1)[:, None]
-        return comp, partition
+        self._comp = partition / np.sum(partition, axis=1)[:, None]
+        return self._comp, partition
 
     def compute_formation_energy(self, energy: float, n_atoms: np.ndarray):
         """Compute formation energy.
 
         Energy per n_atoms must be given.
         """
-        _, partition = self.get_composition(n_atoms)
+        if self._energies_end is None:
+            print("Energies of endmembers required.")
+
+        self._comp, partition = self.get_composition(n_atoms)
         e_end = self._energies_end @ partition
         return (energy - e_end) / np.sum(partition)
 
@@ -73,7 +78,9 @@ class Composition:
 
         Energy per n_atoms must be given.
         """
-        _, partition = self.get_compositions(n_atoms_array)
+        if self._energies_end is None:
+            print("Energies of endmembers required.")
+        self._comp, partition = self.get_compositions(n_atoms_array)
         e_end = self._energies_end @ partition.T
         return (energies - e_end) / np.sum(partition, axis=1)
 
@@ -91,3 +98,8 @@ class Composition:
         if self._composition_axis.shape[1] != len(e):
             raise RuntimeError("Size of Energies for end members inconsitent.")
         self._energies_end = e
+
+    @property
+    def compositions(self):
+        """Return compositions."""
+        return self._comp

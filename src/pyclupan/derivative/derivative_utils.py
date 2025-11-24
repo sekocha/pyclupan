@@ -124,8 +124,11 @@ class Derivatives:
             raise RuntimeError("Sampled labelings not found.")
         return [(self.supercell_size, self.supercell_id, i) for i in self._sample]
 
-    def _get_complete_labelings(self, active_labelings: np.ndarray):
+    def get_complete_labelings(self, active_labelings: Optional[np.ndarray] = None):
         """Return complete labelings from both active and inactive labelings."""
+        if active_labelings is None:
+            active_labelings = self.active_labelings
+
         return get_complete_labelings(
             active_labelings,
             self.inactive_labeling,
@@ -145,7 +148,7 @@ class Derivatives:
         """Return complete labelings from both active and inactive labelings."""
         if self._sample is None:
             raise RuntimeError("Sampled labelings not found.")
-        return self._get_complete_labelings(self.sampled_active_labelings)
+        return self.get_complete_labelings(self.sampled_active_labelings)
 
     def save(self, element_strings: tuple, path: str = "poscars"):
         """Save derivative structures sampled."""

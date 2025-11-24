@@ -177,6 +177,20 @@ class Lattice:
         """Check if labelings are composed of active elements."""
         return np.all(np.isin(elements, self._active_elements))
 
+    def lattice_supercell(self, supercell: PolymlpStructure):
+        """Return Lattice instance for supercell representation."""
+        lattice_supercell = copy.deepcopy(self)
+        lattice_supercell.cell = supercell
+        lattice_supercell._reduced_cell = None
+        lattice_supercell._active_sites = None
+        lattice_supercell._inactive_sites = None
+        lattice_supercell._map_full_to_active_rep = None
+
+        if len(self._cell.n_atoms) != len(supercell.n_atoms):
+            raise RuntimeError("Number of sublattices in supercell is not consistent.")
+
+        return lattice_supercell
+
     def to_spins(self, elements: np.ndarray):
         """Convert elements (labelings) to spins.
 
@@ -196,20 +210,6 @@ class Lattice:
                     spins_assigned[:, begin:end][elements[:, begin:end] == e] = s
                 begin = end
         return spins_assigned
-
-    def lattice_supercell(self, supercell: PolymlpStructure):
-        """Return Lattice instance for supercell representation."""
-        lattice_supercell = copy.deepcopy(self)
-        lattice_supercell.cell = supercell
-        lattice_supercell._reduced_cell = None
-        lattice_supercell._active_sites = None
-        lattice_supercell._inactive_sites = None
-        lattice_supercell._map_full_to_active_rep = None
-
-        if len(self._cell.n_atoms) != len(supercell.n_atoms):
-            raise RuntimeError("Number of sublattices in supercell is not consistent.")
-
-        return lattice_supercell
 
     def get_spin_polynomials(self, basis_ids: np.ndarray):
         """Return spin polynomial coefficients for given basis IDs."""

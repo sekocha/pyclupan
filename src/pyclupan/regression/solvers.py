@@ -3,7 +3,7 @@
 import numpy as np
 from sklearn import linear_model
 
-from pyclupan.regression.regression_utils import CEmodel
+from pyclupan.core.model import CEmodel
 
 
 def rmse(y_true: np.ndarray, y_pred: np.ndarray):

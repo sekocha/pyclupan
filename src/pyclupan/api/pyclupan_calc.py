@@ -16,7 +16,10 @@ from pyclupan.features.run_correlation import (
     run_correlation,
     run_correlation_from_structures,
 )
-from pyclupan.prediction.formation_energy_utils import get_formation_energies
+from pyclupan.prediction.formation_energy_utils import (
+    get_chemical_compositions,
+    get_formation_energies,
+)
 from pyclupan.regression.regression_utils import load_ecis
 
 
@@ -42,6 +45,8 @@ class PyclupanCalc:
         self._cluster_functions = None
         self._structure_ids = None
         self._model = None
+        self._energies = None
+        self._formation_energies = None
 
         self.clear_structures()
 
@@ -155,12 +160,15 @@ class PyclupanCalc:
             spin_basis_clusters=self._spin_clusters,
         )
         self._structure_ids = [str(i).zfill(5) for i, l in enumerate(self._labelings)]
+        # TODO: Use complete labelings
+        self._n_atoms_array = get_chemical_compositions(labelings=self._labelings)
         return self._cluster_functions
 
     def _eval_cluster_functions_from_derivatives(self):
         """Evaluate cluster functions from derivative structure set."""
         self._cluster_functions = []
         self._structure_ids = []
+        self._n_atoms_array = []
         for d in self._derivative_set:
             cf = run_correlation(
                 unitcell=d.unitcell,
@@ -172,6 +180,9 @@ class PyclupanCalc:
             )
             self._cluster_functions.extend(cf)
             self._structure_ids.extend(d.structure_ids)
+            self._n_atoms_array.extend(
+                get_chemical_compositions(labelings=d.get_complete_labelings())
+            )
         self._cluster_functions = np.array(self._cluster_functions)
         return self._cluster_functions
 
@@ -214,33 +225,43 @@ class PyclupanCalc:
         if self._cluster_functions is None:
             self.eval_cluster_functions()
 
-        energies = self._model.eval(self._cluster_functions)
-        return energies
+        self._energies = self._model.eval(self._cluster_functions)
+        return self._energies
 
     def eval_formation_energies(
         self,
-        chemical_comps_end_members: Optional[np.ndarray] = None,
+        structures: Optional[list[PolymlpStructure]] = None,
+        element_strings: Optional[tuple] = None,
+        labelings: Optional[np.ndarray] = None,
+        supercell_matrices: Optional[np.ndarray] = None,
     ):
         """Evaluate formation energies.
 
         Parameters
         ----------
-        chemical_comps_end_members: Chemical compositions for end members.
-            shape=(n_end_members, n_type),
-            Each row corresponds to number of atoms for each end member.
-            For example, if SnO and SnO2 are endmembers that are used
-            to define the composition, this array should be given as
-            chemical_comps_end_members = [[1, 1], [1, 2]].
+        TODO: Add parameters.
         """
-        get_formation_energies(
+        if self._energies is None:
+            raise RuntimeError("Energies not found.")
+        if self._model is None:
+            raise RuntimeError("CE model not found.")
+        if self._n_atoms_array is None:
+            raise RuntimeError("Number of atoms not found.")
+
+        formation_energies = get_formation_energies(
+            self._energies,
+            self._n_atoms_array,
+            self._model,
             self._lattice,
-            chemical_comps_end_members=chemical_comps_end_members,
+            self._clusters,
+            self._spin_clusters,
+            structures=structures,
+            element_strings=element_strings,
+            labelings=labelings,
+            supercell_matrices=supercell_matrices,
+            verbose=self._verbose,
         )
-        # if chemical_comps_end_members is None:
-        #     elements = self._lattice.elements_on_lattice
-        #     if len(elements) == 1:
-        #         chemical_comps_end_members = np.eye(len(elements[0]))
-        # print(chemical_comps_end_members)
+        return formation_energies
 
     def save_features(self, filename: str = "pyclupan_features.hdf5"):
         """Save features in HDF5 format."""
@@ -253,6 +274,22 @@ class PyclupanCalc:
             filename=filename,
         )
         return self
+
+    @property
+    def structures(self):
+        """Return structures."""
+        return self._structures
+
+    @structures.setter
+    def structures(self, strs: list[PolymlpStructure]):
+        """Set structures to be calculated.
+
+        Parameter
+        ---------
+        str: List of structures to be calculated.
+        """
+        self._structures = strs
+        self._structure_ids = ["str-" + (i) for i in range(len(strs))]
 
     @property
     def element_strings(self):
