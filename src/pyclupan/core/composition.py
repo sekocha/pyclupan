@@ -82,7 +82,8 @@ class Composition:
             print("Energies of endmembers required.")
         self._comp, partition = self.get_compositions(n_atoms_array)
         e_end = self._energies_end @ partition.T
-        return (energies - e_end) / np.sum(partition, axis=1)
+        e_form = (energies - e_end) / np.sum(partition, axis=1)
+        return e_form
 
     @property
     def energies_end_members(self):

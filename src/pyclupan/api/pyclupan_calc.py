@@ -11,15 +11,21 @@ from pyclupan.derivative.derivative_utils import (
     load_derivatives_yaml,
     load_sample_attrs_yaml,
 )
-from pyclupan.features.features_utils import save_cluster_functions_hdf5
+from pyclupan.features.features_utils import (
+    load_cluster_functions_hdf5,
+    save_cluster_functions_hdf5,
+)
 from pyclupan.features.run_correlation import (
     run_correlation,
     run_correlation_from_structures,
 )
 from pyclupan.prediction.formation_energy_utils import (
+    append_formation_energies_endmembers,
+    find_convex_hull,
     get_chemical_compositions,
     get_formation_energies,
 )
+from pyclupan.prediction.prediction_io import load_energies_hdf5, save_energies_hdf5
 from pyclupan.regression.regression_utils import load_ecis
 
 
@@ -46,7 +52,10 @@ class PyclupanCalc:
         self._structure_ids = None
         self._model = None
         self._energies = None
+
         self._formation_energies = None
+        self._compositions = None
+        self._convex = None
 
         self.clear_structures()
 
@@ -217,6 +226,36 @@ class PyclupanCalc:
             print("Evaluating cluster functions from structures.", flush=True)
         return self._eval_cluster_functions_from_structures()
 
+    def save_features(self, filename: str = "pyclupan_features.hdf5"):
+        """Save features in HDF5 format.
+
+        Parameter
+        ---------
+        filename: HDF5 file for outputing features.
+        """
+        if self._cluster_functions is None:
+            raise RuntimeError("Cluster functions not found.")
+
+        save_cluster_functions_hdf5(
+            self._cluster_functions,
+            ids=self._structure_ids,
+            filename=filename,
+        )
+        return self
+
+    def load_features(self, filename: str = "pyclupan_features.hdf5"):
+        """Load features in HDF5 format.
+
+        Parameter
+        ---------
+        filename: HDF5 file for features.
+        """
+
+        self._cluster_functions, self._structure_ids = load_cluster_functions_hdf5(
+            filename=filename,
+        )
+        return self
+
     def eval_energies(self):
         """Evaluate energies."""
         if self._model is None:
@@ -227,6 +266,29 @@ class PyclupanCalc:
 
         self._energies = self._model.eval(self._cluster_functions)
         return self._energies
+
+    def save_energies(self, filename: str = "pyclupan_energies.hdf5"):
+        """Save energies.
+
+        Parameter
+        ---------
+        filename: HDF5 file for outputing energies.
+        """
+        if self._energies is None:
+            raise RuntimeError("Energies not found.")
+
+        save_energies_hdf5(self._energies, self._structure_ids, filename=filename)
+        return self
+
+    def load_energies(self, filename: str = "pyclupan_energies.hdf5"):
+        """Load energies.
+
+        Parameter
+        ---------
+        filename: HDF5 file for energies.
+        """
+        self._energies, self._structure_ids = load_energies_hdf5(filename=filename)
+        return self
 
     def eval_formation_energies(
         self,
@@ -248,7 +310,7 @@ class PyclupanCalc:
         if self._n_atoms_array is None:
             raise RuntimeError("Number of atoms not found.")
 
-        formation_energies = get_formation_energies(
+        self._formation_energies, self._compositions = get_formation_energies(
             self._energies,
             self._n_atoms_array,
             self._model,
@@ -261,19 +323,13 @@ class PyclupanCalc:
             supercell_matrices=supercell_matrices,
             verbose=self._verbose,
         )
-        return formation_energies
-
-    def save_features(self, filename: str = "pyclupan_features.hdf5"):
-        """Save features in HDF5 format."""
-        if self._cluster_functions is None:
-            raise RuntimeError("Cluster functions not found.")
-
-        save_cluster_functions_hdf5(
-            self._cluster_functions,
-            ids=self._structure_ids,
-            filename=filename,
+        res = append_formation_energies_endmembers(
+            self._compositions,
+            self._formation_energies,
+            self._structure_ids,
         )
-        return self
+        self._convex = find_convex_hull(*res)
+        return self._formation_energies, self._compositions, self._convex
 
     @property
     def structures(self):
@@ -313,3 +369,13 @@ class PyclupanCalc:
     def cluster_functions(self):
         """Return cluster functions."""
         return self._cluster_functions
+
+    @property
+    def energies(self):
+        """Return energies (per unitcell)."""
+        return self._energies
+
+    @property
+    def formation_energies(self):
+        """Return formation energies (per unitcell)."""
+        return self._formation_energies

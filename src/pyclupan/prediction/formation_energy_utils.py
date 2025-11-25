@@ -58,7 +58,10 @@ def get_formation_energies(
 
     Parameters
     ----------
-    energies: Energies per unitcell.
+    energies: Energies per unitcell for structure set.
+    n_atoms_array: Numbers of atoms for structure set.
+    model: CEmodel instance used for calculating formation energies.
+    lattice: Lattice in unitcell representation.
     """
     if structures is None and labelings is None:
         raise RuntimeError("structures or labelings required.")
@@ -111,15 +114,28 @@ def get_formation_energies(
         energies * n_cells, n_atoms_array
     )
     compositions = comp.compositions
-
-    compositions = np.vstack([compositions, comp.compositions_endmembers])
-    fe_end = np.zeros(comp.compositions_endmembers.shape[0])
-    formation_energies = np.concatenate([formation_energies, fe_end])
-
     return formation_energies, compositions
 
 
-def find_convex_hull(compositions: np.ndarray, formation_energies: np.ndarray):
+def append_formation_energies_endmembers(
+    compositions: np.ndarray,
+    formation_energies: np.ndarray,
+    struture_ids: list,
+):
+    """Append formation energies for endmembers."""
+    n_type = compositions.shape[1]
+    compositions = np.vstack([compositions, np.eye(n_type)])
+    formation_energies = np.concatenate([formation_energies, np.zeros(n_type)])
+    for i in range(n_type):
+        struture_ids.append("Endmember-" + str(i + 1))
+    return compositions, formation_energies, struture_ids
+
+
+def find_convex_hull(
+    compositions: np.ndarray,
+    formation_energies: np.ndarray,
+    struture_ids: list,
+):
     """Find convex hull of formation energies."""
     if compositions.shape[0] != formation_energies.shape[0]:
         raise RuntimeError("Inconsistent sizes of compositions and energies.")
@@ -130,12 +146,16 @@ def find_convex_hull(compositions: np.ndarray, formation_energies: np.ndarray):
 
     compositions_convex = compositions[v_convex]
     formation_energies_convex = formation_energies[v_convex]
-    lower_convex = formation_energies_convex < 1e-10
+    struture_ids_convex = np.array(struture_ids)[v_convex]
 
+    lower_convex = formation_energies_convex < 1e-10
     convex_data = np.hstack(
         [
             compositions_convex[lower_convex],
             formation_energies_convex[lower_convex].reshape((-1, 1)),
+            struture_ids_convex[lower_convex].reshape((-1, 1)),
         ]
     )
+    index = np.lexsort(convex_data.T[:-2])
+    convex_data = convex_data[index]
     return convex_data
