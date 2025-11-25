@@ -2,6 +2,8 @@
 
 from typing import Optional
 
+import numpy as np
+
 from pyclupan.features.features_utils import load_cluster_functions_hdf5
 from pyclupan.regression.regression_utils import check_data, load_energy_dat, save_ecis
 from pyclupan.regression.solvers import solver_lasso, solver_ridge
@@ -24,6 +26,7 @@ class PyclupanRegression:
         self._y = None
 
         self._model = None
+        np.set_printoptions(legacy="1.21")
 
     def load_features(self, features_hdf5: str = "pyclupan_features.hdf5"):
         """Load feature data used as predictors.

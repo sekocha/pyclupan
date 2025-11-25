@@ -20,6 +20,7 @@ class Pyclupan:
         self._zdd = None
 
         self._clusters = None
+        np.set_printoptions(legacy="1.21")
 
     def load_poscar(self, poscar: str = "POSCAR") -> PolymlpStructure:
         """Parse POSCAR files.

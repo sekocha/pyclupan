@@ -25,7 +25,13 @@ from pyclupan.prediction.formation_energy_utils import (
     get_chemical_compositions,
     get_formation_energies,
 )
-from pyclupan.prediction.prediction_io import load_energies_hdf5, save_energies_hdf5
+from pyclupan.prediction.prediction_io import (
+    load_energies_hdf5,
+    load_formation_energies_hdf5,
+    save_convex_yaml,
+    save_energies_hdf5,
+    save_formation_energies_hdf5,
+)
 from pyclupan.regression.regression_utils import load_ecis
 
 
@@ -58,6 +64,7 @@ class PyclupanCalc:
         self._convex = None
 
         self.clear_structures()
+        np.set_printoptions(legacy="1.21")
 
     def clear_structures(self):
         """Clear structures and labelings to be evaluated."""
@@ -331,6 +338,55 @@ class PyclupanCalc:
         self._convex = find_convex_hull(*res)
         return self._formation_energies, self._compositions, self._convex
 
+    def save_formation_energies(
+        self,
+        filename: str = "pyclupan_formation_energies.hdf5",
+    ):
+        """Save formation energies.
+
+        Parameter
+        ---------
+        filename: HDF5 file for outputing formation energies.
+        """
+        if self._formation_energies is None:
+            raise RuntimeError("Formation energies not found.")
+
+        save_formation_energies_hdf5(
+            self._formation_energies,
+            self._compositions,
+            self._structure_ids,
+            filename=filename,
+        )
+        return self
+
+    def save_convex_hull_yaml(self, filename: str = "pyclupan_convexhull.yaml"):
+        """Save convex hull of formation energies.
+
+        Parameter
+        ---------
+        filename: Yaml file for outputing convex hull of formation energies.
+        """
+        if self._convex is None:
+            raise RuntimeError("Convex hull not found.")
+
+        save_convex_yaml(self._convex, filename=filename)
+        # TODO: POSCAR files.
+        return self
+
+    def load_formation_energies(
+        self,
+        filename: str = "pyclupan_formation_energies.hdf5",
+    ):
+        """Load formation energies.
+
+        Parameter
+        ---------
+        filename: HDF5 file for formation energies.
+        """
+        res = load_formation_energies_hdf5(filename=filename)
+        self._formation_energies, self._compositions, self._structure_ids = res
+        return self
+
     @property
     def structures(self):
         """Return structures."""
@@ -379,3 +435,8 @@ class PyclupanCalc:
     def formation_energies(self):
         """Return formation energies (per unitcell)."""
         return self._formation_energies
+
+    @property
+    def convexhull(self):
+        """Return convex hull of formation energies."""
+        return self._convex
