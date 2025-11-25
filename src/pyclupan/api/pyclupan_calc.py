@@ -48,9 +48,7 @@ class PyclupanCalc:
         self._verbose = verbose
 
         self._cf = ClusterFunctions(clusters_yaml=clusters_yaml, verbose=verbose)
-        self._spin_clusters = None
         self._cluster_functions = None
-
         self.clear_structures()
 
         self._model = None
@@ -79,7 +77,7 @@ class PyclupanCalc:
         """
         self._model = load_ecis(filename)
         self._cf.spin_basis_clusters = [
-            self._spin_clusters[i] for i in self._model.cluster_ids
+            self._cf.spin_basis_clusters[i] for i in self._model.cluster_ids
         ]
         return self
 
@@ -259,16 +257,19 @@ class PyclupanCalc:
             raise RuntimeError("Energies not found.")
         if self._model is None:
             raise RuntimeError("CE model not found.")
-        if self._n_atoms_array is None:
+
+        if self._cf.n_atoms_array is not None:
+            n_atoms_array = self._cf.n_atoms_array
+        elif self._n_atoms_array is not None:
+            n_atoms_array = self._n_atoms_array
+        else:
             raise RuntimeError("Number of atoms not found.")
 
         self._formation_energies, self._compositions = get_formation_energies(
             self._energies,
-            self._n_atoms_array,
+            n_atoms_array,
             self._model,
-            self._lattice,
-            self._clusters,
-            self._spin_clusters,
+            self._cf,
             structures=structures,
             element_strings=element_strings,
             labelings=labelings,

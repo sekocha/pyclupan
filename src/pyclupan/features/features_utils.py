@@ -1,5 +1,7 @@
 """Utility functions for calculating features."""
 
+from typing import Optional
+
 import h5py
 import numpy as np
 
@@ -32,6 +34,32 @@ def structure_to_lattice(
     if only_active:
         labelings_order = labelings_order[lattice_supercell.active_sites]
     return lattice_supercell, labelings_order
+
+
+def get_chemical_compositions(
+    structures: Optional[list[PolymlpStructure]] = None,
+    element_strings: Optional[tuple] = None,
+    labelings: Optional[np.ndarray] = None,
+):
+    """Return chemical compositions of endmembers."""
+    if structures is None and labelings is None:
+        raise RuntimeError("structures or labelings required.")
+
+    chemical_comps = []
+    if structures is not None:
+        if element_strings is None:
+            raise RuntimeError("Element strings required.")
+        for st in structures:
+            elements = np.array(st.elements)
+            chem = [np.sum(elements == ele) for ele in element_strings]
+            chemical_comps.append(chem)
+    elif labelings is not None:
+        uniq_types = np.unique(labelings)
+        for single_labeling in labelings:
+            chem = [np.sum(single_labeling == t) for t in uniq_types]
+            chemical_comps.append(chem)
+    chemical_comps = np.array(chemical_comps)
+    return chemical_comps
 
 
 def save_cluster_functions_hdf5(

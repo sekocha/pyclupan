@@ -20,32 +20,24 @@ def test_prediction_from_poscars():
     pyclupan.element_strings = ("Ag", "Au")
     pyclupan.eval_cluster_functions()
     pyclupan.eval_energies()
-
-    energies_true = np.array([-2.99605414, -3.11993823])
-    np.testing.assert_allclose(pyclupan.energies, energies_true, atol=1e-6)
-
     labelings_end = np.array([[0], [1]])
     _ = pyclupan.eval_formation_energies(labelings=labelings_end)
 
-    print(pyclupan.formation_energies)
-    formation_energies_true = np.array([-2.99605414, -3.11993823])
-    np.testing.assert_allclose(
-        pyclupan.formation_energies, formation_energies_true, atol=1e-6
-    )
-    assert 1 == 0
+    energies_true = np.array([-2.99605414, -3.11993823])
+    f_energies_true = np.array([-0.02735838, -0.02568571])
+    np.testing.assert_allclose(pyclupan.energies, energies_true, atol=1e-6)
+    np.testing.assert_allclose(pyclupan.formation_energies, f_energies_true, atol=1e-6)
 
-    # chems = get_chemical_compositions(
-    #     structures=[st1, st2],
-    #     element_strings=("Ag", "Au"),
-    # )
-    # np.testing.assert_equal(chems, [[2, 2], [1, 3]])
-    # labelings = [
-    #     [0, 0, 0, 1, 2, 2, 3, 3, 3, 3],
-    #     [0, 0, 1, 1, 2, 2, 3, 3, 3, 3],
-    #     [0, 1, 1, 1, 2, 2, 3, 3, 3, 3],
-    # ]
-    # chems = get_chemical_compositions(labelings=labelings)
-    # np.testing.assert_equal(chems, [[3, 1, 2, 4], [2, 2, 2, 4], [1, 3, 2, 4]])
+    ch_true = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.5, 0.5, -0.027358375542346547],
+            [0.25, 0.75, -0.025685706225164306],
+            [0.0, 1.0, 0.0],
+        ]
+    )
+    ch_pred = pyclupan.convexhull[:, :-1].astype(float)
+    np.testing.assert_allclose(ch_pred, ch_true, atol=1e-6)
 
 
 def test_prediction_from_structures():
@@ -53,8 +45,29 @@ def test_prediction_from_structures():
     pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
 
-    _ = Poscar(str(cwd) + "/derivative-1").structure
-    _ = Poscar(str(cwd) + "/derivative-2").structure
+    st1 = Poscar(str(cwd) + "/derivative-1").structure
+    st2 = Poscar(str(cwd) + "/derivative-2").structure
+    pyclupan.structures = [st1, st2]
+    pyclupan.element_strings = ("Ag", "Au")
+    pyclupan.eval_energies()
+    labelings_end = np.array([[0], [1]])
+    _ = pyclupan.eval_formation_energies(labelings=labelings_end)
+
+    energies_true = np.array([-2.99605414, -3.11993823])
+    f_energies_true = np.array([-0.02735838, -0.02568571])
+    np.testing.assert_allclose(pyclupan.energies, energies_true, atol=1e-6)
+    np.testing.assert_allclose(pyclupan.formation_energies, f_energies_true, atol=1e-6)
+
+    ch_true = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.5, 0.5, -0.027358375542346547],
+            [0.25, 0.75, -0.025685706225164306],
+            [0.0, 1.0, 0.0],
+        ]
+    )
+    ch_pred = pyclupan.convexhull[:, :-1].astype(float)
+    np.testing.assert_allclose(ch_pred, ch_true, atol=1e-6)
 
 
 def test_prediction_from_labelings():

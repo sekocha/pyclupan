@@ -6,48 +6,17 @@ import numpy as np
 from scipy.spatial import ConvexHull
 
 from pyclupan.core.composition import Composition
-from pyclupan.core.lattice import Lattice
 from pyclupan.core.model import CEmodel
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
-from pyclupan.features.run_correlation import (
-    run_correlation,
-    run_correlation_from_structures,
-)
-
-
-def get_chemical_compositions(
-    structures: Optional[list[PolymlpStructure]] = None,
-    element_strings: Optional[tuple] = None,
-    labelings: Optional[np.ndarray] = None,
-):
-    """Return chemical compositions of endmembers."""
-    if structures is None and labelings is None:
-        raise RuntimeError("structures or labelings required.")
-
-    chemical_comps = []
-    if structures is not None:
-        if element_strings is None:
-            raise RuntimeError("Element strings required.")
-        for st in structures:
-            elements = np.array(st.elements)
-            chem = [np.sum(elements == ele) for ele in element_strings]
-            chemical_comps.append(chem)
-    elif labelings is not None:
-        uniq_types = np.unique(labelings)
-        for single_labeling in labelings:
-            chem = [np.sum(single_labeling == t) for t in uniq_types]
-            chemical_comps.append(chem)
-    chemical_comps = np.array(chemical_comps)
-    return chemical_comps
+from pyclupan.features.features_utils import get_chemical_compositions
+from pyclupan.features.run_correlation import ClusterFunctions
 
 
 def get_formation_energies(
     energies: np.ndarray,
     n_atoms_array: np.ndarray,
     model: CEmodel,
-    lattice: Lattice,
-    clusters: list,
-    spin_basis_clusters: list,
+    cf: ClusterFunctions,
     structures: Optional[list[PolymlpStructure]] = None,
     element_strings: Optional[tuple] = None,
     labelings: Optional[np.ndarray] = None,
@@ -61,22 +30,18 @@ def get_formation_energies(
     energies: Energies per unitcell for structure set.
     n_atoms_array: Numbers of atoms for structure set.
     model: CEmodel instance used for calculating formation energies.
-    lattice: Lattice in unitcell representation.
     """
     if structures is None and labelings is None:
         raise RuntimeError("structures or labelings required.")
 
+    unitcell = cf.lattice_unitcell.cell
+    cf.clear_structures()
     if structures is not None:
         if element_strings is None:
             raise RuntimeError("Element strings required.")
-        cluster_functions = run_correlation_from_structures(
-            structures,
-            element_strings,
-            lattice=lattice,
-            clusters=clusters,
-            spin_basis_clusters=spin_basis_clusters,
-            verbose=verbose,
-        )
+        cf.structures = structures
+        cf.element_strings = element_strings
+        cluster_functions = cf.eval()
     elif labelings is not None:
         labelings = np.array(labelings)
         if supercell_matrices is None:
@@ -88,16 +53,9 @@ def get_formation_energies(
         cluster_functions = []
         for single_labeling, supercell_matrix in zip(labelings, supercell_matrices):
             single_labeling = np.array([single_labeling])
-            cf = run_correlation(
-                unitcell=lattice.cell,
-                supercell_matrix=supercell_matrix,
-                labelings=single_labeling,
-                lattice=lattice,
-                clusters=clusters,
-                spin_basis_clusters=spin_basis_clusters,
-                verbose=verbose,
-            )
-            cluster_functions.append(cf[0])
+            cf.set_labelings(unitcell, supercell_matrix, single_labeling)
+            functions = cf.eval()
+            cluster_functions.append(functions[0])
         cluster_functions = np.array(cluster_functions)
 
     chemical_comps_end_members = get_chemical_compositions(
@@ -109,7 +67,7 @@ def get_formation_energies(
     comp = Composition(chemical_comps_end_members)
     comp.energies_end_members = model.eval(cluster_functions)
 
-    n_cells = np.sum(n_atoms_array, axis=1) / np.sum(lattice.cell.n_atoms)
+    n_cells = np.sum(n_atoms_array, axis=1) / np.sum(unitcell.n_atoms)
     formation_energies = comp.compute_formation_energies(
         energies * n_cells, n_atoms_array
     )

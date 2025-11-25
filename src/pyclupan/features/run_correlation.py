@@ -2,8 +2,6 @@
 
 # import time
 
-# from typing import Optional
-
 import numpy as np
 
 from pyclupan.cluster.cluster_io import load_clusters_yaml
@@ -21,6 +19,7 @@ from pyclupan.core.spin import eval_cluster_functions
 from pyclupan.derivative.derivative_utils import DerivativesSet
 from pyclupan.features.features_utils import (
     element_strings_to_labeling,
+    get_chemical_compositions,
     structure_to_lattice,
 )
 from pyclupan.features.orbit_utils import find_orbit
@@ -73,6 +72,245 @@ def calc_correlation(
     # t3 = time.time()
     # print(t2 - t1, t3-t2)
     return cluster_functions
+
+
+class ClusterFunctions:
+    """Class for calculating cluster functions."""
+
+    def __init__(
+        self,
+        clusters_yaml: str = "pyclupan_clusters.yaml",
+        verbose: bool = False,
+    ):
+        """Init method.
+
+        Parameter
+        ---------
+        clusters_yaml: Name of output file for cluster search results.
+        """
+        cluster_attrs = load_clusters_yaml(clusters_yaml)
+        self._lattice_unitcell = cluster_attrs[0]
+        self._clusters = cluster_attrs[1]
+        self._spin_basis_clusters = cluster_attrs[3]
+        self._verbose = verbose
+
+        self._cluster_functions = None
+        self._n_atoms_array = None
+
+        self._lattice_supercell = None
+        self._active_labelings = None
+        self._structures = None
+        self._element_strings = None
+        self._derivatives = None
+
+    def clear_structures(self):
+        """Clear structures."""
+        self._structures = None
+        self._derivatives = None
+        self._active_labelings = None
+        return self
+
+    def set_labelings(
+        self,
+        unitcell: PolymlpStructure,
+        supercell_matrix: np.ndarray,
+        active_labelings: np.ndarray,
+    ):
+        """Calculate cluster functions.
+
+        Parameters
+        ----------
+        unitcell: Unitcell.
+        supercell_matrix: Supercell matrix.
+        active_labelings: Element labelings in supercell.
+                          Only active labelings should be given.
+        """
+        if not is_cell_equal(unitcell, self._lattice_unitcell.cell):
+            raise RuntimeError(
+                "Unitcell in cluster.yaml is not equal to given unitcell."
+            )
+        supercell = supercell_reduced(unitcell, supercell_matrix=supercell_matrix)
+        self._lattice_supercell = self._lattice_unitcell.lattice_supercell(supercell)
+        self._active_labelings = active_labelings
+        return self
+
+    def _eval_from_structures(self):
+        """Evaluate cluster functions from structures."""
+        if self._structures is None:
+            raise RuntimeError("Structures are required.")
+        if self._element_strings is None:
+            raise RuntimeError("Labels for element strings are required.")
+
+        self._cluster_functions = []
+        self._n_atoms_array = []
+        for st in self._structures:
+            supercell_matrix = np.linalg.inv(self._lattice_unitcell.axis) @ st.axis
+            if not np.allclose(supercell_matrix - np.round(supercell_matrix), 0.0):
+                raise RuntimeError(
+                    "Axis of given structure not consistent with lattice."
+                )
+
+            supercell, tmat = reduced(st, return_transformation=True)
+            supercell.supercell_matrix = supercell_matrix @ tmat
+            labeling = element_strings_to_labeling(
+                supercell.elements, self._element_strings
+            )
+
+            lattice_supercell, labelings_order = structure_to_lattice(
+                supercell,
+                self._lattice_unitcell,
+                # only_active=True,
+            )
+            labelings = np.array([labeling])[:, labelings_order]
+            active_labelings = labelings[:, lattice_supercell.active_sites]
+
+            self._n_atoms_array.append(
+                get_chemical_compositions(labelings=labelings)[0]
+            )
+            cf = calc_correlation(
+                self._lattice_unitcell,
+                lattice_supercell,
+                active_labelings,
+                self._clusters,
+                self._spin_basis_clusters,
+                verbose=self._verbose,
+            )
+            self._cluster_functions.extend(cf)
+        self._cluster_functions = np.array(self._cluster_functions)
+        return self._cluster_functions
+
+    def _eval_from_labelings(self):
+        """Evaluate cluster functions from labelings."""
+        self._cluster_functions = calc_correlation(
+            self._lattice_unitcell,
+            self._lattice_supercell,
+            self._active_labelings,
+            self._clusters,
+            self._spin_basis_clusters,
+            verbose=self._verbose,
+        )
+        return self._cluster_functions
+
+    def _eval_from_derivatives(self):
+        """Evaluate cluster functions from derivative structures."""
+        self._cluster_functions = []
+        for d in self._derivatives:
+            supercell = supercell_reduced(
+                d.unitcell, supercell_matrix=d.supercell_matrix
+            )
+            lattice_supercell = self._lattice_unitcell.lattice_supercell(supercell)
+            cf = calc_correlation(
+                self._lattice_unitcell,
+                lattice_supercell,
+                d.active_labelings,
+                self._clusters,
+                self._spin_basis_clusters,
+                verbose=self._verbose,
+            )
+            self._cluster_functions.extend(cf)
+        self._cluster_functions = np.array(self._cluster_functions)
+        return self._cluster_functions
+
+    def eval(self):
+        """Evaluate cluster functions."""
+        if self._active_labelings is not None:
+            if self._verbose:
+                print("Evaluating cluster functions from labelings.", flush=True)
+            self._cluster_functions = self._eval_from_labelings()
+        elif self._structures is not None:
+            if self._verbose:
+                print("Evaluating cluster functions from structures.", flush=True)
+            self._cluster_functions = self._eval_from_structures()
+        elif len(self._derivatives) > 0:
+            if self._verbose:
+                print("Evaluating cluster functions from derivatives.", flush=True)
+            self._cluster_functions = self._eval_from_derivatives()
+        return self._cluster_functions
+
+    @property
+    def structures(self):
+        """Return structures."""
+        return self._structures
+
+    @structures.setter
+    def structures(self, st: list[PolymlpStructure]):
+        """Setter of structures."""
+        self._structures = st
+
+    @property
+    def element_strings(self):
+        """Return element strings."""
+        return self._element_strings
+
+    @element_strings.setter
+    def element_strings(self, element_strings: tuple):
+        """Set element strings.
+
+        Parameter
+        ---------
+        element_strings: Element strings.
+            The location index corresponds to label integer.
+            For example, element_strings are ("Ag", "Au"),
+            labels 0 and 1 indicate elements Ag and Au, respectively.
+        """
+        self._element_strings = element_strings
+
+    @property
+    def derivatives(self):
+        """Return set of derivative class instance."""
+        return self._derivatives
+
+    @derivatives.setter
+    def derivatives(self, derivs: DerivativesSet):
+        """Setter of derivative class instance."""
+        self._derivatives = derivs
+
+    @property
+    def cluster_functions(self):
+        """Return cluster functions."""
+        return self._cluster_functions
+
+    @property
+    def active_labelings(self):
+        """Return active labelings."""
+        return self._active_labelings
+
+    @property
+    def complete_labelings(self):
+        """Return complete labelings."""
+        # TODO: inactive_labeling
+        inactive_labeling = 1
+        return get_complete_labelings(
+            self._active_labelings,
+            inactive_labeling,
+            self._lattice_supercell.active_sites,
+            self._lattice_supercell.inactive_sites,
+        )
+
+    @property
+    def lattice_unitcell(self):
+        """Return lattice in unitcell representation."""
+        return self._lattice_unitcell
+
+    @property
+    def clusters(self):
+        """Return cluster attributes."""
+        return self._clusters
+
+    @property
+    def spin_basis_clusters(self):
+        """Return spin basis clusters."""
+        return self._spin_basis_clusters
+
+    @spin_basis_clusters.setter
+    def spin_basis_clusters(self, sp_clusters: list):
+        """Setter of spin basis clusters."""
+        self._spin_basis_clusters = sp_clusters
+
+    @property
+    def n_atoms_array(self):
+        """Return numbers of atoms in structures."""
+        return self._n_atoms_array
 
 
 # def _check_cluster_attrs(
@@ -186,212 +424,3 @@ def calc_correlation(
 #    )
 #    return cluster_functions
 #
-
-
-class ClusterFunctions:
-    """Class for calculating cluster functions."""
-
-    def __init__(
-        self,
-        clusters_yaml: str = "pyclupan_clusters.yaml",
-        verbose: bool = False,
-    ):
-        """Init method.
-
-        Parameter
-        ---------
-        clusters_yaml: Name of output file for cluster search results.
-        """
-        cluster_attrs = load_clusters_yaml(clusters_yaml)
-        self._lattice_unitcell = cluster_attrs[0]
-        self._clusters = cluster_attrs[1]
-        self._spin_basis_clusters = cluster_attrs[3]
-        self._verbose = verbose
-
-        self._cluster_functions = None
-        self._lattice_supercell = None
-        self._active_labelings = None
-
-        self._structures = None
-        self._element_strings = None
-        self._derivatives = None
-
-    def set_labelings(
-        self,
-        unitcell: PolymlpStructure,
-        supercell_matrix: np.ndarray,
-        active_labelings: np.ndarray,
-    ):
-        """Calculate cluster functions.
-
-        Parameters
-        ----------
-        unitcell: Unitcell.
-        supercell_matrix: Supercell matrix.
-        active_labelings: Element labelings in supercell.
-                          Only active labelings should be given.
-        """
-        if not is_cell_equal(unitcell, self._lattice_unitcell.cell):
-            raise RuntimeError(
-                "Unitcell in cluster.yaml is not equal to given unitcell."
-            )
-        supercell = supercell_reduced(unitcell, supercell_matrix=supercell_matrix)
-        self._lattice_supercell = self._lattice_unitcell.lattice_supercell(supercell)
-        self._active_labelings = active_labelings
-
-    def _eval_from_structures(self):
-        """Evaluate cluster functions from structures."""
-        if self._structures is None:
-            raise RuntimeError("Structures are required.")
-        if self._element_strings is None:
-            raise RuntimeError("Labels for element strings are required.")
-
-        cluster_functions = []
-        for st in self._structures:
-            supercell_matrix = np.linalg.inv(self._lattice_unitcell.axis) @ st.axis
-            if not np.allclose(supercell_matrix - np.round(supercell_matrix), 0.0):
-                raise RuntimeError(
-                    "Axis of given structure not consistent with lattice."
-                )
-
-            supercell, tmat = reduced(st, return_transformation=True)
-            supercell.supercell_matrix = supercell_matrix @ tmat
-            labeling = element_strings_to_labeling(
-                supercell.elements, self._element_strings
-            )
-
-            lattice_supercell, labelings_order = structure_to_lattice(
-                supercell,
-                self._lattice_unitcell,
-                only_active=True,
-            )
-            labelings = np.array([labeling])[:, labelings_order]
-
-            cf = calc_correlation(
-                self._lattice_unitcell,
-                lattice_supercell,
-                labelings,
-                self._clusters,
-                self._spin_basis_clusters,
-                verbose=self._verbose,
-            )
-            cluster_functions.extend(cf)
-        return np.array(cluster_functions)
-
-    def _eval_from_labelings(self):
-        """Evaluate cluster functions from labelings."""
-        self._cluster_functions = calc_correlation(
-            self._lattice_unitcell,
-            self._lattice_supercell,
-            self._active_labelings,
-            self._clusters,
-            self._spin_basis_clusters,
-            verbose=self._verbose,
-        )
-        return self._cluster_functions
-
-    def _eval_from_derivatives(self):
-        """Evaluate cluster functions from derivative structures."""
-        self._cluster_functions = []
-        for d in self._derivatives:
-            supercell = supercell_reduced(
-                d.unitcell, supercell_matrix=d.supercell_matrix
-            )
-            lattice_supercell = self._lattice_unitcell.lattice_supercell(supercell)
-            cf = calc_correlation(
-                self._lattice_unitcell,
-                lattice_supercell,
-                d.active_labelings,
-                self._clusters,
-                self._spin_basis_clusters,
-                verbose=self._verbose,
-            )
-            self._cluster_functions.extend(cf)
-        self._cluster_functions = np.array(self._cluster_functions)
-        return self._cluster_functions
-
-    def eval(self):
-        """Evaluate cluster functions."""
-        if self._active_labelings is not None:
-            if self._verbose:
-                print("Evaluating cluster functions from labelings.", flush=True)
-            self._cluster_functions = self._eval_from_labelings()
-        elif self._structures is not None:
-            if self._verbose:
-                print("Evaluating cluster functions from structures.", flush=True)
-            self._cluster_functions = self._eval_from_structures()
-        elif len(self._derivatives) > 0:
-            if self._verbose:
-                print("Evaluating cluster functions from derivatives.", flush=True)
-            self._cluster_functions = self._eval_from_derivatives()
-        return self._cluster_functions
-
-    @property
-    def structures(self):
-        """Return structures."""
-        return self._structures
-
-    @structures.setter
-    def structures(self, st: list[PolymlpStructure]):
-        """Setter of structures."""
-        self._structures = st
-
-    @property
-    def element_strings(self):
-        """Return element strings."""
-        return self._element_strings
-
-    @element_strings.setter
-    def element_strings(self, element_strings: tuple):
-        """Set element strings.
-
-        Parameter
-        ---------
-        element_strings: Element strings.
-            The location index corresponds to label integer.
-            For example, element_strings are ("Ag", "Au"),
-            labels 0 and 1 indicate elements Ag and Au, respectively.
-        """
-        self._element_strings = element_strings
-
-    @property
-    def derivatives(self):
-        """Return set of derivative class instance."""
-        return self._derivatives
-
-    @derivatives.setter
-    def derivatives(self, derivs: DerivativesSet):
-        """Setter of derivative class instance."""
-        self._derivatives = derivs
-
-    @property
-    def cluster_functions(self):
-        """Return cluster functions."""
-        return self._cluster_functions
-
-    @property
-    def active_labelings(self):
-        """Return active labelings."""
-        return self._active_labelings
-
-    @property
-    def complete_labelings(self):
-        """Return complete labelings."""
-        # TODO: inactive_labeling
-        inactive_labeling = 1
-        return get_complete_labelings(
-            self._active_labelings,
-            inactive_labeling,
-            self._lattice_supercell.active_sites,
-            self._lattice_supercell.inactive_sites,
-        )
-
-    @property
-    def spin_basis_clusters(self):
-        """Return spin basis clusters."""
-        return self._spin_basis_clusters
-
-    @spin_basis_clusters.setter
-    def spin_basis_clusters(self, sp_clusters: list):
-        """Setter of spin basis clusters."""
-        self._spin_basis_clusters = sp_clusters
