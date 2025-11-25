@@ -17,7 +17,7 @@ class CEmodel:
 
     def eval(self, cluster_functions: np.ndarray):
         """Evaluate energies."""
-        if cluster_functions.shape[1] != self.coeffs.shape[0]:
+        if cluster_functions.shape[1] != len(self.coeffs):
             raise RuntimeError("Inconsistent dimension of cluster functions and ECIs.")
 
         energies = cluster_functions @ self.coeffs

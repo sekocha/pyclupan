@@ -12,8 +12,8 @@ cwd = Path(__file__).parent
 
 def test_entire_hnfs():
     """Test number of HNFs."""
-    n_hnfs = [len(enumerate_hnf(n)) for n in range(2, 11)]
-    n_refs = [7, 13, 35, 31, 91, 57, 155, 130, 217]
+    n_hnfs = [len(enumerate_hnf(n)) for n in range(2, 17)]
+    n_refs = [7, 13, 35, 31, 91, 57, 155, 130, 217, 133, 455, 183, 399, 403, 651]
     np.testing.assert_equal(n_hnfs, n_refs)
 
 
@@ -38,4 +38,12 @@ def test_tetra_hnfs():
     st = Poscar(str(cwd) + "/poscar-tetra").structure
     n_hnfs = [len(get_nonequivalent_hnf(n, st)) for n in range(2, 11)]
     n_refs = [5, 5, 17, 9, 29, 13, 51, 28, 53]
+    np.testing.assert_equal(n_hnfs, n_refs)
+
+
+def test_perovskite_hnfs():
+    """Test number of non-equivalent HNFs for cubic perovskite."""
+    st = Poscar(str(cwd) + "/poscar-perovskite").structure
+    n_hnfs = [len(get_nonequivalent_hnf(n, st)) for n in range(2, 11)]
+    n_refs = [3, 3, 9, 5, 13, 7, 24, 14, 23]
     np.testing.assert_equal(n_hnfs, n_refs)
