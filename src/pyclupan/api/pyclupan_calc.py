@@ -51,13 +51,9 @@ class PyclupanCalc:
         self._spin_clusters = None
         self._cluster_functions = None
 
-        self._structures = None
-        self._derivative_set = DerivativesSet([])
-        self._structure_ids = None
-        self._n_atoms_array = None
+        self.clear_structures()
 
         self._model = None
-
         self._energies = None
         self._formation_energies = None
         self._compositions = None
@@ -66,8 +62,12 @@ class PyclupanCalc:
         np.set_printoptions(legacy="1.21")
 
     def clear_structures(self):
-        """Clear structures and labelings to be evaluated."""
-
+        """Clear structure data."""
+        self._structures = None
+        self._cf.structures = None
+        self._derivatives = DerivativesSet([])
+        self._structure_ids = None
+        self._n_atoms_array = None
         return self
 
     def load_ecis(self, filename: str = "pyclupan_ecis.yaml"):
@@ -122,8 +122,8 @@ class PyclupanCalc:
             If other files are alreadly loaded, the file will be appended
             to the existing dataset.
         """
-        self._derivative_set.append(load_sample_attrs_yaml(filename))
-        self._cf.derivatives = self._derivative_set
+        self._derivatives.append(load_sample_attrs_yaml(filename))
+        self._cf.derivatives = self._derivatives
         return self
 
     def load_derivatives_yaml(self, filename: str = "pyclupan_derivatives.yaml"):
@@ -135,8 +135,8 @@ class PyclupanCalc:
             If other files are alreadly loaded, the file will be appended
             to the existing dataset.
         """
-        self._derivative_set.append(load_derivatives_yaml(filename))
-        self._cf.derivatives = self._derivative_set
+        self._derivatives.append(load_derivatives_yaml(filename))
+        self._cf.derivatives = self._derivatives
         return self
 
     def set_labelings(
@@ -159,11 +159,11 @@ class PyclupanCalc:
         self._n_atoms_array = get_chemical_compositions(labelings=active_labelings)
         return self
 
-    def _eval_cluster_functions_from_derivatives(self):
+    def _set_attrs_from_derivatives(self):
         """Evaluate cluster functions from derivative structure set."""
         self._structure_ids = []
         self._n_atoms_array = []
-        for d in self._derivative_set:
+        for d in self._derivatives:
             self._structure_ids.extend(d.structure_ids)
             self._n_atoms_array.extend(
                 get_chemical_compositions(labelings=d.get_complete_labelings())
@@ -172,8 +172,8 @@ class PyclupanCalc:
 
     def eval_cluster_functions(self):
         """Evaluate cluster functions."""
-        if len(self._derivative_set) > 0:
-            self._eval_cluster_functions_from_derivatives()
+        if len(self._derivatives) > 0:
+            self._set_attrs_from_derivatives()
 
         self._cluster_functions = self._cf.eval()
         return self._cluster_functions
