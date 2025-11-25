@@ -34,6 +34,7 @@ def test_get_chemical_compositions():
 
 def test_get_formation_energies():
     """Test get_formation_energies."""
+    pass
 
 
 def test_find_convex_hull():
