@@ -41,6 +41,24 @@ def test_eval_cluster_functions_from_poscars():
     np.testing.assert_allclose(cf_calc2, cf_true2, atol=1e-8)
 
 
+def test_eval_cluster_functions_from_structures():
+    """Test eval_cluster_functions using structures setter.."""
+    element_strings = ("Ag", "Au")
+    features = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
+    st1 = Poscar(str(cwd) + "/derivative-1").structure
+    st2 = Poscar(str(cwd) + "/derivative-2").structure
+    features.structures = [st1, st2]
+    features.element_strings = element_strings
+    cluster_functions = features.eval_cluster_functions()
+
+    cf_calc1 = cluster_functions[0, :10]
+    cf_calc2 = cluster_functions[1, :10]
+    cf_true1 = [0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    cf_true2 = [0.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    np.testing.assert_allclose(cf_calc1, cf_true1, atol=1e-8)
+    np.testing.assert_allclose(cf_calc2, cf_true2, atol=1e-8)
+
+
 def test_eval_cluster_functions_from_labelings():
     """Test eval_cluster_functions using given labelings."""
     features = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")

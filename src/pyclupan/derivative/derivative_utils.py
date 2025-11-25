@@ -14,27 +14,12 @@ import yaml
 from pyclupan.core.cell_utils import supercell_reduced
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import load_cell, save_cell, write_poscar_file
+from pyclupan.derivative.labelings_utils import get_complete_labelings
 
 
 def get_structure_id(supercell_size: int, supercell_id: int, structure_id: int):
     """Return structure ID."""
     return "-".join((str(supercell_size), str(supercell_id), str(structure_id)))
-
-
-def get_complete_labelings(
-    active_labelings: np.ndarray,
-    inactive_labeling: np.ndarray,
-    active_sites: np.ndarray,
-    inactive_sites: np.ndarray,
-):
-    """Return complete labelings from both active and inactive labelings."""
-    n_site = active_labelings.shape[1] + len(inactive_labeling)
-    n_labelings = active_labelings.shape[0]
-    labelings = np.zeros((n_labelings, n_site), dtype=np.uint8)
-    labelings[:, active_sites] = active_labelings
-    if len(inactive_sites) > 0:
-        labelings[:, inactive_sites] = inactive_labeling
-    return labelings
 
 
 @dataclass

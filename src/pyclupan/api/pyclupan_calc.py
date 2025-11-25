@@ -216,6 +216,7 @@ class PyclupanCalc:
             clusters=self._clusters,
             spin_basis_clusters=self._spin_clusters,
         )
+        # TODO: n_atoms_array
         return self._cluster_functions
 
     def eval_cluster_functions(self):
@@ -401,7 +402,7 @@ class PyclupanCalc:
         str: List of structures to be calculated.
         """
         self._structures = strs
-        self._structure_ids = ["str-" + (i) for i in range(len(strs))]
+        self._structure_ids = ["str-" + str(i) for i in range(len(strs))]
 
     @property
     def element_strings(self):

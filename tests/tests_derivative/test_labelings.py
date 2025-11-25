@@ -6,10 +6,26 @@ import numpy as np
 
 from pyclupan.derivative.labelings_utils import (
     eliminate_superperiodic_labelings,
+    get_complete_labelings,
     get_nonequivalent_labelings,
 )
 
 cwd = Path(__file__).parent
+
+
+def test_get_complete_labelings():
+    """Test get_complete_labelings."""
+    active_labelings = np.array([[0, 0, 1, 1, 2, 2], [0, 1, 2, 0, 2, 1]])
+    inactive_labeling = [3, 3, 4, 4, 4]
+    active_sites = [0, 1, 2, 5, 6, 7]
+    inactive_sites = [3, 4, 8, 9, 10]
+    labelings = get_complete_labelings(
+        active_labelings, inactive_labeling, active_sites, inactive_sites
+    )
+    labelings_true = np.array(
+        [[0, 0, 1, 3, 3, 1, 2, 2, 4, 4, 4], [0, 1, 2, 3, 3, 0, 2, 1, 4, 4, 4]]
+    )
+    np.testing.assert_equal(labelings, labelings_true)
 
 
 def test_get_nonequivalent_labelings():
