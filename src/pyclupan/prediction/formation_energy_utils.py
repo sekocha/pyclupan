@@ -30,7 +30,7 @@ def get_chemical_compositions(
             raise RuntimeError("Element strings required.")
         for st in structures:
             elements = np.array(st.elements)
-            chem = [np.sum(elements == ele) for ele in enumerate(element_strings)]
+            chem = [np.sum(elements == ele) for ele in element_strings]
             chemical_comps.append(chem)
     elif labelings is not None:
         uniq_types = np.unique(labelings)
