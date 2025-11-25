@@ -10,6 +10,59 @@ from pyclupan.core.pypolymlp_utils import Poscar
 cwd = Path(__file__).parent
 
 
+def test_prediction_from_poscars():
+    """Test energy prediction using poscars."""
+    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
+    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
+
+    poscars = [str(cwd) + "/derivative-1", str(cwd) + "/derivative-2"]
+    pyclupan.load_poscars(poscars)
+    pyclupan.element_strings = ("Ag", "Au")
+    pyclupan.eval_cluster_functions()
+    pyclupan.eval_energies()
+
+    energies_true = np.array([-2.99605414, -3.11993823])
+    np.testing.assert_allclose(pyclupan.energies, energies_true, atol=1e-6)
+
+    labelings_end = np.array([[0], [1]])
+    _ = pyclupan.eval_formation_energies(labelings=labelings_end)
+
+    print(pyclupan.formation_energies)
+    formation_energies_true = np.array([-2.99605414, -3.11993823])
+    np.testing.assert_allclose(
+        pyclupan.formation_energies, formation_energies_true, atol=1e-6
+    )
+    assert 1 == 0
+
+    # chems = get_chemical_compositions(
+    #     structures=[st1, st2],
+    #     element_strings=("Ag", "Au"),
+    # )
+    # np.testing.assert_equal(chems, [[2, 2], [1, 3]])
+    # labelings = [
+    #     [0, 0, 0, 1, 2, 2, 3, 3, 3, 3],
+    #     [0, 0, 1, 1, 2, 2, 3, 3, 3, 3],
+    #     [0, 1, 1, 1, 2, 2, 3, 3, 3, 3],
+    # ]
+    # chems = get_chemical_compositions(labelings=labelings)
+    # np.testing.assert_equal(chems, [[3, 1, 2, 4], [2, 2, 2, 4], [1, 3, 2, 4]])
+
+
+def test_prediction_from_structures():
+    """Test energy prediction using structures."""
+    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
+    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
+
+    _ = Poscar(str(cwd) + "/derivative-1").structure
+    _ = Poscar(str(cwd) + "/derivative-2").structure
+
+
+def test_prediction_from_labelings():
+    """Test energy prediction using structures."""
+    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
+    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
+
+
 def test_prediction_from_derivatives():
     """Test energy prediction using derivatives."""
     pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
@@ -108,36 +161,3 @@ def test_prediction_from_derivatives():
     )
     ch_pred = pyclupan.convexhull[:, :-1].astype(float)
     np.testing.assert_allclose(ch_pred, ch_true, atol=1e-6)
-
-
-def test_prediction_from_poscars():
-    """Test energy prediction using poscars."""
-    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
-    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
-
-    _ = Poscar(str(cwd) + "/derivative-1").structure
-    _ = Poscar(str(cwd) + "/derivative-2").structure
-    # chems = get_chemical_compositions(
-    #     structures=[st1, st2],
-    #     element_strings=("Ag", "Au"),
-    # )
-    # np.testing.assert_equal(chems, [[2, 2], [1, 3]])
-    # labelings = [
-    #     [0, 0, 0, 1, 2, 2, 3, 3, 3, 3],
-    #     [0, 0, 1, 1, 2, 2, 3, 3, 3, 3],
-    #     [0, 1, 1, 1, 2, 2, 3, 3, 3, 3],
-    # ]
-    # chems = get_chemical_compositions(labelings=labelings)
-    # np.testing.assert_equal(chems, [[3, 1, 2, 4], [2, 2, 2, 4], [1, 3, 2, 4]])
-
-
-def test_prediction_from_structures():
-    """Test energy prediction using structures."""
-    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
-    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
-
-
-def test_prediction_from_labelings():
-    """Test energy prediction using structures."""
-    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
-    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")

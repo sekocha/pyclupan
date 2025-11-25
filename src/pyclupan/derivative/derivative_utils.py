@@ -12,9 +12,9 @@ import numpy as np
 import yaml
 
 from pyclupan.core.cell_utils import supercell_reduced
+from pyclupan.core.labelings_utils import get_complete_labelings
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import load_cell, save_cell, write_poscar_file
-from pyclupan.derivative.labelings_utils import get_complete_labelings
 
 
 def get_structure_id(supercell_size: int, supercell_id: int, structure_id: int):

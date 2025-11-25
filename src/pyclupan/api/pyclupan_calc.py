@@ -4,7 +4,6 @@ from typing import Optional, Union
 
 import numpy as np
 
-from pyclupan.cluster.cluster_io import load_clusters_yaml
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
 from pyclupan.derivative.derivative_utils import (
     DerivativesSet,
@@ -15,10 +14,7 @@ from pyclupan.features.features_utils import (
     load_cluster_functions_hdf5,
     save_cluster_functions_hdf5,
 )
-from pyclupan.features.run_correlation import (
-    run_correlation,
-    run_correlation_from_structures,
-)
+from pyclupan.features.run_correlation import ClusterFunctions
 from pyclupan.prediction.formation_energy_utils import (
     append_formation_energies_endmembers,
     find_convex_hull,
@@ -51,29 +47,27 @@ class PyclupanCalc:
         """
         self._verbose = verbose
 
-        cluster_res = load_clusters_yaml(clusters_yaml)
-        self._lattice, self._clusters, _, self._spin_clusters = cluster_res
-
+        self._cf = ClusterFunctions(clusters_yaml=clusters_yaml, verbose=verbose)
+        self._spin_clusters = None
         self._cluster_functions = None
-        self._structure_ids = None
-        self._model = None
-        self._energies = None
 
+        self._structures = None
+        self._derivative_set = DerivativesSet([])
+        self._structure_ids = None
+        self._n_atoms_array = None
+
+        self._model = None
+
+        self._energies = None
         self._formation_energies = None
         self._compositions = None
         self._convex = None
 
-        self.clear_structures()
         np.set_printoptions(legacy="1.21")
 
     def clear_structures(self):
         """Clear structures and labelings to be evaluated."""
-        self._structures = None
-        self._derivative_set = DerivativesSet([])
 
-        self._unitcell = None
-        self._supercell_matrix = None
-        self._labelings = None
         return self
 
     def load_ecis(self, filename: str = "pyclupan_ecis.yaml"):
@@ -84,7 +78,9 @@ class PyclupanCalc:
         filename: File of ECIs from regression.
         """
         self._model = load_ecis(filename)
-        self._spin_clusters = [self._spin_clusters[i] for i in self._model.cluster_ids]
+        self._cf.spin_basis_clusters = [
+            self._spin_clusters[i] for i in self._model.cluster_ids
+        ]
         return self
 
     def load_poscars(
@@ -103,9 +99,9 @@ class PyclupanCalc:
             labels 0 and 1 indicate elements Ag and Au, respectively.
         """
         if isinstance(poscars, str):
-            self._structures = [Poscar(poscars).structure]
+            self.structures = [Poscar(poscars).structure]
         elif isinstance(poscars, (list, tuple, np.ndarray)):
-            self._structures = [Poscar(p).structure for p in poscars]
+            self.structures = [Poscar(p).structure for p in poscars]
         else:
             raise RuntimeError(
                 "Parameter in load_poscars must be string or array-like."
@@ -113,7 +109,7 @@ class PyclupanCalc:
 
         self._structure_ids = poscars
         if element_strings is not None:
-            self._element_strings = element_strings
+            self.element_strings = element_strings
 
         return self
 
@@ -127,6 +123,7 @@ class PyclupanCalc:
             to the existing dataset.
         """
         self._derivative_set.append(load_sample_attrs_yaml(filename))
+        self._cf.derivatives = self._derivative_set
         return self
 
     def load_derivatives_yaml(self, filename: str = "pyclupan_derivatives.yaml"):
@@ -139,13 +136,14 @@ class PyclupanCalc:
             to the existing dataset.
         """
         self._derivative_set.append(load_derivatives_yaml(filename))
+        self._cf.derivatives = self._derivative_set
         return self
 
     def set_labelings(
         self,
         unitcell: PolymlpStructure,
         supercell_matrix: np.ndarray,
-        labelings: np.ndarray,
+        active_labelings: np.ndarray,
     ):
         """Set labelings.
 
@@ -153,86 +151,32 @@ class PyclupanCalc:
         ----------
         unitcell: Unitcell.
         supercell_matrix: Supercell matrix.
-        labelings: Labelings for active sites.
+        active_labelings: Labelings only for active sites.
         """
-        self._unitcell = unitcell
-        self._supercell_matrix = supercell_matrix
-        self._labelings = labelings
-        return self
-
-    def _eval_cluster_functions_from_labelings(self):
-        """Evaluate cluster functions from labelings."""
-        if self._unitcell is None:
-            raise RuntimeError("Unitcell is required.")
-        if self._supercell_matrix is None:
-            raise RuntimeError("Supercell matrix is required.")
-
-        self._cluster_functions = run_correlation(
-            unitcell=self._unitcell,
-            supercell_matrix=self._supercell_matrix,
-            labelings=self._labelings,
-            lattice=self._lattice,
-            clusters=self._clusters,
-            spin_basis_clusters=self._spin_clusters,
-        )
-        self._structure_ids = [str(i).zfill(5) for i, l in enumerate(self._labelings)]
+        self._cf.set_labelings(unitcell, supercell_matrix, active_labelings)
+        self._structure_ids = [str(i).zfill(5) for i, l in enumerate(active_labelings)]
         # TODO: Use complete labelings
-        self._n_atoms_array = get_chemical_compositions(labelings=self._labelings)
-        return self._cluster_functions
+        self._n_atoms_array = get_chemical_compositions(labelings=active_labelings)
+        return self
 
     def _eval_cluster_functions_from_derivatives(self):
         """Evaluate cluster functions from derivative structure set."""
-        self._cluster_functions = []
         self._structure_ids = []
         self._n_atoms_array = []
         for d in self._derivative_set:
-            cf = run_correlation(
-                unitcell=d.unitcell,
-                supercell_matrix=d.supercell_matrix,
-                labelings=d.active_labelings,
-                lattice=self._lattice,
-                clusters=self._clusters,
-                spin_basis_clusters=self._spin_clusters,
-            )
-            self._cluster_functions.extend(cf)
             self._structure_ids.extend(d.structure_ids)
             self._n_atoms_array.extend(
                 get_chemical_compositions(labelings=d.get_complete_labelings())
             )
-        self._cluster_functions = np.array(self._cluster_functions)
-        return self._cluster_functions
-
-    def _eval_cluster_functions_from_structures(self):
-        """Evaluate cluster functions from structures."""
-        if self._structures is None:
-            raise RuntimeError("Structures are required.")
-        if self._element_strings is None:
-            raise RuntimeError("Labels for element strings are required.")
-
-        self._cluster_functions = run_correlation_from_structures(
-            structures=self._structures,
-            element_strings=self._element_strings,
-            lattice=self._lattice,
-            clusters=self._clusters,
-            spin_basis_clusters=self._spin_clusters,
-        )
-        # TODO: n_atoms_array
-        return self._cluster_functions
+        return self
 
     def eval_cluster_functions(self):
         """Evaluate cluster functions."""
-        if self._labelings is not None:
-            if self._verbose:
-                print("Evaluating cluster functions from labelings.", flush=True)
-            return self._eval_cluster_functions_from_labelings()
-        elif len(self._derivative_set) > 0:
-            if self._verbose:
-                print("Evaluating cluster functions from derivatives.", flush=True)
-            return self._eval_cluster_functions_from_derivatives()
+        if len(self._derivative_set) > 0:
+            self._eval_cluster_functions_from_derivatives()
 
-        if self._verbose:
-            print("Evaluating cluster functions from structures.", flush=True)
-        return self._eval_cluster_functions_from_structures()
+        self._cluster_functions = self._cf.eval()
+        return self._cluster_functions
 
     def save_features(self, filename: str = "pyclupan_features.hdf5"):
         """Save features in HDF5 format.
@@ -401,13 +345,17 @@ class PyclupanCalc:
         ---------
         str: List of structures to be calculated.
         """
-        self._structures = strs
+        # TODO: n_atoms_array
+        # TODO: Use complete labelings
+        # self._n_atoms_array = get_chemical_compositions(labelings=active_labelings)
+
+        self._structures = self._cf.structures = strs
         self._structure_ids = ["str-" + str(i) for i in range(len(strs))]
 
     @property
     def element_strings(self):
         """Return element strings."""
-        return self._element_strings
+        return self._cf.element_strings
 
     @element_strings.setter
     def element_strings(self, element_strings: tuple):
@@ -420,7 +368,7 @@ class PyclupanCalc:
             For example, element_strings are ("Ag", "Au"),
             labels 0 and 1 indicate elements Ag and Au, respectively.
         """
-        self._element_strings = element_strings
+        self._cf.element_strings = element_strings
 
     @property
     def cluster_functions(self):

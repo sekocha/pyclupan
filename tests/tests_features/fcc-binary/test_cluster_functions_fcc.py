@@ -78,7 +78,7 @@ def test_eval_cluster_functions_from_labelings():
     features.set_labelings(
         unitcell=unitcell,
         supercell_matrix=hnf,
-        labelings=labelings,
+        active_labelings=labelings,
     )
     cluster_functions = features.eval_cluster_functions()
 
