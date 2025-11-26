@@ -5,7 +5,11 @@ from pathlib import Path
 import numpy as np
 
 from pyclupan.core.cell_utils import supercell_reduced
-from pyclupan.core.lattice import Lattice, set_elements_on_sublattices
+from pyclupan.core.lattice import (
+    Lattice,
+    get_complete_labelings,
+    set_elements_on_sublattices,
+)
 from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
@@ -85,8 +89,13 @@ def test_lattice_binary_fcc():
     np.testing.assert_equal(spins, spins_true)
 
     assert lattice_supercell.elements_on_lattice == elements
+    assert lattice_supercell.n_elements == 2
     assert list(lattice_supercell.active_sites) == [0, 1, 2]
     assert list(lattice_supercell.inactive_sites) == []
+    assert list(lattice_supercell.inactive_labeling) == []
+    complete = list(lattice_supercell.complete_labelings(labelings[0:1])[0])
+    assert complete == [0, 0, 0]
+
     assert list(lattice_supercell.map_full_to_active_rep) == [0, 1, 2]
     assert lattice_supercell.is_active_size(labelings) == True
     assert lattice_supercell.is_active_element(labelings) == True
@@ -166,7 +175,12 @@ def test_lattice_binary_perovskite():
     np.testing.assert_equal(spins, spins_true)
 
     assert lattice_supercell.elements_on_lattice == elements
+    assert lattice_supercell.n_elements == 4
     assert list(lattice_supercell.active_sites) == [4, 5, 6, 7, 8, 9]
+    assert list(lattice_supercell.inactive_sites) == [0, 1, 2, 3]
+    assert list(lattice_supercell.inactive_labeling) == [0, 0, 1, 1]
+    complete = list(lattice_supercell.complete_labelings(labelings[0:1])[0])
+    assert complete == [0, 0, 1, 1, 2, 2, 2, 3, 2, 2]
 
     map_true = np.array([None, None, None, None, 0, 1, 2, 3, 4, 5])
     np.testing.assert_equal(lattice_supercell.map_full_to_active_rep, map_true)
@@ -182,3 +196,18 @@ def test_lattice_binary_perovskite():
     spin_poly = lattice_supercell.get_spin_polynomials([0, 0])
     np.isclose(spin_poly[0][0], 1.0)
     np.isclose(spin_poly[1][0], 1.0)
+
+
+def test_get_complete_labelings():
+    """Test get_complete_labelings."""
+    active_labelings = np.array([[0, 0, 1, 1, 2, 2], [0, 1, 2, 0, 2, 1]])
+    inactive_labeling = [3, 3, 4, 4, 4]
+    active_sites = [0, 1, 2, 5, 6, 7]
+    inactive_sites = [3, 4, 8, 9, 10]
+    labelings = get_complete_labelings(
+        active_labelings, inactive_labeling, active_sites, inactive_sites
+    )
+    labelings_true = np.array(
+        [[0, 0, 1, 3, 3, 1, 2, 2, 4, 4, 4], [0, 1, 2, 3, 3, 0, 2, 1, 4, 4, 4]]
+    )
+    np.testing.assert_equal(labelings, labelings_true)

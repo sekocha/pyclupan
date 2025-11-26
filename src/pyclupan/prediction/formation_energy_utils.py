@@ -99,9 +99,6 @@ def find_convex_hull(
     struture_ids: list,
 ):
     """Find convex hull of formation energies."""
-    print(compositions.shape)
-    print(compositions)
-    print(formation_energies.shape)
     if compositions.shape[0] != formation_energies.shape[0]:
         raise RuntimeError("Inconsistent sizes of compositions and energies.")
 

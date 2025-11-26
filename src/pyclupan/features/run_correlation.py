@@ -9,7 +9,6 @@ from pyclupan.core.cell_utils import (
     reduced,
     supercell_reduced,
 )
-from pyclupan.core.labelings_utils import get_complete_labelings
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.core.spglib_utils import get_symmetry
@@ -128,26 +127,12 @@ class ClusterFunctions:
             raise RuntimeError(
                 "Unitcell in cluster.yaml is not equal to given unitcell."
             )
+        if not self._lattice_unitcell.is_active_element(active_labelings):
+            raise RuntimeError("Some labels are not active.")
+
         supercell = supercell_reduced(unitcell, supercell_matrix=supercell_matrix)
         self._lattice_supercell = self._lattice_unitcell.lattice_supercell(supercell)
         self._active_labelings = active_labelings
-
-        inactive_labeling = []
-        for i, n in enumerate(self._lattice_supercell.cell.n_atoms):
-            elements = self._lattice_supercell.elements_on_lattice[i]
-            if len(elements) == 1:
-                inactive_labeling.extend([elements[0] for j in range(n)])
-
-        complete_labelings = get_complete_labelings(
-            active_labelings,
-            inactive_labeling,
-            self._lattice_supercell.active_sites,
-            self._lattice_supercell.inactive_sites,
-        )
-        self._n_atoms_array = get_chemical_compositions(
-            labelings=complete_labelings,
-            n_elements=self._lattice_supercell.n_elements,
-        )
         return self
 
     def _eval_from_structures(self):
@@ -178,6 +163,7 @@ class ClusterFunctions:
             )
             labelings = np.array([labeling])[:, labelings_order]
             active_labelings = labelings[:, lattice_supercell.active_sites]
+
             n_atoms = get_chemical_compositions(
                 labelings=labelings,
                 n_elements=lattice_supercell.n_elements,
@@ -205,6 +191,14 @@ class ClusterFunctions:
             self._clusters,
             self._spin_basis_clusters,
             verbose=self._verbose,
+        )
+
+        complete_labelings = self._lattice_supercell.complete_labelings(
+            self._active_labelings
+        )
+        self._n_atoms_array = get_chemical_compositions(
+            labelings=complete_labelings,
+            n_elements=self._lattice_supercell.n_elements,
         )
         return self._cluster_functions
 
@@ -248,17 +242,9 @@ class ClusterFunctions:
             if self._verbose:
                 print("Evaluating cluster functions from derivatives.", flush=True)
             self._cluster_functions = self._eval_from_derivatives()
+        else:
+            raise RuntimeError("Structures or labelings not found.")
         return self._cluster_functions
-
-    @property
-    def structures(self):
-        """Return structures."""
-        return self._structures
-
-    @structures.setter
-    def structures(self, st: list[PolymlpStructure]):
-        """Setter of structures."""
-        self._structures = st
 
     @property
     def element_strings(self):
@@ -279,6 +265,16 @@ class ClusterFunctions:
         self._element_strings = element_strings
 
     @property
+    def structures(self):
+        """Return structures."""
+        return self._structures
+
+    @structures.setter
+    def structures(self, st: list[PolymlpStructure]):
+        """Setter of structures."""
+        self._structures = st
+
+    @property
     def derivatives(self):
         """Return set of derivative class instance."""
         return self._derivatives
@@ -287,33 +283,6 @@ class ClusterFunctions:
     def derivatives(self, derivs: DerivativesSet):
         """Setter of derivative class instance."""
         self._derivatives = derivs
-
-    @property
-    def cluster_functions(self):
-        """Return cluster functions."""
-        return self._cluster_functions
-
-    @property
-    def active_labelings(self):
-        """Return active labelings."""
-        return self._active_labelings
-
-    @property
-    def complete_labelings(self):
-        """Return complete labelings."""
-        # TODO: inactive_labeling
-        inactive_labeling = 1
-        return get_complete_labelings(
-            self._active_labelings,
-            inactive_labeling,
-            self._lattice_supercell.active_sites,
-            self._lattice_supercell.inactive_sites,
-        )
-
-    @property
-    def lattice_unitcell(self):
-        """Return lattice in unitcell representation."""
-        return self._lattice_unitcell
 
     @property
     def clusters(self):
@@ -334,6 +303,16 @@ class ClusterFunctions:
     def n_atoms_array(self):
         """Return numbers of atoms in structures."""
         return self._n_atoms_array
+
+    @property
+    def lattice_unitcell(self):
+        """Return lattice in unitcell representation."""
+        return self._lattice_unitcell
+
+    @property
+    def cluster_functions(self):
+        """Return cluster functions."""
+        return self._cluster_functions
 
 
 # def _check_cluster_attrs(

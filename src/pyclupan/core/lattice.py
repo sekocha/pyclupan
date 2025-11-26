@@ -52,6 +52,25 @@ def set_elements_on_sublattices(
     return elements_lattice
 
 
+def get_complete_labelings(
+    active_labelings: np.ndarray,
+    inactive_labeling: np.ndarray,
+    active_sites: np.ndarray,
+    inactive_sites: np.ndarray,
+):
+    """Return complete labelings from both active and inactive labelings."""
+    if active_labelings.shape[1] != len(active_sites):
+        raise RuntimeError("Given shape of active_labelings is not consistent.")
+
+    n_site = active_labelings.shape[1] + len(inactive_labeling)
+    n_labelings = active_labelings.shape[0]
+    labelings = np.zeros((n_labelings, n_site), dtype=np.uint8)
+    labelings[:, active_sites] = active_labelings
+    if len(inactive_sites) > 0:
+        labelings[:, inactive_sites] = inactive_labeling
+    return labelings
+
+
 class Lattice:
     """Class for defining lattice."""
 
@@ -80,6 +99,7 @@ class Lattice:
         self._reduced_cell = None
         self._active_sites = None
         self._inactive_sites = None
+        self._inactive_labeling = None
         self._map_full_to_active_rep = None
 
         elements = self._elements_on_lattice
@@ -159,6 +179,29 @@ class Lattice:
         return self._inactive_sites
 
     @property
+    def inactive_labeling(self):
+        """Return inactive labeling."""
+        if self._inactive_labeling is not None:
+            return self._inactive_labeling
+
+        n_sites = self._cell.n_atoms
+        self._inactive_labeling = []
+        for lattice_id in self._inactive_lattice:
+            ele = self._elements_on_lattice[lattice_id][0]
+            self._inactive_labeling.extend([ele for j in range(n_sites[lattice_id])])
+        self._inactive_labeling = np.array(self._inactive_labeling)
+        return self._inactive_labeling
+
+    def complete_labelings(self, active_labelings: np.ndarray):
+        """Return complete labeling from active labelings."""
+        return get_complete_labelings(
+            active_labelings,
+            self.inactive_labeling,
+            self.active_sites,
+            self.inactive_sites,
+        )
+
+    @property
     def map_full_to_active_rep(self):
         """Return mapping full site ID to active site ID."""
         if self._map_full_to_active_rep is not None:
@@ -173,15 +216,15 @@ class Lattice:
         """Convert full sites to active site representation."""
         return self.map_full_to_active_rep[sites].astype(int)
 
-    def is_active_size(self, elements: np.ndarray):
+    def is_active_size(self, labelings: np.ndarray):
         """Check if size of given elements, labelings, and spin is appropriate."""
-        if elements.shape[1] != self.active_sites.shape[0]:
+        if labelings.shape[1] != self.active_sites.shape[0]:
             return False
         return True
 
-    def is_active_element(self, elements: np.ndarray):
+    def is_active_element(self, labelings: np.ndarray):
         """Check if labelings are composed of active elements."""
-        return np.all(np.isin(elements, self._active_elements))
+        return np.all(np.isin(labelings, self._active_elements))
 
     def lattice_supercell(self, supercell: PolymlpStructure):
         """Return Lattice instance for supercell representation."""
@@ -197,15 +240,15 @@ class Lattice:
 
         return lattice_supercell
 
-    def to_spins(self, elements: np.ndarray):
+    def to_spins(self, labelings: np.ndarray):
         """Convert elements (labelings) to spins.
 
-        elements: Elements (labelings) converted to spins.
+        labelings: Elements (labelings) converted to spins.
         """
-        if not self.is_active_size(elements):
-            raise RuntimeError("Size of given elements not consistent with lattice.")
+        if not self.is_active_size(labelings):
+            raise RuntimeError("Size of given labelings not consistent with lattice.")
 
-        spins_assigned = np.zeros(elements.shape, dtype=int)
+        spins_assigned = np.zeros(labelings.shape, dtype=int)
         begin = 0
         for ele, spins, n in zip(
             self._elements_on_lattice, self._spins_on_lattice, self._cell.n_atoms
@@ -213,7 +256,7 @@ class Lattice:
             if len(spins) > 1:
                 end = begin + n
                 for e, s in zip(ele, spins):
-                    spins_assigned[:, begin:end][elements[:, begin:end] == e] = s
+                    spins_assigned[:, begin:end][labelings[:, begin:end] == e] = s
                 begin = end
         return spins_assigned
 

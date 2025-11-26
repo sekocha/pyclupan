@@ -61,9 +61,9 @@ class PyclupanCalc:
     def clear_structures(self):
         """Clear structure data."""
         self._structures = None
-        self._cf.structures = None
-        self._derivatives = DerivativesSet([])
         self._structure_ids = None
+        self._derivatives = DerivativesSet([])
+        self._cf.clear_structures()
         return self
 
     def load_ecis(self, filename: str = "pyclupan_ecis.yaml"):

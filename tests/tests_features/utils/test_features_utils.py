@@ -4,8 +4,10 @@ from pathlib import Path
 
 import numpy as np
 
+from pyclupan.core.pypolymlp_utils import Poscar
 from pyclupan.features.features_utils import (
     element_strings_to_labeling,
+    get_chemical_compositions,
     load_cluster_functions_hdf5,
 )
 
@@ -27,3 +29,21 @@ def test_load_cluster_functions_hdf5():
     assert ids[0] == "2-0-0"
     assert ids[1] == "2-1-0"
     assert ids[2] == "3-0-0"
+
+
+def test_get_chemical_compositions():
+    """Test get_chemical_compositions."""
+    st1 = Poscar(str(cwd) + "/derivative-1").structure
+    st2 = Poscar(str(cwd) + "/derivative-2").structure
+    chems = get_chemical_compositions(
+        structures=[st1, st2],
+        element_strings=("Ag", "Au"),
+    )
+    np.testing.assert_equal(chems, [[2, 2], [1, 3]])
+    labelings = [
+        [0, 0, 0, 1, 2, 2, 3, 3, 3, 3],
+        [0, 0, 1, 1, 2, 2, 3, 3, 3, 3],
+        [0, 1, 1, 1, 2, 2, 3, 3, 3, 3],
+    ]
+    chems = get_chemical_compositions(labelings=labelings, n_elements=4)
+    np.testing.assert_equal(chems, [[3, 1, 2, 4], [2, 2, 2, 4], [1, 3, 2, 4]])

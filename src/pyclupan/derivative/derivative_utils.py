@@ -12,7 +12,6 @@ import numpy as np
 import yaml
 
 from pyclupan.core.cell_utils import supercell_reduced
-from pyclupan.core.labelings_utils import get_complete_labelings
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import load_cell, save_cell, write_poscar_file
 
@@ -114,12 +113,7 @@ class Derivatives:
         if active_labelings is None:
             active_labelings = self.active_labelings
 
-        return get_complete_labelings(
-            active_labelings,
-            self.inactive_labeling,
-            self.active_sites,
-            self.inactive_sites,
-        )
+        return self.lattice_supercell.complete_labelings(active_labelings)
 
     @property
     def sampled_active_labelings(self):

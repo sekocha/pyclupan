@@ -47,11 +47,7 @@ def get_chemical_compositions(
     return chemical_comps
 
 
-def structure_to_lattice(
-    st: PolymlpStructure,
-    lattice_unitcell: Lattice,
-    only_active: bool = True,
-):
+def structure_to_lattice(st: PolymlpStructure, lattice_unitcell: Lattice):
     """Find lattice attributes in derivative supercell structure."""
     if st.supercell_matrix is None:
         raise RuntimeError("Supercell matrix attribute is required.")
@@ -59,9 +55,6 @@ def structure_to_lattice(
     sup = supercell(lattice_unitcell.cell, st.supercell_matrix)
     lattice_supercell = lattice_unitcell.lattice_supercell(sup)
     labelings_order = get_matching_positions(sup.positions, st.positions)
-
-    if only_active:
-        labelings_order = labelings_order[lattice_supercell.active_sites]
     return lattice_supercell, labelings_order
 
 
