@@ -21,7 +21,7 @@ def test_prediction_from_poscars():
     pyclupan.eval_cluster_functions()
     pyclupan.eval_energies()
     labelings_end = np.array([[0], [1]])
-    _ = pyclupan.eval_formation_energies(labelings=labelings_end)
+    _ = pyclupan.eval_formation_energies(labelings_endmembers=labelings_end)
 
     energies_true = np.array([-2.99605414, -3.11993823])
     f_energies_true = np.array([-0.02735838, -0.02568571])
@@ -51,7 +51,7 @@ def test_prediction_from_structures():
     pyclupan.element_strings = ("Ag", "Au")
     pyclupan.eval_energies()
     labelings_end = np.array([[0], [1]])
-    _ = pyclupan.eval_formation_energies(labelings=labelings_end)
+    _ = pyclupan.eval_formation_energies(labelings_endmembers=labelings_end)
 
     energies_true = np.array([-2.99605414, -3.11993823])
     f_energies_true = np.array([-0.02735838, -0.02568571])
@@ -94,7 +94,7 @@ def test_prediction_from_labelings():
     )
     pyclupan.eval_energies()
     labelings_end = np.array([[0], [1]])
-    _ = pyclupan.eval_formation_energies(labelings=labelings_end)
+    _ = pyclupan.eval_formation_energies(labelings_endmembers=labelings_end)
 
     energies_true = np.array(
         [-2.717582, -2.88247, -3.030677, -3.016268, -3.133167, -3.219809]
@@ -189,13 +189,13 @@ def test_prediction_from_derivatives():
 
     pyclupan.eval_energies()
     labelings_end = np.array([[0], [1]])
-    res = pyclupan.eval_formation_energies(labelings=labelings_end)
+    res = pyclupan.eval_formation_energies(labelings_endmembers=labelings_end)
     np.testing.assert_allclose(res[0], formation_energies_true, atol=1e-6)
 
     st_end1 = Poscar(str(cwd) + "/poscar-end1").structure
     st_end2 = Poscar(str(cwd) + "/poscar-end2").structure
     res = pyclupan.eval_formation_energies(
-        structures=[st_end1, st_end2],
+        structures_endmembers=[st_end1, st_end2],
         element_strings=("Ag", "Au"),
     )
     np.testing.assert_allclose(res[0], formation_energies_true, atol=1e-6)

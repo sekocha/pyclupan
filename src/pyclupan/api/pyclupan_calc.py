@@ -236,10 +236,10 @@ class PyclupanCalc:
 
     def eval_formation_energies(
         self,
-        structures: Optional[list[PolymlpStructure]] = None,
+        structures_endmembers: Optional[list[PolymlpStructure]] = None,
         element_strings: Optional[tuple] = None,
-        labelings: Optional[np.ndarray] = None,
-        supercell_matrices: Optional[np.ndarray] = None,
+        labelings_endmembers: Optional[np.ndarray] = None,
+        supercell_matrices_endmembers: Optional[np.ndarray] = None,
     ):
         """Evaluate formation energies.
 
@@ -256,10 +256,10 @@ class PyclupanCalc:
             self._energies,
             self._model,
             self._cf,
-            structures=structures,
+            structures_endmembers=structures_endmembers,
             element_strings=element_strings,
-            labelings=labelings,
-            supercell_matrices=supercell_matrices,
+            labelings_endmembers=labelings_endmembers,
+            supercell_matrices_endmembers=supercell_matrices_endmembers,
             verbose=self._verbose,
         )
         res = append_formation_energies_endmembers(

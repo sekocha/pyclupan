@@ -40,10 +40,16 @@ def test_get_chemical_compositions():
         element_strings=("Ag", "Au"),
     )
     np.testing.assert_equal(chems, [[2, 2], [1, 3]])
+
     labelings = [
+        [0, 0, 0, 0, 2, 2, 3, 3, 3, 3],
         [0, 0, 0, 1, 2, 2, 3, 3, 3, 3],
         [0, 0, 1, 1, 2, 2, 3, 3, 3, 3],
         [0, 1, 1, 1, 2, 2, 3, 3, 3, 3],
+        [1, 1, 1, 1, 2, 2, 3, 3, 3, 3],
     ]
     chems = get_chemical_compositions(labelings=labelings, n_elements=4)
-    np.testing.assert_equal(chems, [[3, 1, 2, 4], [2, 2, 2, 4], [1, 3, 2, 4]])
+    chems_true = np.array(
+        [[4, 0, 2, 4], [3, 1, 2, 4], [2, 2, 2, 4], [1, 3, 2, 4], [0, 4, 2, 4]]
+    )
+    np.testing.assert_equal(chems, chems_true)

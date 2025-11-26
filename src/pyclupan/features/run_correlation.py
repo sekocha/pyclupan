@@ -161,14 +161,8 @@ class ClusterFunctions:
                 supercell,
                 self._lattice_unitcell,
             )
-            labelings = np.array([labeling])[:, labelings_order]
-            active_labelings = labelings[:, lattice_supercell.active_sites]
-
-            n_atoms = get_chemical_compositions(
-                labelings=labelings,
-                n_elements=lattice_supercell.n_elements,
-            )[0]
-            self._n_atoms_array.append(n_atoms)
+            complete_labelings = np.array([labeling])[:, labelings_order]
+            active_labelings = complete_labelings[:, lattice_supercell.active_sites]
 
             cf = calc_correlation(
                 self._lattice_unitcell,
@@ -179,6 +173,12 @@ class ClusterFunctions:
                 verbose=self._verbose,
             )
             self._cluster_functions.extend(cf)
+            n_atoms = get_chemical_compositions(
+                labelings=complete_labelings,
+                n_elements=lattice_supercell.n_elements,
+            )[0]
+            self._n_atoms_array.append(n_atoms)
+
         self._cluster_functions = np.array(self._cluster_functions)
         return self._cluster_functions
 
@@ -302,7 +302,7 @@ class ClusterFunctions:
     @property
     def n_atoms_array(self):
         """Return numbers of atoms in structures."""
-        return self._n_atoms_array
+        return np.array(self._n_atoms_array)
 
     @property
     def lattice_unitcell(self):
@@ -313,116 +313,3 @@ class ClusterFunctions:
     def cluster_functions(self):
         """Return cluster functions."""
         return self._cluster_functions
-
-
-# def _check_cluster_attrs(
-#    clusters_yaml: str = "pyclupan_cluster.yaml",
-#    lattice: Optional[Lattice] = None,
-#    clusters: Optional[list] = None,
-#    spin_basis_clusters: Optional[list] = None,
-# ):
-#    """Check cluster attributes."""
-#    if lattice is None:
-#        lattice, clusters, _, spin_basis_clusters = load_clusters_yaml(clusters_yaml)
-#        return lattice, clusters, spin_basis_clusters
-#
-#    if clusters is None:
-#        raise RuntimeError("Cluster attributes required.")
-#    if spin_basis_clusters is None:
-#        raise RuntimeError("Spin-basis cluster attributes required.")
-#    return lattice, clusters, spin_basis_clusters
-#
-#
-# def run_correlation_from_structures(
-#    structures: list[PolymlpStructure],
-#    element_strings: tuple,
-#    clusters_yaml: str = "pyclupan_cluster.yaml",
-#    lattice: Optional[Lattice] = None,
-#    clusters: Optional[list] = None,
-#    spin_basis_clusters: Optional[list] = None,
-#    verbose: bool = False,
-# ):
-#    """Calculate cluster functions from derivative structure."""
-#    lattice, clusters, spin_basis_clusters = _check_cluster_attrs(
-#        clusters_yaml,
-#        lattice=lattice,
-#        clusters=clusters,
-#        spin_basis_clusters=spin_basis_clusters,
-#    )
-#
-#    cluster_functions = []
-#    for st in structures:
-#        supercell_matrix = np.linalg.inv(lattice.axis) @ st.axis
-#        if not np.allclose(supercell_matrix - np.round(supercell_matrix), 0.0):
-#            raise RuntimeError("Axis of given structure not consistent with lattice.")
-#
-#        supercell, tmat = reduced(st, return_transformation=True)
-#        supercell.supercell_matrix = supercell_matrix @ tmat
-#        labeling = element_strings_to_labeling(supercell.elements, element_strings)
-#
-#        lattice_supercell, labelings_order = structure_to_lattice(
-#            supercell,
-#            lattice,
-#            only_active=True,
-#        )
-#        labelings = np.array([labeling])[:, labelings_order]
-#
-#        cf = calc_correlation(
-#            lattice,
-#            lattice_supercell,
-#            labelings,
-#            clusters,
-#            spin_basis_clusters,
-#            verbose=verbose,
-#        )
-#        cluster_functions.extend(cf)
-#    return np.array(cluster_functions)
-#
-#
-# def run_correlation(
-#    unitcell: PolymlpStructure,
-#    supercell_matrix: np.ndarray,
-#    labelings: np.ndarray,
-#    clusters_yaml: str = "pyclupan_cluster.yaml",
-#    lattice: Optional[Lattice] = None,
-#    clusters: Optional[list] = None,
-#    spin_basis_clusters: Optional[list] = None,
-#    verbose: bool = False,
-# ):
-#    """Calculate cluster functions.
-#
-#    Parameters
-#    ----------
-#    unitcell: Unitcell.
-#    supercell_matrix: Supercell matrix.
-#    labelings: Element labelings in supercell. Only active labelings should be given.
-#    clusters_yaml: Name of output file for cluster search results.
-#
-#    Return
-#    ------
-#    cluster_functions: Cluster functions for labelings.
-#        shape: (n_labeling, n_features)
-#    """
-#    lattice, clusters, spin_basis_clusters = _check_cluster_attrs(
-#        clusters_yaml,
-#        lattice=lattice,
-#        clusters=clusters,
-#        spin_basis_clusters=spin_basis_clusters,
-#    )
-#
-#    if not is_cell_equal(unitcell, lattice.cell):
-#        raise RuntimeError("Unitcell in cluster.yaml is not equal to given unitcell.")
-#
-#    supercell = supercell_reduced(unitcell, supercell_matrix=supercell_matrix)
-#    lattice_supercell = lattice.lattice_supercell(supercell)
-#
-#    cluster_functions = calc_correlation(
-#        lattice,
-#        lattice_supercell,
-#        labelings,
-#        clusters,
-#        spin_basis_clusters,
-#        verbose=verbose,
-#    )
-#    return cluster_functions
-#

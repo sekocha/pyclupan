@@ -13,40 +13,26 @@ from pyclupan.features.features_utils import get_chemical_compositions
 from pyclupan.features.run_correlation import ClusterFunctions
 
 
-def get_formation_energies(
-    energies: np.ndarray,
-    model: CEmodel,
+def _calc_cluster_functions_endmembers(
     cf: ClusterFunctions,
     structures: Optional[list[PolymlpStructure]] = None,
     element_strings: Optional[tuple] = None,
     labelings: Optional[np.ndarray] = None,
     supercell_matrices: Optional[np.ndarray] = None,
-    verbose: bool = False,
 ):
-    """Evaluate formation energies.
-
-    Parameters
-    ----------
-    energies: Energies per unitcell for structure set.
-    model: CEmodel instance used for calculating formation energies.
-    """
+    """Calculate cluster functions for endmembers."""
     if structures is None and labelings is None:
         raise RuntimeError("structures or labelings required.")
-    if cf.n_atoms_array is None:
-        raise RuntimeError("Number of atoms not found.")
 
-    cf_current = copy.deepcopy(cf)
-
-    unitcell = cf_current.lattice_unitcell.cell
-    n_atoms_array = cf_current.n_atoms_array
+    unitcell = cf.lattice_unitcell.cell
+    cf_end = copy.deepcopy(cf)
     if structures is not None:
         if element_strings is None:
             raise RuntimeError("Element strings required.")
-        cf_current.structures = structures
-        cf_current.element_strings = element_strings
-        cluster_functions = cf_current.eval()
+        cf_end.structures = structures
+        cf_end.element_strings = element_strings
+        cluster_functions = cf_end.eval()
     elif labelings is not None:
-        labelings = np.array(labelings)
         if supercell_matrices is None:
             supercell_matrices = [np.eye(3) for _ in labelings]
         else:
@@ -56,16 +42,49 @@ def get_formation_energies(
         cluster_functions = []
         for single_labeling, supercell_matrix in zip(labelings, supercell_matrices):
             single_labeling = np.array([single_labeling])
-            cf_current.set_labelings(unitcell, supercell_matrix, single_labeling)
-            functions = cf_current.eval()
-            cluster_functions.append(functions[0])
+            cf_end.set_labelings(unitcell, supercell_matrix, single_labeling)
+            cluster_functions.append(cf_end.eval()[0])
         cluster_functions = np.array(cluster_functions)
+    return cluster_functions
+
+
+def get_formation_energies(
+    energies: np.ndarray,
+    model: CEmodel,
+    cf: ClusterFunctions,
+    structures_endmembers: Optional[list[PolymlpStructure]] = None,
+    element_strings: Optional[tuple] = None,
+    labelings_endmembers: Optional[np.ndarray] = None,
+    supercell_matrices_endmembers: Optional[np.ndarray] = None,
+    verbose: bool = False,
+):
+    """Evaluate formation energies.
+
+    Parameters
+    ----------
+    energies: Energies per unitcell for structure set.
+    model: CEmodel instance used for calculating formation energies.
+    """
+    cluster_functions = _calc_cluster_functions_endmembers(
+        cf,
+        structures=structures_endmembers,
+        element_strings=element_strings,
+        labelings=labelings_endmembers,
+        supercell_matrices=supercell_matrices_endmembers,
+    )
+
+    unitcell = cf.lattice_unitcell.cell
+    n_atoms_array = cf.n_atoms_array
+    if n_atoms_array is None:
+        raise RuntimeError("Number of atoms not found.")
+    if len(energies) != len(n_atoms_array):
+        raise RuntimeError("Sizes of energies and n_atoms are not consistent.")
 
     chemical_comps_end_members = get_chemical_compositions(
-        structures=structures,
+        structures=structures_endmembers,
         element_strings=element_strings,
-        labelings=labelings,
-        n_elements=cf_current.lattice_unitcell.n_elements,
+        labelings=labelings_endmembers,
+        n_elements=cf.lattice_unitcell.n_elements,
     )
 
     comp = Composition(chemical_comps_end_members)
