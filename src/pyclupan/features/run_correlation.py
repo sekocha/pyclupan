@@ -133,6 +133,10 @@ class ClusterFunctions:
         supercell = supercell_reduced(unitcell, supercell_matrix=supercell_matrix)
         self._lattice_supercell = self._lattice_unitcell.lattice_supercell(supercell)
         self._active_labelings = active_labelings
+
+        if not self._lattice_supercell.is_active_size(active_labelings):
+            raise RuntimeError("Size of active labelings is not size of active sites.")
+
         return self
 
     def _eval_from_structures(self):
