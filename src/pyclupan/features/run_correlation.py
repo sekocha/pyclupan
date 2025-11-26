@@ -1,5 +1,7 @@
 """Class for calculating cluster functions."""
 
+import time
+
 import numpy as np
 
 from pyclupan.cluster.cluster_io import load_clusters_yaml
@@ -19,14 +21,14 @@ from pyclupan.features.features_utils import (
     get_chemical_compositions,
     structure_to_lattice,
 )
-from pyclupan.features.orbit_utils import find_orbit
+from pyclupan.features.orbit_utils import find_orbit_supercell, find_orbit_unitcell
 
 
 def calc_correlation(
     lattice_unitcell: Lattice,
     lattice_supercell: Lattice,
     labelings: np.ndarray,
-    clusters: list,
+    orbit_fracs_unitcell: list,
     spin_basis_clusters: list,
     verbose: bool = False,
 ):
@@ -39,24 +41,22 @@ def calc_correlation(
     unitcell = lattice_unitcell.cell
     supercell = lattice_supercell.cell
     map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
-    rotations, translations = get_symmetry(unitcell)
 
-    # import time
-    # t1 = time.time()
+    # TODO: Expensive part.
+    t1 = time.time()
     orbit_all = []
-    for cl in clusters:
-        orbit = find_orbit(
-            cl,
+    for orbit_f in orbit_fracs_unitcell:
+        orbit = find_orbit_supercell(
             unitcell,
             supercell,
-            rotations,
-            translations,
+            orbit_f,
             map_unit_to_sup,
             return_array=True,
         )
         orbit = lattice_supercell.to_active_site_rep(orbit)
         orbit_all.append(orbit)
-    # t2 = time.time()
+    t2 = time.time()
+    print("Supercell Orbit:", t2 - t1)
 
     spins = lattice_supercell.to_spins(labelings)
     cluster_functions = []
@@ -66,9 +66,6 @@ def calc_correlation(
         cf = eval_cluster_functions(coeffs, spins[:, orbit])
         cluster_functions.append(cf)
     cluster_functions = np.array(cluster_functions).T
-
-    # t3 = time.time()
-    # print(t2 - t1, t3-t2)
     return cluster_functions
 
 
@@ -100,6 +97,18 @@ class ClusterFunctions:
         self._structures = None
         self._element_strings = None
         self._derivatives = None
+
+        self._eval_unitcell_attrs()
+
+    def _eval_unitcell_attrs(self):
+        """Evaluate required attributes for unitcell.."""
+        unitcell = self._lattice_unitcell.cell
+        rotations, translations = get_symmetry(unitcell)
+        self._orbit_fracs_unitcell = []
+        for cl in self._clusters:
+            _, orbit_fracs = find_orbit_unitcell(cl, unitcell, rotations, translations)
+            self._orbit_fracs_unitcell.append(orbit_fracs)
+        return self
 
     def clear_structures(self):
         """Clear structures."""
@@ -172,7 +181,7 @@ class ClusterFunctions:
                 self._lattice_unitcell,
                 lattice_supercell,
                 active_labelings,
-                self._clusters,
+                self._orbit_fracs_unitcell,
                 self._spin_basis_clusters,
                 verbose=self._verbose,
             )
@@ -192,11 +201,10 @@ class ClusterFunctions:
             self._lattice_unitcell,
             self._lattice_supercell,
             self._active_labelings,
-            self._clusters,
+            self._orbit_fracs_unitcell,
             self._spin_basis_clusters,
             verbose=self._verbose,
         )
-
         complete_labelings = self._lattice_supercell.complete_labelings(
             self._active_labelings
         )
@@ -211,15 +219,25 @@ class ClusterFunctions:
         self._cluster_functions = []
         self._n_atoms_array = []
         for d in self._derivatives:
+            if self._verbose:
+                print("Supercell Size:", d.supercell_size, flush=True)
+                print("- Supercell:", flush=True)
+                print(d.supercell_matrix, flush=True)
+                print("- n_labelings:", d.active_labelings.shape[0], flush=True)
+
+            ta = time.time()
             supercell = supercell_reduced(
                 d.unitcell, supercell_matrix=d.supercell_matrix
             )
             lattice_supercell = self._lattice_unitcell.lattice_supercell(supercell)
+            tb = time.time()
+            print("Supercell calc.", tb - ta)
+
             cf = calc_correlation(
                 self._lattice_unitcell,
                 lattice_supercell,
                 d.active_labelings,
-                self._clusters,
+                self._orbit_fracs_unitcell,
                 self._spin_basis_clusters,
                 verbose=self._verbose,
             )
