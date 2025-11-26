@@ -91,6 +91,13 @@ class Derivatives:
         self._sample = np.sort(self._sample)
         return self._sample
 
+    def select(self, key: int):
+        """Sample single labeling."""
+        if self._sample is None:
+            self._sample = []
+        self._sample.append(key)
+        return self
+
     @property
     def sample(self):
         """Return IDs of sampled labelings."""
@@ -112,7 +119,6 @@ class Derivatives:
         """Return complete labelings from both active and inactive labelings."""
         if active_labelings is None:
             active_labelings = self.active_labelings
-
         return self.lattice_supercell.complete_labelings(active_labelings)
 
     @property
@@ -131,20 +137,18 @@ class Derivatives:
 
     def save(self, element_strings: tuple, path: str = "poscars"):
         """Save derivative structures sampled."""
-        if self._sample is None:
-            raise RuntimeError("Sampled labelings not found.")
+        if self._sample is not None and len(self._sample) > 0:
+            os.makedirs(path, exist_ok=True)
+            for ids, labeling in zip(self.sample_ids, self.sampled_complete_labelings):
+                structure_id = get_structure_id(*ids)
+                filename = "poscar-" + structure_id
+                sup = copy.deepcopy(self.supercell)
+                sup.types = labeling
+                sup.elements = list(np.array(element_strings)[sup.types])
+                sup = sup.reorder()
 
-        os.makedirs(path, exist_ok=True)
-        for ids, labeling in zip(self.sample_ids, self.sampled_complete_labelings):
-            structure_id = get_structure_id(*ids)
-            filename = "poscar-" + structure_id
-            sup = copy.deepcopy(self.supercell)
-            sup.types = labeling
-            sup.elements = list(np.array(element_strings)[sup.types])
-            sup = sup.reorder()
-
-            header = "pyclupan: " + structure_id
-            write_poscar_file(sup, filename=path + "/" + filename, header=header)
+                header = "pyclupan: " + structure_id
+                write_poscar_file(sup, filename=path + "/" + filename, header=header)
         return self
 
     def write_attrs(self, file: Union[str, io.IOBase]):
@@ -156,18 +160,19 @@ class Derivatives:
         else:
             raise RuntimeError("file is not str or io.IOBase")
 
-        print("- supercell_matrix:", file=f)
-        print("  -", list(self.supercell_matrix[0]), file=f)
-        print("  -", list(self.supercell_matrix[1]), file=f)
-        print("  -", list(self.supercell_matrix[2]), file=f)
-        print("  inactive_labeling:", list(self.inactive_labeling), file=f)
-        print("  active_labelings:", file=f)
-        for labeling in self.sampled_active_labelings:
-            print("  -", list(labeling), file=f)
-        print("  id:", file=f)
-        for ids in self.sample_ids:
-            print("  -", get_structure_id(*ids), file=f)
-        print(file=f)
+        if self._sample is not None and len(self._sample) > 0:
+            print("- supercell_matrix:", file=f)
+            print("  -", list(self.supercell_matrix[0]), file=f)
+            print("  -", list(self.supercell_matrix[1]), file=f)
+            print("  -", list(self.supercell_matrix[2]), file=f)
+            print("  inactive_labeling:", list(self.inactive_labeling), file=f)
+            print("  active_labelings:", file=f)
+            for labeling in self.sampled_active_labelings:
+                print("  -", list(labeling), file=f)
+            print("  id:", file=f)
+            for ids in self.sample_ids:
+                print("  -", get_structure_id(*ids), file=f)
+            print(file=f)
         return self
 
 
@@ -185,6 +190,7 @@ class DerivativesSet:
     def __post_init__(self):
         """Post init method."""
         self._sample = None
+        self._set_map_supercell_ids()
 
     def __iter__(self):
         """Iter method."""
@@ -201,6 +207,14 @@ class DerivativesSet:
     def __len__(self):
         """Len method."""
         return len(self.derivatives_set)
+
+    def _set_map_supercell_ids(self):
+        """Set mapping from supercell IDs to array id."""
+        self._map_supercell_ids = dict()
+        for i, d in enumerate(self):
+            key = (d.supercell_size, d.supercell_id)
+            self._map_supercell_ids[key] = i
+        return self
 
     def append(self, ds: Union[list, tuple, Derivatives, DerivativesSet]):
         """Append data of derivative structures."""
@@ -246,6 +260,21 @@ class DerivativesSet:
         n_samples_cell = self._choose_cell(n_samples=n_samples, prob=self.n_labelings)
         self._sample = [d.random(n_samples=n) for d, n in zip(self, n_samples_cell)]
         return self._sample
+
+    def select(self, key: tuple):
+        """Sample single labeling from IDs.
+
+        Parameter
+        ---------
+        key: Tuple of IDs, (supercell_size, supercell_id, labeling_id).
+        """
+        if len(self._map_supercell_ids) != len(self.derivatives_set):
+            self._set_map_supercell_ids()
+
+        supercell_size, supercell_id, labeling_id = key
+        iset = self._map_supercell_ids[(supercell_size, supercell_id)]
+        self[iset].select(labeling_id)
+        return self
 
     def _choose_cell(self, n_samples: int = 100, prob: np.ndarray = None):
         """Choose supercell id randomly."""
