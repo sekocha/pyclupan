@@ -239,6 +239,9 @@ class ClusterFunctions:
             )
             self._n_atoms_array.extend(n_atoms)
         self._cluster_functions = np.array(self._cluster_functions)
+
+        if self._verbose:
+            print("Cluster Function Size:", self._cluster_functions.shape, flush=True)
         return self._cluster_functions
 
     def eval(self):

@@ -244,9 +244,19 @@ class PyclupanCalc:
     ):
         """Evaluate formation energies.
 
+        Structures or labelings are needed to specity endmembers.
+        Their formation energies are calculated using CE model.
+
         Parameters
         ----------
-        TODO: Add parameters.
+        structures_endmembers: Structures of endmembers.
+        element_strings: Element strings.
+            The location index corresponds to label integer.
+            For example, element_strings are ("Ag", "Au"),
+            labels 0 and 1 indicate elements Ag and Au, respectively.
+        labelings_endmembers: Labelings of endmembers.
+        supercell_matrices_endmembers:
+            Supercell matrice corresponding to each labeling.
         """
         if self._energies is None:
             raise RuntimeError("Energies not found.")
@@ -320,7 +330,15 @@ class PyclupanCalc:
         return self
 
     def save_convex_hull_poscars_from_derivatives(self, element_strings: tuple):
-        """Save derivative structures on convex hull."""
+        """Save derivative structures on convex hull.
+
+        Parameter
+        ---------
+        element_strings: Element strings.
+            The location index corresponds to label integer.
+            For example, element_strings are ("Ag", "Au"),
+            labels 0 and 1 indicate elements Ag and Au, respectively.
+        """
         if self._convex is None:
             raise RuntimeError("Convex hull not found.")
         if self._derivatives is None:
