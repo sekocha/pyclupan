@@ -75,6 +75,46 @@ def test_prediction_from_labelings():
     pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
 
+    unitcell = Poscar(str(cwd) + "/fcc-primitive").structure
+    hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 4]])
+    labelings = np.array(
+        [
+            [0, 0, 0, 0],
+            [0, 0, 0, 1],
+            [0, 1, 0, 1],
+            [0, 0, 1, 1],
+            [0, 1, 1, 1],
+            [1, 1, 1, 1],
+        ]
+    )
+    pyclupan.set_labelings(
+        unitcell=unitcell,
+        supercell_matrix=hnf,
+        active_labelings=labelings,
+    )
+    pyclupan.eval_energies()
+    labelings_end = np.array([[0], [1]])
+    _ = pyclupan.eval_formation_energies(labelings=labelings_end)
+
+    energies_true = np.array(
+        [-2.717582, -2.88247, -3.030677, -3.016268, -3.133167, -3.219809]
+    )
+    f_energies_true = np.array([0.0, -0.039331, -0.061982, -0.047572, -0.038915, 0.0])
+    np.testing.assert_allclose(pyclupan.energies, energies_true, atol=1e-6)
+    np.testing.assert_allclose(pyclupan.formation_energies, f_energies_true, atol=1e-6)
+
+    ch_true = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.75, 0.25, -0.039331],
+            [0.5, 0.5, -0.061982],
+            [0.25, 0.75, -0.03891461],
+            [0.0, 1.0, 0.0],
+        ]
+    )
+    ch_pred = pyclupan.convexhull[:, :-1].astype(float)
+    np.testing.assert_allclose(ch_pred, ch_true, atol=1e-6)
+
 
 def test_prediction_from_derivatives():
     """Test energy prediction using derivatives."""

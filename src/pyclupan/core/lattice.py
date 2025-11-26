@@ -87,6 +87,7 @@ class Lattice:
         self._inactive_lattice = [i for i, e in enumerate(elements) if len(e) == 1]
         self._active_elements = [e2 for e in elements if len(e) > 1 for e2 in e]
         self._inactive_elements = [e2 for e in elements if len(e) == 1 for e2 in e]
+        self._n_elements = max([e2 for e in elements for e2 in e]) + 1
         self._set_spins()
 
     def _set_spins(self):
@@ -123,6 +124,11 @@ class Lattice:
     def elements_on_lattice(self):
         """Return elements on sublattices."""
         return self._elements_on_lattice
+
+    @property
+    def n_elements(self):
+        """Return number of elements on the entire lattice."""
+        return self._n_elements
 
     @property
     def active_sites(self):

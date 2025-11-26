@@ -1,7 +1,5 @@
 """Class for calculating cluster functions."""
 
-# import time
-
 import numpy as np
 
 from pyclupan.cluster.cluster_io import load_clusters_yaml
@@ -44,6 +42,7 @@ def calc_correlation(
     map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
     rotations, translations = get_symmetry(unitcell)
 
+    # import time
     # t1 = time.time()
     orbit_all = []
     for cl in clusters:
@@ -132,6 +131,23 @@ class ClusterFunctions:
         supercell = supercell_reduced(unitcell, supercell_matrix=supercell_matrix)
         self._lattice_supercell = self._lattice_unitcell.lattice_supercell(supercell)
         self._active_labelings = active_labelings
+
+        inactive_labeling = []
+        for i, n in enumerate(self._lattice_supercell.cell.n_atoms):
+            elements = self._lattice_supercell.elements_on_lattice[i]
+            if len(elements) == 1:
+                inactive_labeling.extend([elements[0] for j in range(n)])
+
+        complete_labelings = get_complete_labelings(
+            active_labelings,
+            inactive_labeling,
+            self._lattice_supercell.active_sites,
+            self._lattice_supercell.inactive_sites,
+        )
+        self._n_atoms_array = get_chemical_compositions(
+            labelings=complete_labelings,
+            n_elements=self._lattice_supercell.n_elements,
+        )
         return self
 
     def _eval_from_structures(self):
@@ -159,14 +175,15 @@ class ClusterFunctions:
             lattice_supercell, labelings_order = structure_to_lattice(
                 supercell,
                 self._lattice_unitcell,
-                # only_active=True,
             )
             labelings = np.array([labeling])[:, labelings_order]
             active_labelings = labelings[:, lattice_supercell.active_sites]
+            n_atoms = get_chemical_compositions(
+                labelings=labelings,
+                n_elements=lattice_supercell.n_elements,
+            )[0]
+            self._n_atoms_array.append(n_atoms)
 
-            self._n_atoms_array.append(
-                get_chemical_compositions(labelings=labelings)[0]
-            )
             cf = calc_correlation(
                 self._lattice_unitcell,
                 lattice_supercell,
@@ -194,6 +211,7 @@ class ClusterFunctions:
     def _eval_from_derivatives(self):
         """Evaluate cluster functions from derivative structures."""
         self._cluster_functions = []
+        self._n_atoms_array = []
         for d in self._derivatives:
             supercell = supercell_reduced(
                 d.unitcell, supercell_matrix=d.supercell_matrix
@@ -208,6 +226,11 @@ class ClusterFunctions:
                 verbose=self._verbose,
             )
             self._cluster_functions.extend(cf)
+            n_atoms = get_chemical_compositions(
+                labelings=d.get_complete_labelings(),
+                n_elements=lattice_supercell.n_elements,
+            )
+            self._n_atoms_array.extend(n_atoms)
         self._cluster_functions = np.array(self._cluster_functions)
         return self._cluster_functions
 

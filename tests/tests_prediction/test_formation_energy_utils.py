@@ -28,7 +28,7 @@ def test_get_chemical_compositions():
         [0, 0, 1, 1, 2, 2, 3, 3, 3, 3],
         [0, 1, 1, 1, 2, 2, 3, 3, 3, 3],
     ]
-    chems = get_chemical_compositions(labelings=labelings)
+    chems = get_chemical_compositions(labelings=labelings, n_elements=4)
     np.testing.assert_equal(chems, [[3, 1, 2, 4], [2, 2, 2, 4], [1, 3, 2, 4]])
 
 

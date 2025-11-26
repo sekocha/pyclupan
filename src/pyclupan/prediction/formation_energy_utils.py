@@ -1,5 +1,6 @@
 """Utility functions for formation energy."""
 
+import copy
 from typing import Optional
 
 import numpy as np
@@ -14,7 +15,6 @@ from pyclupan.features.run_correlation import ClusterFunctions
 
 def get_formation_energies(
     energies: np.ndarray,
-    n_atoms_array: np.ndarray,
     model: CEmodel,
     cf: ClusterFunctions,
     structures: Optional[list[PolymlpStructure]] = None,
@@ -28,20 +28,23 @@ def get_formation_energies(
     Parameters
     ----------
     energies: Energies per unitcell for structure set.
-    n_atoms_array: Numbers of atoms for structure set.
     model: CEmodel instance used for calculating formation energies.
     """
     if structures is None and labelings is None:
         raise RuntimeError("structures or labelings required.")
+    if cf.n_atoms_array is None:
+        raise RuntimeError("Number of atoms not found.")
 
-    unitcell = cf.lattice_unitcell.cell
-    cf.clear_structures()
+    cf_current = copy.deepcopy(cf)
+
+    unitcell = cf_current.lattice_unitcell.cell
+    n_atoms_array = cf_current.n_atoms_array
     if structures is not None:
         if element_strings is None:
             raise RuntimeError("Element strings required.")
-        cf.structures = structures
-        cf.element_strings = element_strings
-        cluster_functions = cf.eval()
+        cf_current.structures = structures
+        cf_current.element_strings = element_strings
+        cluster_functions = cf_current.eval()
     elif labelings is not None:
         labelings = np.array(labelings)
         if supercell_matrices is None:
@@ -53,8 +56,8 @@ def get_formation_energies(
         cluster_functions = []
         for single_labeling, supercell_matrix in zip(labelings, supercell_matrices):
             single_labeling = np.array([single_labeling])
-            cf.set_labelings(unitcell, supercell_matrix, single_labeling)
-            functions = cf.eval()
+            cf_current.set_labelings(unitcell, supercell_matrix, single_labeling)
+            functions = cf_current.eval()
             cluster_functions.append(functions[0])
         cluster_functions = np.array(cluster_functions)
 
@@ -62,6 +65,7 @@ def get_formation_energies(
         structures=structures,
         element_strings=element_strings,
         labelings=labelings,
+        n_elements=cf_current.lattice_unitcell.n_elements,
     )
 
     comp = Composition(chemical_comps_end_members)
@@ -95,6 +99,9 @@ def find_convex_hull(
     struture_ids: list,
 ):
     """Find convex hull of formation energies."""
+    print(compositions.shape)
+    print(compositions)
+    print(formation_energies.shape)
     if compositions.shape[0] != formation_energies.shape[0]:
         raise RuntimeError("Inconsistent sizes of compositions and energies.")
 

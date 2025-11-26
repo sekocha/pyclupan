@@ -23,3 +23,7 @@ class CEmodel:
         energies = cluster_functions @ self.coeffs
         energies += self.intercept
         return energies
+
+    def nonzero_spin_basis(self, spin_basis: list):
+        """Extract spin basis clusters with nonzero ECIs."""
+        return [spin_basis[i] for i in self.cluster_ids]

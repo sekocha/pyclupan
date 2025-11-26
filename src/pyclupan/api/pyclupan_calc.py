@@ -18,7 +18,6 @@ from pyclupan.features.run_correlation import ClusterFunctions
 from pyclupan.prediction.formation_energy_utils import (
     append_formation_energies_endmembers,
     find_convex_hull,
-    get_chemical_compositions,
     get_formation_energies,
 )
 from pyclupan.prediction.prediction_io import (
@@ -65,7 +64,6 @@ class PyclupanCalc:
         self._cf.structures = None
         self._derivatives = DerivativesSet([])
         self._structure_ids = None
-        self._n_atoms_array = None
         return self
 
     def load_ecis(self, filename: str = "pyclupan_ecis.yaml"):
@@ -76,9 +74,9 @@ class PyclupanCalc:
         filename: File of ECIs from regression.
         """
         self._model = load_ecis(filename)
-        self._cf.spin_basis_clusters = [
-            self._cf.spin_basis_clusters[i] for i in self._model.cluster_ids
-        ]
+        self._cf.spin_basis_clusters = self._model.nonzero_spin_basis(
+            self._cf.spin_basis_clusters
+        )
         return self
 
     def load_poscars(
@@ -111,6 +109,18 @@ class PyclupanCalc:
 
         return self
 
+    def _set_attrs_from_derivatives(self, derivs: DerivativesSet):
+        """Evaluate cluster functions from derivative structure set."""
+        self._derivatives.append(derivs)
+        self._cf.derivatives = self._derivatives
+
+        if self._structure_ids is None:
+            self._structure_ids = []
+
+        for d in derivs:
+            self._structure_ids.extend(d.structure_ids)
+        return self
+
     def load_sample_attrs_yaml(self, filename: str = "pyclupan_samples_attrs.yaml"):
         """Load pyclupan_samples_attrs.yaml file.
 
@@ -120,8 +130,8 @@ class PyclupanCalc:
             If other files are alreadly loaded, the file will be appended
             to the existing dataset.
         """
-        self._derivatives.append(load_sample_attrs_yaml(filename))
-        self._cf.derivatives = self._derivatives
+        derivs = load_sample_attrs_yaml(filename)
+        self._set_attrs_from_derivatives(derivs)
         return self
 
     def load_derivatives_yaml(self, filename: str = "pyclupan_derivatives.yaml"):
@@ -133,8 +143,8 @@ class PyclupanCalc:
             If other files are alreadly loaded, the file will be appended
             to the existing dataset.
         """
-        self._derivatives.append(load_derivatives_yaml(filename))
-        self._cf.derivatives = self._derivatives
+        derivs = load_derivatives_yaml(filename)
+        self._set_attrs_from_derivatives(derivs)
         return self
 
     def set_labelings(
@@ -153,26 +163,10 @@ class PyclupanCalc:
         """
         self._cf.set_labelings(unitcell, supercell_matrix, active_labelings)
         self._structure_ids = [str(i).zfill(5) for i, l in enumerate(active_labelings)]
-        # TODO: Use complete labelings
-        self._n_atoms_array = get_chemical_compositions(labelings=active_labelings)
-        return self
-
-    def _set_attrs_from_derivatives(self):
-        """Evaluate cluster functions from derivative structure set."""
-        self._structure_ids = []
-        self._n_atoms_array = []
-        for d in self._derivatives:
-            self._structure_ids.extend(d.structure_ids)
-            self._n_atoms_array.extend(
-                get_chemical_compositions(labelings=d.get_complete_labelings())
-            )
         return self
 
     def eval_cluster_functions(self):
         """Evaluate cluster functions."""
-        if len(self._derivatives) > 0:
-            self._set_attrs_from_derivatives()
-
         self._cluster_functions = self._cf.eval()
         return self._cluster_functions
 
@@ -258,16 +252,8 @@ class PyclupanCalc:
         if self._model is None:
             raise RuntimeError("CE model not found.")
 
-        if self._cf.n_atoms_array is not None:
-            n_atoms_array = self._cf.n_atoms_array
-        elif self._n_atoms_array is not None:
-            n_atoms_array = self._n_atoms_array
-        else:
-            raise RuntimeError("Number of atoms not found.")
-
         self._formation_energies, self._compositions = get_formation_energies(
             self._energies,
-            n_atoms_array,
             self._model,
             self._cf,
             structures=structures,
@@ -316,7 +302,7 @@ class PyclupanCalc:
             raise RuntimeError("Convex hull not found.")
 
         save_convex_yaml(self._convex, filename=filename)
-        # TODO: POSCAR files.
+        # TODO: Generate POSCAR files.
         return self
 
     def load_formation_energies(
@@ -346,10 +332,6 @@ class PyclupanCalc:
         ---------
         str: List of structures to be calculated.
         """
-        # TODO: n_atoms_array
-        # TODO: Use complete labelings
-        # self._n_atoms_array = get_chemical_compositions(labelings=active_labelings)
-
         self._structures = self._cf.structures = strs
         self._structure_ids = ["str-" + str(i) for i in range(len(strs))]
 
