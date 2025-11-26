@@ -1,7 +1,5 @@
 """Class for calculating cluster functions."""
 
-import time
-
 import numpy as np
 
 from pyclupan.cluster.cluster_io import load_clusters_yaml
@@ -42,8 +40,6 @@ def calc_correlation(
     supercell = lattice_supercell.cell
     map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
 
-    # TODO: Expensive part.
-    t1 = time.time()
     orbit_all = []
     for orbit_f in orbit_fracs_unitcell:
         orbit = find_orbit_supercell(
@@ -55,8 +51,6 @@ def calc_correlation(
         )
         orbit = lattice_supercell.to_active_site_rep(orbit)
         orbit_all.append(orbit)
-    t2 = time.time()
-    print("Supercell Orbit:", t2 - t1)
 
     spins = lattice_supercell.to_spins(labelings)
     cluster_functions = []
@@ -225,13 +219,10 @@ class ClusterFunctions:
                 print(d.supercell_matrix, flush=True)
                 print("- n_labelings:", d.active_labelings.shape[0], flush=True)
 
-            ta = time.time()
             supercell = supercell_reduced(
                 d.unitcell, supercell_matrix=d.supercell_matrix
             )
             lattice_supercell = self._lattice_unitcell.lattice_supercell(supercell)
-            tb = time.time()
-            print("Supercell calc.", tb - ta)
 
             cf = calc_correlation(
                 self._lattice_unitcell,
