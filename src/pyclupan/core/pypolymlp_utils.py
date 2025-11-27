@@ -21,6 +21,7 @@ try:
     import pypolymlp.utils.structure_utils as supercell_utils
 
     supercell = supercell_utils.supercell
+    supercell_diagonal = supercell_utils.supercell_diagonal
 except:
     pass
 

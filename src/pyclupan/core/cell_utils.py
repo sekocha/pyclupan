@@ -10,6 +10,26 @@ import pyclupan.core.pypolymlp_utils as pypolymlp_utils
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, ReducedCell
 
 supercell = pypolymlp_utils.supercell
+# supercell_diagonal = pypolymlp_utils.supercell_diagonal
+
+
+def supercell_diagonal(st: PolymlpStructure, size: tuple = (2, 2, 2)):
+    """Construct supercell using a diagonal supercell matrix."""
+    supercell_matrix = np.diag(size)
+    n_expand = np.prod(size)
+
+    sup = copy.deepcopy(st)
+    sup.axis = st.axis @ supercell_matrix
+    sup.n_atoms = np.array(st.n_atoms) * n_expand
+    sup.types = np.repeat(st.types, n_expand)
+    sup.elements = np.repeat(st.elements, n_expand)
+    sup.volume = st.volume * n_expand
+    sup.supercell_matrix = supercell_matrix
+
+    trans_all = np.indices(size).reshape(3, -1).T
+    positions_new = (st.positions.T[:, None] + trans_all[None, :]).reshape((-1, 3))
+    sup.positions = (positions_new / size).T
+    return sup
 
 
 def reduced(

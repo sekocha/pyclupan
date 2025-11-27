@@ -1,5 +1,6 @@
 """Utility functions for spglib."""
 
+import copy
 from typing import Optional
 
 import numpy as np
@@ -17,6 +18,25 @@ def _structure_to_cell(st: PolymlpStructure):
     """Transform structure to spglib cell."""
     cell = (st.axis.T, st.positions.T, np.array(st.types))
     return cell
+
+
+def refine_cell(st: PolymlpStructure, symprec: float = 1e-5):
+    """Refine cell."""
+    cell = _structure_to_cell(st)
+
+    map_elements = dict()
+    for e, t in zip(st.elements, st.types):
+        map_elements[t] = e
+
+    lattice1, position1, types1 = spglib.refine_cell(cell, symprec=symprec)
+    elements1 = [map_elements[t] for t in types1]
+    st_rev = copy.deepcopy(st)
+    st_rev.axis = lattice1.T
+    st_rev.positions = position1.T
+    st_rev.types = types1
+    st_rev.elements = elements1
+    st_rev = st_rev.reorder()
+    return st_rev
 
 
 def get_rotations(st: PolymlpStructure, symprec: float = 1e-5):
