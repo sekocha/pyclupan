@@ -183,7 +183,8 @@ class PyclupanCalc:
 
         save_cluster_functions_hdf5(
             self._cluster_functions,
-            ids=self._structure_ids,
+            self._structure_ids,
+            self._cf.n_atoms_array,
             filename=filename,
         )
         return self
@@ -196,9 +197,11 @@ class PyclupanCalc:
         filename: HDF5 file for features.
         """
 
-        self._cluster_functions, self._structure_ids = load_cluster_functions_hdf5(
+        res = load_cluster_functions_hdf5(
             filename=filename,
         )
+        self._cluster_functions, self._structure_ids, n_atoms_array = res
+        self._cf.n_atoms_array = n_atoms_array
         return self
 
     def eval_energies(self):
@@ -222,7 +225,12 @@ class PyclupanCalc:
         if self._energies is None:
             raise RuntimeError("Energies not found.")
 
-        save_energies_hdf5(self._energies, self._structure_ids, filename=filename)
+        save_energies_hdf5(
+            self._energies,
+            self._structure_ids,
+            self._cf.n_atoms_array,
+            filename=filename,
+        )
         return self
 
     def load_energies(self, filename: str = "pyclupan_energies.hdf5"):
@@ -232,7 +240,9 @@ class PyclupanCalc:
         ---------
         filename: HDF5 file for energies.
         """
-        self._energies, self._structure_ids = load_energies_hdf5(filename=filename)
+        res = load_energies_hdf5(filename=filename)
+        self._energies, self._structure_ids, n_atoms_array = res
+        self._cf.n_atoms_array = n_atoms_array
         return self
 
     def eval_formation_energies(
@@ -262,6 +272,8 @@ class PyclupanCalc:
             raise RuntimeError("Energies not found.")
         if self._model is None:
             raise RuntimeError("CE model not found.")
+        if self._cf.n_atoms_array is None:
+            raise RuntimeError("Number of atoms not found.")
 
         self._formation_energies, self._compositions = get_formation_energies(
             self._energies,

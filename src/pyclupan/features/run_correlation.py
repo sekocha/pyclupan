@@ -320,6 +320,11 @@ class ClusterFunctions:
         """Return numbers of atoms in structures."""
         return np.array(self._n_atoms_array)
 
+    @n_atoms_array.setter
+    def n_atoms_array(self, n_atoms_array: np.ndarray):
+        """Setter of numbers of atoms in structures."""
+        self._n_atoms_array = n_atoms_array
+
     @property
     def lattice_unitcell(self):
         """Return lattice in unitcell representation."""

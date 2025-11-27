@@ -214,3 +214,114 @@ def test_prediction_from_derivatives():
     )
     ch_pred = pyclupan.convexhull[:, :-1].astype(float)
     np.testing.assert_allclose(ch_pred, ch_true, atol=1e-6)
+
+
+def test_prediction_from_cluster_functions():
+    """Test energy prediction using cluster_functions."""
+    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
+    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
+    pyclupan.load_features(str(cwd) + "/pyclupan_features.hdf5")
+
+    formation_energies_true = np.array(
+        [
+            -0.04544599,
+            -0.06198151,
+            -0.03252755,
+            -0.03424761,
+            -0.05089163,
+            -0.04961041,
+            -0.04204881,
+            -0.04292115,
+            -0.02439566,
+            -0.02735838,
+            -0.02568571,
+            -0.03933114,
+            -0.04757212,
+            -0.03891461,
+            -0.03872562,
+            -0.05384497,
+            -0.03792942,
+            -0.03153661,
+            -0.03273672,
+            -0.03219086,
+            -0.04519174,
+            -0.05853932,
+            -0.04370441,
+            -0.03818375,
+            -0.03802169,
+            -0.04598144,
+            -0.04603994,
+        ]
+    )
+
+    pyclupan.eval_energies()
+    labelings_end = np.array([[0], [1]])
+    res = pyclupan.eval_formation_energies(labelings_endmembers=labelings_end)
+    np.testing.assert_allclose(res[0], formation_energies_true, atol=1e-6)
+
+    ch_true = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.75, 0.25, -0.045981436763470995],
+            [0.5, 0.5, -0.06198150625768761],
+            [0.25, 0.75, -0.04603994362635033],
+            [0.0, 1.0, 0.0],
+        ]
+    )
+    ch_pred = pyclupan.convexhull[:, :-1].astype(float)
+    np.testing.assert_allclose(ch_pred, ch_true, atol=1e-6)
+
+
+def test_prediction_from_energies():
+    """Test energy prediction using energies."""
+    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
+    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
+    pyclupan.load_energies(str(cwd) + "/pyclupan_energies.hdf5")
+
+    formation_energies_true = np.array(
+        [
+            -0.04544599,
+            -0.06198151,
+            -0.03252755,
+            -0.03424761,
+            -0.05089163,
+            -0.04961041,
+            -0.04204881,
+            -0.04292115,
+            -0.02439566,
+            -0.02735838,
+            -0.02568571,
+            -0.03933114,
+            -0.04757212,
+            -0.03891461,
+            -0.03872562,
+            -0.05384497,
+            -0.03792942,
+            -0.03153661,
+            -0.03273672,
+            -0.03219086,
+            -0.04519174,
+            -0.05853932,
+            -0.04370441,
+            -0.03818375,
+            -0.03802169,
+            -0.04598144,
+            -0.04603994,
+        ]
+    )
+
+    labelings_end = np.array([[0], [1]])
+    res = pyclupan.eval_formation_energies(labelings_endmembers=labelings_end)
+    np.testing.assert_allclose(res[0], formation_energies_true, atol=1e-6)
+
+    ch_true = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.75, 0.25, -0.045981436763470995],
+            [0.5, 0.5, -0.06198150625768761],
+            [0.25, 0.75, -0.04603994362635033],
+            [0.0, 1.0, 0.0],
+        ]
+    )
+    ch_pred = pyclupan.convexhull[:, :-1].astype(float)
+    np.testing.assert_allclose(ch_pred, ch_true, atol=1e-6)
