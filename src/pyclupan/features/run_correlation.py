@@ -1,5 +1,7 @@
 """Class for calculating cluster functions."""
 
+from typing import Optional
+
 import numpy as np
 
 from pyclupan.cluster.cluster_io import load_clusters_yaml
@@ -98,6 +100,9 @@ class ClusterFunctions:
         self._structures = None
         self._element_strings = None
         self._derivatives = None
+
+        self._orbit_frac_unitcell = None
+        self._orbit_sites_supercell = None
 
         self._eval_unitcell_attrs()
 
@@ -352,13 +357,12 @@ class ClusterFunctions:
         map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
         map_supercell_positions = get_map_positions(supercell, decimals=decimals)
 
-        orbit_all = []
-        for i, (orbit_f, mask) in enumerate(
-            zip(self._orbit_fracs_unitcell, self._mask_clusters)
-        ):
+        orbit_unitcell = self._orbit_fracs_unitcell
+        self._orbit_sites_supercell = []
+        for i, (orbit_f, mask) in enumerate(zip(orbit_unitcell, self._mask_clusters)):
             if mask:
                 if self._verbose:
-                    print("Calculating orbits for cluster ", i)
+                    print("Calculating orbits for cluster", i, flush=True)
 
                 orbit = find_orbit_supercell(
                     self._lattice_unitcell,
@@ -369,7 +373,26 @@ class ClusterFunctions:
                     return_array=True,
                 )
                 orbit = lattice_supercell.to_active_site_rep(orbit)
-                orbit_all.append(orbit)
+                self._orbit_sites_supercell.append(orbit)
             else:
-                orbit_all.append(None)
-        return orbit_all
+                self._orbit_sites_supercell.append(None)
+        return self._orbit_sites_supercell
+
+    def eval_from_labelings(
+        self,
+        lattice_supercell: Lattice,
+        active_labelings: Optional[np.ndarray] = None,
+        active_spins: Optional[np.ndarray] = None,
+    ):
+        """Evaluate cluster functions from active labelings."""
+        if active_labelings is not None:
+            active_spins = lattice_supercell.to_spins(active_labelings)
+
+        self._cluster_functions = []
+        for cl in self._spin_basis_clusters:
+            orbit = self._orbit_sites_supercell[cl.cluster_id]
+            coeffs = lattice_supercell.get_spin_polynomials(cl.spin_basis)
+            cf = eval_cluster_functions(coeffs, active_spins[:, orbit])
+            self._cluster_functions.append(cf)
+        self._cluster_functions = np.array(self._cluster_functions).T
+        return self._cluster_functions

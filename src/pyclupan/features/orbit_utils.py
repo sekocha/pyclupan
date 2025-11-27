@@ -123,15 +123,12 @@ def find_orbit_supercell_usemap(
     decimals: int = 5,
 ):
     """Extend orbit for unitcell to orbit for supercell."""
-    import time
-
     orbit_sites = [] if return_array else defaultdict(list)
 
     if map_supercell_positions is None:
         map_supercell_positions = get_map_positions(supercell, decimals=decimals)
 
     supercell_matrix_inv = np.linalg.inv(supercell.axis) @ unitcell.axis
-    t1 = time.time()
     for (site_unit, cell), site_sup in map_unit_to_sup.items():
         unitcell_fracs = np.array(orbit_positions_unitcell[site_unit])
         if unitcell_fracs.shape[0] > 0:
@@ -142,9 +139,6 @@ def find_orbit_supercell_usemap(
                 orbit_sites.extend(sites)
             else:
                 orbit_sites[site_sup].extend(sites)
-    t2 = time.time()
-    print(t2 - t1)
-
     return orbit_sites
 
 

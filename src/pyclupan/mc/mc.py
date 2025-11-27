@@ -1,6 +1,6 @@
 """Class for performing Monte Carlo simulations."""
 
-# from typing import Optional
+from typing import Optional
 
 import numpy as np
 
@@ -37,17 +37,80 @@ class MC:
             self._cf.spin_basis_clusters
         )
 
+        self._n_sites = None
         self._active_spins = None
+
         self._orbit = None
         self._cluster_functions = None
+        self._energy = None
         np.set_printoptions(legacy="1.21")
 
-    def set_init(self):
-        """Set initial conditions."""
+    def _set_init_structure_random(self, compositions: tuple):
+        """Set initial structure randomly."""
+        elements = self._lattice_supercell._active_elements
+        n_atoms = np.array([compositions[ele] * self._n_sites for ele in elements])
+        if not np.allclose(n_atoms - np.round(n_atoms), 0.0):
+            raise RuntimeError("Given supercell cannot express compositions.")
+
+        n_atoms = np.round(n_atoms).astype(int)
+        if self._verbose:
+            print("Number of atoms:", n_atoms, flush=True)
+            for e, n in zip(elements, n_atoms):
+                print("- Element", e, ":", n, flush=True)
+
+        perm = np.random.permutation(self._n_sites)
+        active_labelings = np.ones(self._n_sites, dtype=int) * -1
+        begin = 0
+        for ele, n in zip(elements, n_atoms):
+            end = begin + n
+            active_labelings[perm[begin:end]] = ele
+            begin = end
+        active_labelings = np.array([active_labelings])
+        self._active_spins = self._lattice_supercell.to_spins(active_labelings)[0]
+        return self._active_spins
+
+    def set_init_structure(self, compositions: Optional[tuple] = None):
+        """Set initial structure."""
         if self._lattice_supercell is None:
             raise RuntimeError("Set supercell first.")
 
-        # print(self._lattice_supercell.active_sites)
+        if compositions is not None:
+            self._set_init_structure_random(compositions)
+        else:
+            pass
+
+        return self
+
+    def set_init(self, compositions: Optional[tuple] = None):
+        """Set initial conditions.
+
+        Parameters
+        ----------
+        compositions: Compositions for active elements.
+            Array indices correspond to element IDs.
+            The compositions are defined as
+            (number of atoms) / (number of active sites).
+        """
+        if self._lattice_supercell is None:
+            raise RuntimeError("Set supercell first.")
+
+        self._n_sites = len(self._lattice_supercell.active_sites)
+        self.set_init_structure(compositions=compositions)
+
+        if self._verbose:
+            print("Constructing cluster orbits in supercell.", flush=True)
+
+        self._orbit = self._cf.get_orbit_supercell(self._lattice_supercell)
+        self._cluster_functions = self._cf.eval_from_labelings(
+            self._lattice_supercell,
+            active_spins=np.array([self._active_spins]),
+        )[0]
+        self._energy = self._model.eval(self._cluster_functions)
+        if self._verbose:
+            print("Initial structures:", flush=True)
+            print("- Cluster functions:", flush=True)
+            print(self._cluster_functions, flush=True)
+            print("- Energy:", self._energy, flush=True)
 
     def set_supercell(self, supercell_matrix: np.ndarray, refine: bool = False):
         """Set supercell.
@@ -86,11 +149,6 @@ class MC:
         sup.supercell_matrix = np.linalg.inv(unitcell.axis) @ sup.axis
         sup.supercell_matrix = np.rint(sup.supercell_matrix).astype(int)
         self._lattice_supercell = self._lattice_unitcell.lattice_supercell(sup)
-
-        if self._verbose:
-            print("Constructing cluster orbits in supercell.", flush=True)
-        self._orbit = self._cf.get_orbit_supercell(self._lattice_supercell)
-        print(self._orbit[-1])
         return self
 
 
