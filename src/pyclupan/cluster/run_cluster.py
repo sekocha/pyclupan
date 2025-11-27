@@ -12,7 +12,7 @@ from pyclupan.cluster.cluster_utils import (
     calc_distance_pairs,
     find_supercell,
 )
-from pyclupan.core.cell_utils import decompose_fraction
+from pyclupan.core.cell_positions_utils import decompose_fraction
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.core.spglib_utils import get_permutation

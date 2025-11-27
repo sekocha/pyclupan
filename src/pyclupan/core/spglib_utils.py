@@ -8,7 +8,10 @@ import spglib
 from symfc.utils.utils import compute_sg_permutations
 
 import pyclupan.core.pypolymlp_utils as pypolymlp_utils
-from pyclupan.core.cell_utils import decompose_fraction, get_matching_positions
+from pyclupan.core.cell_positions_utils import (
+    decompose_fraction,
+    get_matching_positions,
+)
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 
 ReducedCell = pypolymlp_utils.ReducedCell

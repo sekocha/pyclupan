@@ -18,3 +18,10 @@ class MCAttr:
     def n_sites(self):
         """Return number of active sites."""
         return len(self.active_spins)
+
+
+@dataclass
+class MCParams:
+    """Dataclass for parameters in MC simulation."""
+
+    n_steps: Optional[int] = None

@@ -4,9 +4,11 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.core.cell_utils import (
+from pyclupan.core.cell_positions_utils import (
     decompose_fraction,
     get_matching_positions,
+)
+from pyclupan.core.cell_utils import (
     get_unitcell_reps,
     supercell,
     supercell_diagonal,

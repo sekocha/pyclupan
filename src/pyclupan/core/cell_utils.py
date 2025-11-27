@@ -7,7 +7,12 @@ from typing import Literal, Optional
 import numpy as np
 
 import pyclupan.core.pypolymlp_utils as pypolymlp_utils
+from pyclupan.core.cell_positions_utils import (
+    decompose_fraction,
+    get_matching_positions,
+)
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, ReducedCell
+from pyclupan.core.spglib_utils import refine_cell
 
 supercell = pypolymlp_utils.supercell
 # supercell_diagonal = pypolymlp_utils.supercell_diagonal
@@ -29,6 +34,46 @@ def supercell_diagonal(st: PolymlpStructure, size: tuple = (2, 2, 2)):
     trans_all = np.indices(size).reshape(3, -1).T
     positions_new = (st.positions.T[:, None] + trans_all[None, :]).reshape((-1, 3))
     sup.positions = (positions_new / size).T
+    return sup
+
+
+def supercell_general(
+    unitcell: PolymlpStructure,
+    supercell_matrix: np.ndarray,
+    refine: bool = False,
+    verbose: bool = False,
+):
+    """Set supercell.
+
+    Parameters
+    ----------
+    supercell_matrix: Supercell matrix.
+        If three elements are given, a diagonal supercell matrix of these
+        elements will be used.
+    refine: Refine unitcell before applying supercell matrix. Default: False.
+        If True, a supercell is constructed by the expansion of given supercell
+        matrix for the refined cell.
+    """
+    if refine:
+        unitcell_rev = refine_cell(unitcell)
+        if verbose:
+            if not np.allclose(unitcell_rev.axis - unitcell.axis, 0.0):
+                print("Unitcell has been refined.", flush=True)
+    else:
+        unitcell_rev = unitcell
+
+    if np.array(supercell_matrix).size == 9:
+        if verbose:
+            print("Supercell matrix:", flush=True)
+            print(supercell_matrix, flush=True)
+        sup = supercell(unitcell_rev, supercell_matrix=supercell_matrix)
+
+    elif np.array(supercell_matrix).size == 3:
+        if verbose:
+            print("Diagonal supercell:", supercell_matrix, flush=True)
+        sup = supercell_diagonal(unitcell_rev, size=supercell_matrix)
+
+    sup.supercell_matrix = np.linalg.inv(unitcell.axis) @ sup.axis
     return sup
 
 
@@ -71,25 +116,6 @@ def is_cell_equal(cell1: PolymlpStructure, cell2: PolymlpStructure):
     if not list(cell1.types) == list(cell2.types):
         return False
     return True
-
-
-def decompose_fraction(positions: np.ndarray, tol: float = 1e-10):
-    """Decompose fractional coordinates into cell and positions from 0 and 1."""
-    cells = np.floor(positions + tol).astype(int)
-    positions_frac = positions - cells
-    return cells, positions_frac
-
-
-def get_matching_positions(
-    positions: np.ndarray, positions_ref: np.ndarray, tol: float = 1e-10
-):
-    """Calculate matching of two set of positions."""
-    import scipy.spatial.distance as distance
-
-    sites = np.where(distance.cdist(positions.T, positions_ref.T) < tol)[1]
-    if sites.shape[0] != positions.shape[1]:
-        raise RuntimeError("Any positions are inconsitent with reference positions.")
-    return sites
 
 
 def get_unitcell_reps(unitcell: PolymlpStructure, supercell: PolymlpStructure):

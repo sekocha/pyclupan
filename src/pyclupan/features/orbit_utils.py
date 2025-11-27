@@ -7,7 +7,8 @@ import numpy as np
 import scipy.spatial.distance as distance
 
 from pyclupan.cluster.cluster_utils import ClusterAttr
-from pyclupan.core.cell_utils import decompose_fraction, unitcell_reps_to_supercell_reps
+from pyclupan.core.cell_positions_utils import decompose_fraction
+from pyclupan.core.cell_utils import unitcell_reps_to_supercell_reps
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.core.spglib_utils import apply_symmetry_operations
 

@@ -4,10 +4,9 @@ from typing import Optional
 
 import numpy as np
 
-from pyclupan.core.cell_utils import supercell, supercell_diagonal
-from pyclupan.core.spglib_utils import refine_cell
+from pyclupan.core.cell_utils import supercell_general
 from pyclupan.features.run_correlation import ClusterFunctions
-from pyclupan.mc.mc_utils import MCAttr
+from pyclupan.mc.mc_utils import MCAttr, MCParams
 from pyclupan.regression.regression_utils import load_ecis
 
 
@@ -37,7 +36,32 @@ class MC:
         self._lattice_unitcell = self._cf.lattice_unitcell
         self._lattice_supercell = None
         self._mc_attr = MCAttr()
+        self._mc_params = MCParams()
         np.set_printoptions(legacy="1.21")
+
+    def set_supercell(self, supercell_matrix: np.ndarray, refine: bool = False):
+        """Set supercell.
+
+        Parameters
+        ----------
+        supercell_matrix: Supercell matrix.
+            If three elements are given, a diagonal supercell matrix of these
+            elements will be used.
+        refine: Refine unitcell before applying supercell matrix. Default: False.
+            If True, a supercell is constructed by the expansion of given supercell
+            matrix for the refined cell.
+        """
+        if self._verbose:
+            print("Constructing supercell.", flush=True)
+
+        sup = supercell_general(
+            self._lattice_unitcell.cell,
+            supercell_matrix,
+            refine=refine,
+            verbose=self._verbose,
+        )
+        self._lattice_supercell = self._lattice_unitcell.lattice_supercell(sup)
+        return self
 
     def _set_init_structure_random(self, compositions: tuple):
         """Set initial structure randomly."""
@@ -114,45 +138,6 @@ class MC:
 
         self._mc_attr.cluster_functions = cluster_functions
         self._mc_attr.energy = energy
-        return self
-
-    def set_supercell(self, supercell_matrix: np.ndarray, refine: bool = False):
-        """Set supercell.
-
-        Parameters
-        ----------
-        supercell_matrix: Supercell matrix.
-            If three elements are given, a diagonal supercell matrix of these
-            elements will be used.
-        refine: Refine unitcell before applying supercell matrix. Default: False.
-            If True, a supercell is constructed by the expansion of given supercell
-            matrix for the refined cell.
-        """
-        if self._verbose:
-            print("Constructing supercell.", flush=True)
-
-        unitcell = self._lattice_unitcell.cell
-        if refine:
-            unitcell_rev = refine_cell(unitcell)
-            if self._verbose:
-                if not np.allclose(unitcell_rev.axis - unitcell.axis, 0.0):
-                    print("Unitcell has been refined.", flush=True)
-        else:
-            unitcell_rev = unitcell
-
-        if np.array(supercell_matrix).size == 9:
-            if self._verbose:
-                print("Supercell matrix:", flush=True)
-                print(supercell_matrix, flush=True)
-            sup = supercell(unitcell_rev, supercell_matrix=supercell_matrix)
-
-        elif np.array(supercell_matrix).size == 3:
-            if self._verbose:
-                print("Diagonal supercell:", supercell_matrix, flush=True)
-            sup = supercell_diagonal(unitcell_rev, size=supercell_matrix)
-
-        sup.supercell_matrix = np.linalg.inv(unitcell.axis) @ sup.axis
-        self._lattice_supercell = self._lattice_unitcell.lattice_supercell(sup)
         return self
 
     @property
