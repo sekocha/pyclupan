@@ -7,6 +7,7 @@ import numpy as np
 from pyclupan.core.cell_utils import supercell, supercell_diagonal
 from pyclupan.core.spglib_utils import refine_cell
 from pyclupan.features.run_correlation import ClusterFunctions
+from pyclupan.mc.mc_utils import MCAttr
 from pyclupan.regression.regression_utils import load_ecis
 
 
@@ -27,47 +28,44 @@ class MC:
         ecis_yaml: File of ECIs from regression.
         """
         self._verbose = verbose
-
         self._cf = ClusterFunctions(clusters_yaml=clusters_yaml, verbose=verbose)
-        self._lattice_unitcell = self._cf.lattice_unitcell
-        self._lattice_supercell = None
-
         self._model = load_ecis(ecis_yaml)
         self._cf.spin_basis_clusters = self._model.nonzero_spin_basis(
             self._cf.spin_basis_clusters
         )
 
-        self._n_sites = None
-        self._active_spins = None
-
-        self._orbit = None
-        self._cluster_functions = None
-        self._energy = None
+        self._lattice_unitcell = self._cf.lattice_unitcell
+        self._lattice_supercell = None
+        self._mc_attr = MCAttr()
         np.set_printoptions(legacy="1.21")
 
     def _set_init_structure_random(self, compositions: tuple):
         """Set initial structure randomly."""
+        if not np.isclose(np.sum(compositions), 1.0):
+            raise RuntimeError("Sum of given compositions is not one.")
+
+        n_sites = len(self._lattice_supercell.active_sites)
         elements = self._lattice_supercell._active_elements
-        n_atoms = np.array([compositions[ele] * self._n_sites for ele in elements])
+        n_atoms = np.array([compositions[ele] * n_sites for ele in elements])
         if not np.allclose(n_atoms - np.round(n_atoms), 0.0):
             raise RuntimeError("Given supercell cannot express compositions.")
 
         n_atoms = np.round(n_atoms).astype(int)
         if self._verbose:
-            print("Number of atoms:", n_atoms, flush=True)
+            print("Number of active sites:", n_sites, flush=True)
             for e, n in zip(elements, n_atoms):
-                print("- Element", e, ":", n, flush=True)
+                print("- Active element", e, ":", n, flush=True)
 
-        perm = np.random.permutation(self._n_sites)
-        active_labelings = np.ones(self._n_sites, dtype=int) * -1
+        perm = np.random.permutation(n_sites)
+        active_labelings = np.ones(n_sites, dtype=int) * -1
         begin = 0
         for ele, n in zip(elements, n_atoms):
-            end = begin + n
-            active_labelings[perm[begin:end]] = ele
-            begin = end
-        active_labelings = np.array([active_labelings])
-        self._active_spins = self._lattice_supercell.to_spins(active_labelings)[0]
-        return self._active_spins
+            active_labelings[perm[begin : begin + n]] = ele
+            begin += n
+        assert np.all(active_labelings != -1)
+
+        active_spins = self._lattice_supercell.to_spins(np.array([active_labelings]))[0]
+        return active_spins
 
     def set_init_structure(self, compositions: Optional[tuple] = None):
         """Set initial structure."""
@@ -75,10 +73,11 @@ class MC:
             raise RuntimeError("Set supercell first.")
 
         if compositions is not None:
-            self._set_init_structure_random(compositions)
+            active_spins = self._set_init_structure_random(compositions)
         else:
             pass
 
+        self._mc_attr.active_spins = active_spins
         return self
 
     def set_init(self, compositions: Optional[tuple] = None):
@@ -94,23 +93,28 @@ class MC:
         if self._lattice_supercell is None:
             raise RuntimeError("Set supercell first.")
 
-        self._n_sites = len(self._lattice_supercell.active_sites)
         self.set_init_structure(compositions=compositions)
 
         if self._verbose:
             print("Constructing cluster orbits in supercell.", flush=True)
+        self._cf.get_orbit_supercell(self._lattice_supercell)
 
-        self._orbit = self._cf.get_orbit_supercell(self._lattice_supercell)
-        self._cluster_functions = self._cf.eval_from_labelings(
+        if self._verbose:
+            print("Calculating cluster functions of initial structure.", flush=True)
+        cluster_functions = self._cf.eval_from_labelings(
             self._lattice_supercell,
-            active_spins=np.array([self._active_spins]),
+            active_spins=np.array([self._mc_attr.active_spins]),
         )[0]
-        self._energy = self._model.eval(self._cluster_functions)
+        energy = self._model.eval(cluster_functions)
         if self._verbose:
             print("Initial structures:", flush=True)
             print("- Cluster functions:", flush=True)
-            print(self._cluster_functions, flush=True)
-            print("- Energy:", self._energy, flush=True)
+            print(cluster_functions, flush=True)
+            print("- Energy:", energy, flush=True)
+
+        self._mc_attr.cluster_functions = cluster_functions
+        self._mc_attr.energy = energy
+        return self
 
     def set_supercell(self, supercell_matrix: np.ndarray, refine: bool = False):
         """Set supercell.
@@ -141,67 +145,33 @@ class MC:
                 print("Supercell matrix:", flush=True)
                 print(supercell_matrix, flush=True)
             sup = supercell(unitcell_rev, supercell_matrix=supercell_matrix)
+
         elif np.array(supercell_matrix).size == 3:
             if self._verbose:
                 print("Diagonal supercell:", supercell_matrix, flush=True)
             sup = supercell_diagonal(unitcell_rev, size=supercell_matrix)
 
         sup.supercell_matrix = np.linalg.inv(unitcell.axis) @ sup.axis
-        sup.supercell_matrix = np.rint(sup.supercell_matrix).astype(int)
         self._lattice_supercell = self._lattice_unitcell.lattice_supercell(sup)
         return self
+
+    @property
+    def unitcell(self):
+        """Return unitcell."""
+        return self._lattice_unitcell.cell
+
+    @property
+    def supercell(self):
+        """Return supercell."""
+        return self._lattice_supercell.cell
+
+    @property
+    def mc_attr(self):
+        """Return attributes from MC."""
+        return self._mc_attr
 
 
 #     @property
 #     def structures(self):
 #         """Return structures."""
 #         return self._structures
-#
-#     @structures.setter
-#     def structures(self, strs: list[PolymlpStructure]):
-#         """Set structures to be calculated.
-#
-#         Parameter
-#         ---------
-#         str: List of structures to be calculated.
-#         """
-#         self._structures = self._cf.structures = strs
-#         self._structure_ids = ["str-" + str(i) for i in range(len(strs))]
-#
-#     @property
-#     def element_strings(self):
-#         """Return element strings."""
-#         return self._cf.element_strings
-#
-#     @element_strings.setter
-#     def element_strings(self, element_strings: tuple):
-#         """Set element strings.
-#
-#         Parameter
-#         ---------
-#         element_strings: Element strings.
-#             The location index corresponds to label integer.
-#             For example, element_strings are ("Ag", "Au"),
-#             labels 0 and 1 indicate elements Ag and Au, respectively.
-#         """
-#         self._cf.element_strings = element_strings
-#
-#     @property
-#     def cluster_functions(self):
-#         """Return cluster functions."""
-#         return self._cluster_functions
-#
-#     @property
-#     def energies(self):
-#         """Return energies (per unitcell)."""
-#         return self._energies
-#
-#     @property
-#     def formation_energies(self):
-#         """Return formation energies (per unitcell)."""
-#         return self._formation_energies
-#
-#     @property
-#     def convexhull(self):
-#         """Return convex hull of formation energies."""
-#         return self._convex
