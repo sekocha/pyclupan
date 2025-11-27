@@ -1,0 +1,82 @@
+unitcell:
+  axis:
+   - [4.0, 0.0, 0.0]
+   - [0.0, 4.0, 0.0]
+   - [0.0, 0.0, 4.0]
+  positions:
+   - [0.0, 0.0, 0.0]
+   - [0.5, 0.5, 0.5]
+   - [0.5, 0.5, 0.0]
+   - [0.0, 0.5, 0.5]
+   - [0.5, 0.0, 0.5]
+  n_atoms:   [1, 1, 3]
+  types:     [0, 1, 2, 2, 2]
+  elements:  ['Sr', 'Ti', 'O', 'O', 'O']
+  volume:    63.99999999999998
+
+zdd:
+  n_cells:  2
+  one_of_k: False
+  element_sets:
+  - id:          0
+    elements:    [0]
+    elements_dd: []
+  - id:          1
+    elements:    [1]
+    elements_dd: []
+  - id:          2
+    elements:    [2, 3]
+    elements_dd: [2]
+
+compositions:
+  comp:    [None, None, None, None]
+  comp_lb: [None, None, 0.65, None]
+  comp_ub: [None, None, None, None]
+
+derivative_structures:
+- id: 0
+  HNF:
+  - [1, 0, 0]
+  - [0, 1, 0]
+  - [0, 0, 2]
+  inactive_sites:    [0,1,2,3]
+  inactive_labeling: [0,0,1,1]
+  active_sites:      [4,5,6,7,8,9]
+  n_labelings:       5
+
+  active_labelings:
+  - [2,2,3,2,2,2]
+  - [2,2,3,2,2,3]
+  - [2,2,3,2,3,2]
+  - [3,2,2,2,2,2]
+  - [3,2,3,2,2,2]
+
+- id: 1
+  HNF:
+  - [1, 0, 0]
+  - [0, 1, 0]
+  - [0, 1, 2]
+  inactive_sites:    [0,1,2,3]
+  inactive_labeling: [0,0,1,1]
+  active_sites:      [4,5,6,7,8,9]
+  n_labelings:       4
+
+  active_labelings:
+  - [2,2,3,2,2,2]
+  - [3,2,2,2,2,2]
+  - [3,2,2,2,3,2]
+  - [3,2,3,2,2,2]
+
+- id: 2
+  HNF:
+  - [1, 0, 0]
+  - [0, 1, 0]
+  - [1, 1, 2]
+  inactive_sites:    [0,1,2,3]
+  inactive_labeling: [0,0,1,1]
+  active_sites:      [4,5,6,7,8,9]
+  n_labelings:       2
+
+  active_labelings:
+  - [3,2,2,2,2,2]
+  - [3,2,3,2,2,2]

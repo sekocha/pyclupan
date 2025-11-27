@@ -5,6 +5,7 @@ import signal
 
 import numpy as np
 
+from pyclupan.api.api_utils import print_credit
 from pyclupan.api.pyclupan import Pyclupan
 
 
@@ -40,7 +41,7 @@ def run():
     parser.add_argument(
         "-c",
         "--comp",
-        nargs="*",
+        nargs=2,
         type=str,
         action="append",
         default=None,
@@ -48,7 +49,7 @@ def run():
     )
     parser.add_argument(
         "--comp_lb",
-        nargs="*",
+        nargs=2,
         type=str,
         action="append",
         default=None,
@@ -56,7 +57,7 @@ def run():
     )
     parser.add_argument(
         "--comp_ub",
-        nargs="*",
+        nargs=2,
         type=str,
         action="append",
         default=None,
@@ -76,18 +77,24 @@ def run():
         help="Determinant of Hermite normal form",
     )
     parser.add_argument(
-        "--charges",
-        type=float,
-        nargs="*",
+        "--charge",
+        type=str,
+        nargs=2,
+        action="append",
         default=None,
-        help="Charges of elements",
+        help="Charge of element (element id, charge).",
+    )
+    parser.add_argument(
+        "--superperiodic",
+        action="store_true",
+        help="Include superperiodic structures.",
     )
 
     parser.add_argument(
         "--yaml",
         type=str,
         default="derivatives.yaml",
-        help="Yaml file.",
+        help="Yaml file for derivative structures.",
     )
     parser.add_argument(
         "--element_strings",
@@ -99,6 +106,7 @@ def run():
 
     args = parser.parse_args()
 
+    print_credit()
     np.set_printoptions(legacy="1.21")
     clupan = Pyclupan(verbose=True)
 
@@ -106,7 +114,7 @@ def run():
         args.hnf = np.array(args.hnf).reshape((3, 3))
     if args.poscar:
         clupan.load_poscar(args.poscar)
-        clupan.run(
+        clupan.run_derivative(
             occupation=args.occupation,
             elements=args.elements,
             comp=args.comp,
@@ -114,10 +122,14 @@ def run():
             comp_ub=args.comp_ub,
             supercell_size=args.supercell_size,
             hnf=args.hnf,
-            charges=args.charges,
+            charges=args.charge,
+            superperiodic=args.superperiodic,
         )
-        clupan.save_derivatives(filename="derivatives.yaml")
+        clupan.save_derivatives(filename="pyclupan_derivatives.yaml")
     elif args.yaml:
+        if args.element_strings is None:
+            raise RuntimeError("Element string must be given.")
+
         clupan.load_derivatives(args.yaml)
         clupan.sample_derivatives(
             method="uniform",

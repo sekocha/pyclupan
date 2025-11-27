@@ -4,19 +4,16 @@ import time
 from typing import Optional
 
 import numpy as np
-from pypolymlp.core.data_format import PolymlpStructure
 
-from pyclupan.core.normal_form import get_nonequivalent_hnf
-from pyclupan.derivative.derivative_utils import (
-    Derivatives,
-    DerivativesSet,
-    set_compositions,
-    set_elements_on_sublattices,
-)
-from pyclupan.derivative.labelings_utils import (
+from pyclupan.core.labelings_utils import (
     eliminate_superperiodic_labelings,
     get_nonequivalent_labelings,
 )
+from pyclupan.core.lattice import Lattice, get_complete_labelings
+from pyclupan.core.linalg_utils import get_nonequivalent_hnf
+from pyclupan.core.pypolymlp_utils import PolymlpStructure
+from pyclupan.derivative.derivative_utils import Derivatives, DerivativesSet
+from pyclupan.derivative.init_utils import set_charges, set_compositions
 from pyclupan.zdd.pyclupan_zdd import PyclupanZdd
 
 
@@ -45,34 +42,41 @@ def run_derivatives(
                 Example: [[0], [1], [2], [2]].
     elements: Element IDs on lattices.
               Example: [[0],[1],[2, 3]].
-    comp: Compositions for sublattices (n_elements / n_sites).
+    comp: Compositions for sublattices.
           Compositions are not needed to be normalized.
-          Format: [(element ID, composition), (element ID, compositions),...]
+          Format: [(element ID, composition), (element ID, composition),...]
     comp_lb: Lower bounds of compositions for sublattices.
-          Format: [(element ID, composition), (element ID, compositions),...]
+          Format: [(element ID, composition), (element ID, composition),...]
     comp_ub: Upper bounds of compositions for sublattices.
-          Format: [(element ID, composition), (element ID, compositions),...]
+          Format: [(element ID, composition), (element ID, composition),...]
     supercell_size: Determinant of supercell matrices.
                 Derivative structures for all nonequivalent HNFs are enumerated.
     hnf: Supercell matrix in Hermite normal form.
     superperiodic: Include superperiodic derivative structures.
     end_members: Include structures of end members.
     charges: Charges of elements.
+          Format: [(element ID, charge), (element ID, charge),...]
     """
     if supercell_size is None and hnf is None:
         raise RuntimeError("supercell_size or hnf required.")
+    if hnf is not None:
+        supercell_size = round(np.linalg.det(hnf))
 
-    elements_lattice = set_elements_on_sublattices(
-        n_sites=unitcell.n_atoms,
-        occupation=occupation,
-        elements=elements,
-    )
+    lattice_unitcell = Lattice(unitcell, occupation=occupation, elements=elements)
+    elements_lattice = lattice_unitcell.elements_on_lattice
+
+    n_sites_supercell = [n * supercell_size for n in unitcell.n_atoms]
     comp, comp_lb, comp_ub = set_compositions(
         elements_lattice=elements_lattice,
+        n_sites_supercell=n_sites_supercell,
         comp=comp,
         comp_lb=comp_lb,
         comp_ub=comp_ub,
     )
+
+    charges = set_charges(charges, elements_lattice)
+    if charges is not None:
+        one_of_k_rep = True
 
     if hnf is None:
         hnf_all = get_nonequivalent_hnf(supercell_size, unitcell)
@@ -115,37 +119,44 @@ def run_derivatives(
             verbose=verbose,
         )
         if labelings.shape[0] > 0:
+            # Eliminate superperiodic labelings.
+            if not superperiodic:
+                # TODO: Refactor ZDD classes.
+                site_perm_lt = zdd.site_permutations_lattice_translations
+                active_sites = zdd.zdd_lattice.site_attrs_set.active_sites
+                inactive_sites = zdd.zdd_lattice.site_attrs_set.inactive_sites
+                complete_labelings = get_complete_labelings(
+                    labelings,
+                    inactive_labeling,
+                    active_sites,
+                    inactive_sites,
+                )
+                complete_labelings = eliminate_superperiodic_labelings(
+                    complete_labelings,
+                    site_perm_lt,
+                )
+                labelings = complete_labelings[:, active_sites]
+                if verbose:
+                    prefix = "n_str (superperiodic)     :"
+                    print(prefix, complete_labelings.shape[0], flush=True)
+
             derivs = Derivatives(
-                zdd_lattice=zdd.zdd_lattice,
-                unitcell=unitcell,
-                hnf=hnf,
+                lattice_unitcell=lattice_unitcell,
+                supercell_matrix=hnf,
+                supercell_id=supercell_id,
                 active_labelings=labelings,
                 inactive_labeling=inactive_labeling,
                 comp=comp,
                 comp_lb=comp_lb,
                 comp_ub=comp_ub,
-                supercell_id=supercell_id,
             )
-            # Eliminate superperiodic labelings.
-            if not superperiodic:
-                site_perm_lt = zdd.site_permutations_lattice_translations
-                derivs.complete_labelings = eliminate_superperiodic_labelings(
-                    derivs.complete_labelings,
-                    site_perm_lt,
-                )
-                if verbose:
-                    print(
-                        "n_str (superperiodic)      :",
-                        derivs.active_labelings.shape[0],
-                        flush=True,
-                    )
-            n_derivs += derivs.active_labelings.shape[0]
+            n_derivs += derivs.n_labelings
             derivs_all.append(derivs)
 
     if verbose:
         print("Number of derivative structures:", n_derivs, flush=True)
 
-    return DerivativesSet(derivs_all)
+    return DerivativesSet(derivs_all), zdd
 
 
 def enum_derivatives(
@@ -159,6 +170,9 @@ def enum_derivatives(
     verbose: bool = False,
 ):
     """Return ZDD of non-equivalent configurations.
+
+    Parameters
+    ----------
     zdd: Initialized PyclupanZdd instance.
     hnf: Supercell matrix in Hermite normal form.
     comp: Compositions for sublattices (n_elements / n_sites).
@@ -168,20 +182,23 @@ def enum_derivatives(
           Format: [(element ID, composition), (element ID, compositions),...]
     comp_ub: Upper bounds of compositions for sublattices.
           Format: [(element ID, composition), (element ID, compositions),...]
+    charges: Charges for elements.
+          Format: [(element ID, charge), (element ID, charge),...]
     """
     zdd.reset_zdd()
     zdd.set_permutations(hnf)
 
     gs = zdd.one_of_k()
     if verbose:
-        print("n_str (one-of-k)           :", gs.len(), flush=True)
+        print("n_str (one-of-k):           ", gs.len(), flush=True)
 
     # Apply compositions
     if comp.count(None) != len(comp):
         gs &= zdd.composition(comp)
         if verbose:
             print("Composition:                ", comp, flush=True)
-            print("n_str (composition)        :", gs.len(), flush=True)
+            print("  Definition: n_element / n_possible_sites", flush=True)
+            print("n_str (composition):        ", gs.len(), flush=True)
 
     # Apply composition ranges
     if comp_lb.count(None) != len(comp_lb) or comp_ub.count(None) != len(comp_ub):
@@ -191,7 +208,7 @@ def enum_derivatives(
 
     # Apply charge balance rule
     if charges is not None:
-        gs = zdd.charge_balance(charges, gs=gs)
+        gs &= zdd.charge_balance(charges, gs=gs)
         if verbose:
             print("Charges:                    ", charges, flush=True)
             print("n_str (charge balanced):    ", gs.len(), flush=True)
@@ -199,30 +216,24 @@ def enum_derivatives(
     # Apply symmetry operations
     try:
         if verbose:
-            print("Using graphillion for calculating non-equiv. structures", flush=True)
+            print("Using graphillion for enumerating nonequiv. structures", flush=True)
         t1 = time.time()
         gs = zdd.nonequivalent_permutations(gs=gs)
         t2 = time.time()
         # Eliminate end members
-        if not end_members:
-            gs &= zdd.no_endmembers()
+        # if not end_members:
+        #     gs &= zdd.no_endmembers()
         labelings, inactive_labeling = zdd.to_labelings(gs)
     except:
         if verbose:
-            print("Using labelings for calculating non-equiv. structures", flush=True)
+            print("Using labelings for enumerating nonequiv. structures", flush=True)
         t1 = time.time()
         labelings, inactive_labeling = zdd.to_labelings(gs)
         labelings = get_nonequivalent_labelings(labelings, zdd.site_permutations)
         t2 = time.time()
-        if not end_members:
-            pass
 
     if verbose:
         print("n_str (non-equivalent)     :", labelings.shape[0], flush=True)
-        print(
-            "Elapsed_time (non-equiv.)  :",
-            np.round(t2 - t1, 3),
-            "(s)",
-            flush=True,
-        )
+        t_round = np.round(t2 - t1, 3)
+        print("Elapsed_time (non-equiv.)  :", t_round, "(s)", flush=True)
     return labelings, inactive_labeling

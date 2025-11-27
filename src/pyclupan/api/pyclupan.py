@@ -3,14 +3,9 @@
 from typing import Literal, Optional
 
 import numpy as np
-from pypolymlp.core.data_format import PolymlpStructure
-from pypolymlp.core.interface_vasp import Poscar
 
-from pyclupan.derivative.derivative_io import (
-    load_derivative_yaml,
-    write_derivative_yaml,
-)
-from pyclupan.derivative.run_derivative import run_derivatives
+from pyclupan.cluster.run_cluster import run_cluster
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
 
 
 class Pyclupan:
@@ -18,13 +13,21 @@ class Pyclupan:
 
     def __init__(self, verbose: bool = False):
         """Init method."""
-        self._unitcell = None
         self._verbose = verbose
 
+        self._unitcell = None
         self._derivs_set = None
+        self._zdd = None
+
+        self._clusters = None
+        np.set_printoptions(legacy="1.21")
 
     def load_poscar(self, poscar: str = "POSCAR") -> PolymlpStructure:
         """Parse POSCAR files.
+
+        Parameter
+        ---------
+        poscar: Name of POSCAR file.
 
         Returns
         -------
@@ -33,7 +36,44 @@ class Pyclupan:
         self._unitcell = Poscar(poscar).structure
         return self._unitcell
 
-    def run(
+    def run_cluster(
+        self,
+        occupation: Optional[list] = None,
+        elements: Optional[list] = None,
+        max_order: int = 4,
+        cutoffs: tuple[float] = (6.0, 6.0, 6.0),
+        filename: str = "pyclupan_cluster.yaml",
+    ):
+        """Search nonequivalent clusters.
+        Parameters
+        ----------
+        occupation: Lattice IDs occupied by elements.
+                    Example: [[0], [1], [2], [2]].
+        elements: Element IDs on lattices.
+                  Example: [[0], [1], [2, 3]].
+        max_order: Maximum order of clusters.
+        cutoffs: Cutoff distances for orders >= 2.
+                (two-body, three-body, four-body, ...)
+                Size of cutoffs must be equal to max_order - 1.
+                Cutoffs must be smaller or equal to those for smaller orders.
+        filename: Name of output file for cluster search results.
+                  If None, no file will be generated.
+        """
+        if self._unitcell is None:
+            raise RuntimeError("Unitcell not found.")
+
+        self._clusters = run_cluster(
+            unitcell=self._unitcell,
+            occupation=occupation,
+            elements=elements,
+            max_order=max_order,
+            cutoffs=cutoffs,
+            filename=filename,
+            verbose=self._verbose,
+        )
+        return self
+
+    def run_derivative(
         self,
         occupation: Optional[list] = None,
         elements: Optional[list] = None,
@@ -54,22 +94,28 @@ class Pyclupan:
         occupation: Lattice IDs occupied by elements.
                     Example: [[0], [1], [2], [2]].
         elements: Element IDs on lattices.
-                  Example: [[0],[1],[2, 3]].
+                  Example: [[0], [1], [2, 3]].
         comp: Compositions for sublattices (n_elements / n_sites).
               Compositions are not needed to be normalized.
-              Format: [(element ID, composition), (element ID, compositions),...]
+              Format: [(element ID, composition), (element ID, composition),...]
         comp_lb: Lower bounds of compositions for sublattices.
-              Format: [(element ID, composition), (element ID, compositions),...]
+              Format: [(element ID, composition), (element ID, composition),...]
         comp_ub: Upper bounds of compositions for sublattices.
-              Format: [(element ID, composition), (element ID, compositions),...]
+              Format: [(element ID, composition), (element ID, composition),...]
         supercell_size: Determinant of supercell matrices.
                     Derivative structures for all nonequivalent HNFs are enumerated.
         hnf: Supercell matrix in Hermite normal form.
         superperiodic: Include superperiodic derivative structures.
         end_members: Include structures of end members.
         charges: Charges of elements.
+              Format: [(element ID, charge), (element ID, charge),...]
         """
-        self._derivs_set = run_derivatives(
+        from pyclupan.derivative.run_derivative import run_derivatives
+
+        if self._unitcell is None:
+            raise RuntimeError("Unitcell not found.")
+
+        self._derivs_set, self._zdd = run_derivatives(
             self._unitcell,
             occupation=occupation,
             elements=elements,
@@ -86,9 +132,23 @@ class Pyclupan:
         )
         return self
 
-    def save_derivatives(self, filename: str = "derivatives.yaml"):
-        """Save derivative structures."""
-        fname_output = write_derivative_yaml(self._derivs_set, filename=filename)
+    def save_derivatives(self, filename: str = "pyclupan_derivatives.yaml"):
+        """Save derivative structures.
+
+        Parameter
+        ---------
+        filename: YAML file for saving derivative structures.
+        """
+        from pyclupan.derivative.derivative_utils import write_derivatives_yaml
+
+        if self._derivs_set is None:
+            raise RuntimeError("Derivative structures not found.")
+
+        fname_output = write_derivatives_yaml(
+            self._derivs_set,
+            self._zdd,
+            filename=filename,
+        )
         if self._verbose:
             if fname_output is None:
                 print("No result file is not generated.", flush=True)
@@ -97,14 +157,16 @@ class Pyclupan:
 
         return self
 
-    def load_derivatives(self, filename: str = "derivatives.yaml"):
-        """Parse derivatives.yaml.
+    def load_derivatives(self, filename: str = "pyclupan_derivatives.yaml"):
+        """Load derivatives.yaml.
 
-        Returns
-        -------
-        TODO: ***
+        Parameter
+        ---------
+        filename: YAML file for derivative structures.
         """
-        self._derivs_set = load_derivative_yaml(filename=filename)
+        from pyclupan.derivative.derivative_utils import load_derivatives_yaml
+
+        self._derivs_set = load_derivatives_yaml(filename=filename)
         return self
 
     def sample_derivatives(
@@ -120,6 +182,9 @@ class Pyclupan:
         -------
         TODO: ***
         """
+        if self._derivs_set is None:
+            raise RuntimeError("Derivative structures not found.")
+
         if method == "all":
             self._derivs_set.all()
         elif method == "uniform":
@@ -127,3 +192,24 @@ class Pyclupan:
         elif method == "random":
             self._derivs_set.random(n_samples=n_samples)
         self._derivs_set.save(path=path, elements=elements)
+
+    @property
+    def derivative_structures(self):
+        """Return derivative structures.
+
+        Return
+        ------
+        deriv_set: Instance of DerivativeSet class.
+        """
+        return self._derivs_set
+
+    @property
+    def clusters(self):
+        """Return nonequivalent clusters.
+
+        Return
+        ------
+        clusters: Nonequivalent clusters, dict[list[ClusterAttr]].
+                  Dictionary keys are cluster orders.
+        """
+        return self._clusters

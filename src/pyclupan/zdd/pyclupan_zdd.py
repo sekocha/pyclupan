@@ -4,9 +4,8 @@ from typing import Optional
 
 import numpy as np
 from graphillion import GraphSet
-from pypolymlp.core.data_format import PolymlpStructure
-from pypolymlp.core.interface_vasp import Poscar
 
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
 from pyclupan.zdd.zdd import ZddCore
 from pyclupan.zdd.zdd_base import ZddLattice
 
@@ -18,6 +17,7 @@ class PyclupanZdd:
         """Init method."""
         self._verbose = verbose
         self._unitcell = None
+        self._supercell = None
         self._elements_lattice = None
         self._one_of_k_rep = None
         self._hnf = None
@@ -75,14 +75,13 @@ class PyclupanZdd:
 
     def set_permutations(self, supercell_matrix: np.ndarray):
         """Set atomic permutations."""
-        from pypolymlp.utils.structure_utils import supercell
-
+        from pyclupan.core.pypolymlp_utils import supercell
         from pyclupan.core.spglib_utils import get_permutation
 
         self._hnf = supercell_matrix
-        sup = supercell(self._unitcell, supercell_matrix)
+        self._supercell = supercell(self._unitcell, supercell_matrix)
         self._site_perm, self._site_perm_lt = get_permutation(
-            sup, superperiodic=True, hnf=supercell_matrix
+            self._supercell, superperiodic=True, hnf=supercell_matrix
         )
         return self
 
@@ -95,6 +94,11 @@ class PyclupanZdd:
     def unitcell(self, cell):
         """Set unit cell."""
         self._unitcell = cell
+
+    @property
+    def supercell(self):
+        """Return supercell."""
+        return self._supercell
 
     @property
     def supercell_size(self):
@@ -147,7 +151,6 @@ class PyclupanZdd:
 
     def composition_range(self, comp_lb: tuple, comp_ub: tuple):
         """Apply composition lower and upper bounds."""
-        # TODO: a test is required
         if self._zdd is None:
             raise RuntimeError("Initialize zdd in advance.")
         return self._zdd.composition_range(comp_lb, comp_ub)
