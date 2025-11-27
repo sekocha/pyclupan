@@ -19,7 +19,11 @@ from pyclupan.features.features_utils import (
     get_chemical_compositions,
     structure_to_lattice,
 )
-from pyclupan.features.orbit_utils import find_orbit_supercell, find_orbit_unitcell
+from pyclupan.features.orbit_utils import (
+    find_orbit_supercell,
+    find_orbit_unitcell,
+    get_map_positions,
+)
 
 
 def calc_correlation(
@@ -39,6 +43,7 @@ def calc_correlation(
     unitcell = lattice_unitcell.cell
     supercell = lattice_supercell.cell
     map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
+    map_supercell_positions = get_map_positions(supercell, decimals=5)
 
     orbit_all = []
     for orbit_f in orbit_fracs_unitcell:
@@ -47,6 +52,7 @@ def calc_correlation(
             supercell,
             orbit_f,
             map_unit_to_sup,
+            map_supercell_positions=map_supercell_positions,
             return_array=True,
         )
         orbit = lattice_supercell.to_active_site_rep(orbit)
@@ -81,6 +87,7 @@ class ClusterFunctions:
         self._lattice_unitcell = cluster_attrs[0]
         self._clusters = cluster_attrs[1]
         self._spin_basis_clusters = cluster_attrs[3]
+        self._mask_clusters = np.ones(len(self._clusters), dtype=bool)
         self._verbose = verbose
 
         self._cluster_functions = None
@@ -314,6 +321,9 @@ class ClusterFunctions:
     def spin_basis_clusters(self, sp_clusters: list):
         """Setter of spin basis clusters."""
         self._spin_basis_clusters = sp_clusters
+        self._mask_clusters = np.zeros(len(self._clusters), dtype=bool)
+        for cl in sp_clusters:
+            self._mask_clusters[cl.cluster_id] = True
 
     @property
     def n_atoms_array(self):
@@ -334,3 +344,32 @@ class ClusterFunctions:
     def cluster_functions(self):
         """Return cluster functions."""
         return self._cluster_functions
+
+    def get_orbit_supercell(self, lattice_supercell: Lattice, decimals: int = 5):
+        """Return orbit for supercell."""
+        unitcell = self._lattice_unitcell.cell
+        supercell = lattice_supercell.cell
+        map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
+        map_supercell_positions = get_map_positions(supercell, decimals=decimals)
+
+        orbit_all = []
+        for i, (orbit_f, mask) in enumerate(
+            zip(self._orbit_fracs_unitcell, self._mask_clusters)
+        ):
+            if mask:
+                if self._verbose:
+                    print("Calculating orbits for cluster ", i)
+
+                orbit = find_orbit_supercell(
+                    self._lattice_unitcell,
+                    lattice_supercell,
+                    orbit_f,
+                    map_unit_to_sup,
+                    map_supercell_positions=map_supercell_positions,
+                    return_array=True,
+                )
+                orbit = lattice_supercell.to_active_site_rep(orbit)
+                orbit_all.append(orbit)
+            else:
+                orbit_all.append(None)
+        return orbit_all

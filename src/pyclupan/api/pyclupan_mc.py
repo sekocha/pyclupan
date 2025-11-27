@@ -31,6 +31,11 @@ class PyclupanMC:
         )
         np.set_printoptions(legacy="1.21")
 
+    def set_init(self):
+        """Set initial conditions."""
+        self._mc.set_init()
+        return self
+
     def set_supercell(self, supercell_matrix: np.ndarray, refine: bool = False):
         """Set supercell.
 

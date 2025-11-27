@@ -36,7 +36,7 @@ class PyclupanRegression:
         features_hdf5: HDF5 file containing features.
         """
         res = load_cluster_functions_hdf5(features_hdf5)
-        self._features, self._structure_ids_x = res
+        self._features, self._structure_ids_x, _ = res
         if self._verbose:
             print("Load features:", self._features.shape, flush=True)
         return self

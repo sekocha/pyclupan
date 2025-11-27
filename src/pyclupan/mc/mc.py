@@ -30,15 +30,24 @@ class MC:
 
         self._cf = ClusterFunctions(clusters_yaml=clusters_yaml, verbose=verbose)
         self._lattice_unitcell = self._cf.lattice_unitcell
+        self._lattice_supercell = None
 
         self._model = load_ecis(ecis_yaml)
         self._cf.spin_basis_clusters = self._model.nonzero_spin_basis(
             self._cf.spin_basis_clusters
         )
 
-        self._lattice_supercell = None
+        self._active_spins = None
+        self._orbit = None
         self._cluster_functions = None
         np.set_printoptions(legacy="1.21")
+
+    def set_init(self):
+        """Set initial conditions."""
+        if self._lattice_supercell is None:
+            raise RuntimeError("Set supercell first.")
+
+        # print(self._lattice_supercell.active_sites)
 
     def set_supercell(self, supercell_matrix: np.ndarray, refine: bool = False):
         """Set supercell.
@@ -77,6 +86,11 @@ class MC:
         sup.supercell_matrix = np.linalg.inv(unitcell.axis) @ sup.axis
         sup.supercell_matrix = np.rint(sup.supercell_matrix).astype(int)
         self._lattice_supercell = self._lattice_unitcell.lattice_supercell(sup)
+
+        if self._verbose:
+            print("Constructing cluster orbits in supercell.", flush=True)
+        self._orbit = self._cf.get_orbit_supercell(self._lattice_supercell)
+        print(self._orbit[-1])
         return self
 
 

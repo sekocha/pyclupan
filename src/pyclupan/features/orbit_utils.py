@@ -1,6 +1,7 @@
 """Class for calculating cluster orbits."""
 
 from collections import defaultdict
+from typing import Optional
 
 import numpy as np
 import scipy.spatial.distance as distance
@@ -59,7 +60,25 @@ def _get_matching_positions(
     return sites
 
 
-def find_orbit_supercell(
+def _get_matching_positions_usemap(
+    multiple_positions: np.ndarray,
+    map_supercell_positions: dict,
+    decimals: int = 5,
+):
+    """Return matching of two sets of positions."""
+    size = multiple_positions.shape[2]
+    scale = 10**decimals
+    multiple_positions_rev = (
+        ((np.round(multiple_positions, decimals) * scale).astype(np.int64))
+        .transpose((0, 2, 1))
+        .reshape((-1, 3))
+    )
+    sites = [map_supercell_positions[pos.tobytes()] for pos in multiple_positions_rev]
+    sites = np.array(sites).reshape((-1, size))
+    return np.array(sites)
+
+
+def find_orbit_supercell_nomap(
     unitcell: PolymlpStructure,
     supercell: PolymlpStructure,
     orbit_positions_unitcell: dict,
@@ -82,6 +101,79 @@ def find_orbit_supercell(
                 orbit_sites[site_sup].extend(sites)
 
     return orbit_sites
+
+
+def get_map_positions(cell: PolymlpStructure, decimals: int = 5):
+    """Return mapping from position to site ID."""
+    map_positions = dict()
+    scale = 10**decimals
+    for i, pos in enumerate(cell.positions.T):
+        key = (np.round(pos, decimals) * scale).astype(np.int64).tobytes()
+        map_positions[key] = i
+    return map_positions
+
+
+def find_orbit_supercell_usemap(
+    unitcell: PolymlpStructure,
+    supercell: PolymlpStructure,
+    orbit_positions_unitcell: dict,
+    map_unit_to_sup: dict,
+    map_supercell_positions: Optional[dict] = None,
+    return_array: bool = False,
+    decimals: int = 5,
+):
+    """Extend orbit for unitcell to orbit for supercell."""
+    import time
+
+    orbit_sites = [] if return_array else defaultdict(list)
+
+    if map_supercell_positions is None:
+        map_supercell_positions = get_map_positions(supercell, decimals=decimals)
+
+    supercell_matrix_inv = np.linalg.inv(supercell.axis) @ unitcell.axis
+    t1 = time.time()
+    for (site_unit, cell), site_sup in map_unit_to_sup.items():
+        unitcell_fracs = np.array(orbit_positions_unitcell[site_unit])
+        if unitcell_fracs.shape[0] > 0:
+            fracs = unitcell_fracs + np.array(cell)[None, :, None]
+            _, fracs_sup = decompose_fraction(supercell_matrix_inv @ fracs)
+            sites = _get_matching_positions_usemap(fracs_sup, map_supercell_positions)
+            if return_array:
+                orbit_sites.extend(sites)
+            else:
+                orbit_sites[site_sup].extend(sites)
+    t2 = time.time()
+    print(t2 - t1)
+
+    return orbit_sites
+
+
+def find_orbit_supercell(
+    unitcell: PolymlpStructure,
+    supercell: PolymlpStructure,
+    orbit_positions_unitcell: dict,
+    map_unit_to_sup: dict,
+    map_supercell_positions: Optional[dict] = None,
+    return_array: bool = False,
+):
+    """Extend orbit for unitcell to orbit for supercell."""
+    if map_supercell_positions is None or len(supercell.types) < 100:
+        return find_orbit_supercell_nomap(
+            unitcell,
+            supercell,
+            orbit_positions_unitcell,
+            map_unit_to_sup,
+            return_array=return_array,
+        )
+    else:
+        return find_orbit_supercell_usemap(
+            unitcell,
+            supercell,
+            orbit_positions_unitcell,
+            map_unit_to_sup,
+            map_supercell_positions=map_supercell_positions,
+            return_array=return_array,
+        )
 
 
 def find_orbit(

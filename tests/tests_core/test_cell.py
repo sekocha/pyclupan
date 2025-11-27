@@ -9,12 +9,31 @@ from pyclupan.core.cell_utils import (
     get_matching_positions,
     get_unitcell_reps,
     supercell,
+    supercell_diagonal,
     supercell_reduced,
     unitcell_reps_to_supercell_reps,
 )
 from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
+
+
+def test_supercell_diagonal():
+    """Test supercell diagonal."""
+    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
+    sup = supercell_diagonal(unitcell, size=(1, 2, 2))
+
+    axis_true = np.array(
+        [[0.0, 5.393, 5.393], [2.6965, 0.0, 5.393], [2.6965, 5.393, 0.0]]
+    )
+    positions_true = np.array(
+        [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.5, 0.5], [0.0, 0.5, 0.0, 0.5]]
+    )
+    types_true = [0, 0, 0, 0]
+
+    np.testing.assert_allclose(sup.axis, axis_true, atol=1e-6)
+    np.testing.assert_allclose(sup.positions, positions_true, atol=1e-6)
+    assert list(sup.types) == types_true
 
 
 def test_supercell_reduced():

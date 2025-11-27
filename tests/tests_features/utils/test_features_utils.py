@@ -23,9 +23,11 @@ def test_element_strings_to_labeling():
 
 def test_load_cluster_functions_hdf5():
     """Test load_cluster_functions_hdf5."""
-    cfs, ids = load_cluster_functions_hdf5(str(cwd) + "/pyclupan_features.hdf5")
+    cfs, ids, n_atoms = load_cluster_functions_hdf5(
+        str(cwd) + "/pyclupan_features.hdf5"
+    )
     np.testing.assert_allclose(cfs[2][3], 0.0, atol=1e-8)
-    np.testing.assert_allclose(cfs[10][34], 0.5, atol=1e-8)
+    np.testing.assert_allclose(cfs[12][16], -1 / 3, atol=1e-8)
     assert ids[0] == "2-0-0"
     assert ids[1] == "2-1-0"
     assert ids[2] == "3-0-0"
