@@ -120,7 +120,11 @@ def set_spins(element_lattice: list):
 #
 
 
-def eval_cluster_functions(coeffs: np.ndarray, spins_from_orbit: np.ndarray):
+def eval_cluster_functions(
+    coeffs: np.ndarray,
+    spins_from_orbit: np.ndarray,
+    return_sum: bool = False,
+):
     """Evaluate cluster functions.
 
     Parameters
@@ -140,12 +144,19 @@ def eval_cluster_functions(coeffs: np.ndarray, spins_from_orbit: np.ndarray):
     if spins_from_orbit.ndim == 3:
         for i, c in enumerate(coeffs):
             vals[:, :, i] = np.polyval(c, spins_from_orbit[:, :, i])
-        cf = np.average(np.prod(vals, axis=2), axis=1)
+        if return_sum:
+            cf = np.sum(np.prod(vals, axis=2), axis=1)
+        else:
+            cf = np.average(np.prod(vals, axis=2), axis=1)
     elif spins_from_orbit.ndim == 2:
         for i, c in enumerate(coeffs):
             vals[:, i] = np.polyval(c, spins_from_orbit[:, i])
-        cf = np.average(np.prod(vals, axis=1))
+        if return_sum:
+            cf = np.sum(np.prod(vals, axis=1))
+        else:
+            cf = np.average(np.prod(vals, axis=1))
     return cf
+
     # vals = np.zeros(spins_from_orbit.shape)
     # for i, c in enumerate(coeffs):
     #     vals[:, :, i] = np.polyval(c, spins_from_orbit[:, :, i])

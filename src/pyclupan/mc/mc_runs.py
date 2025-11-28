@@ -1,7 +1,6 @@
 """Functions for running single MC simulation."""
 
-# import time
-# from typing import Optional
+import time
 
 import numpy as np
 
@@ -9,6 +8,8 @@ from pyclupan.core.model import CEmodel
 from pyclupan.core.pypolymlp_utils import KbEV
 from pyclupan.features.cluster_functions_utils import ClusterFunctionsMC
 from pyclupan.mc.mc_utils import MCAttr, MCParams
+
+# from typing import Optional
 
 
 def _select_two_sites(spins: np.ndarray, spin_species: np.ndarray):
@@ -41,15 +42,26 @@ def cmc(
     beta = 1.0 / (KbEV * temp)
     for n_steps in n_steps_array:
         for mc_iter in range(n_steps):
-            # t1 = time.time()
+            t1 = time.time()
             i, j = _select_two_sites(spins, mc_attr.spin_species)
-            spins[i], spins[j] = spins[j], spins[i]
-            # t2 = time.time()
+            # spins[i], spins[j] = spins[j], spins[i]
+            t2 = time.time()
 
-            # TODO: Implement difference of CFs.
-            cfs_new = cf.eval_from_spins(spins)
+            # TODO: Time consuming part.
+            diff_cfs = cf.eval_from_spin_swap(spins, [i, j])
+            cfs_new = cfs + diff_cfs
+            t3 = time.time()
             energy_new = model.eval(cfs_new)
+
+            # spins[i], spins[j] = spins[j], spins[i]
+            # cfs_new = cf.eval_from_spins(spins)
+            # energy_new = model.eval(cfs_new)
+            # spins[i], spins[j] = spins[j], spins[i]
+            # t4 = time.time()
             # t3 = time.time()
+            # print("Original:", cfs)
+            # print("DIRECT:  ", cfs_new)
+            # print("DIFF:    ", cfs_new2)
 
             delta_e = energy_new - energy
             # TODO: Use supercell energy unit
@@ -57,10 +69,9 @@ def cmc(
             if np.random.rand() < threshold:
                 energy = energy_new
                 cfs = cfs_new
-            else:
                 spins[i], spins[j] = spins[j], spins[i]
-            # t4 = time.time()
-            # print(t2-t1, t3-t2, t4-t3)
+            t4 = time.time()
+            print(t2 - t1, t3 - t2, t4 - t3)
             if verbose and (mc_iter + 1) % 1000 == 0:
                 print("Iter", mc_iter + 1, energy, flush=True)
 

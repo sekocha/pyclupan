@@ -76,6 +76,10 @@ def test_lattice_binary_fcc():
         atol=1e-8,
     )
 
+    labelings_single = np.array([0, 0, 1])
+    spins = lattice_supercell.to_spins(labelings_single)
+    np.testing.assert_equal(spins, [1, 1, -1])
+
     labelings = np.array(
         [
             [0, 0, 0],
@@ -150,6 +154,10 @@ def test_lattice_binary_perovskite():
         lattice_supercell.positions,
         atol=1e-8,
     )
+
+    labelings_single = np.array([2, 3, 2, 3, 2, 3])
+    spins = lattice_supercell.to_spins(labelings_single)
+    np.testing.assert_equal(spins, [1, -1, 1, -1, 1, -1])
 
     labelings = np.array(
         [

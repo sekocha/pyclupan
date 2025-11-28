@@ -109,7 +109,7 @@ class MC:
             begin += n
         assert np.all(active_labelings != -1)
 
-        active_spins = self._lattice_supercell.to_spins(np.array([active_labelings]))[0]
+        active_spins = self._lattice_supercell.to_spins(active_labelings)
         return active_spins
 
     def set_init_structure(self, compositions: Optional[tuple] = None):
@@ -217,7 +217,6 @@ class MC:
         """Run semi-grand canoncial MC simulation."""
         for temp in self._mc_params.temperatures:
             sgcmc()
-            # sgcmc(self._mc_attr, self._mc_params, temp)
 
     @property
     def unitcell(self):

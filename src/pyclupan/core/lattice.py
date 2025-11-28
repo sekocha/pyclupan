@@ -221,7 +221,13 @@ class Lattice:
 
     def is_active_size(self, labelings: np.ndarray):
         """Check if size of given elements, labelings, and spin is appropriate."""
-        if labelings.shape[1] != self.active_sites.shape[0]:
+        labelings = np.array(labelings)
+        if labelings.ndim == 2:
+            if labelings.shape[1] != self.active_sites.shape[0]:
+                return False
+            return True
+
+        if labelings.shape[0] != self.active_sites.shape[0]:
             return False
         return True
 
@@ -251,16 +257,29 @@ class Lattice:
         if not self.is_active_size(labelings):
             raise RuntimeError("Size of given labelings not consistent with lattice.")
 
+        labelings = np.array(labelings)
         spins_assigned = np.zeros(labelings.shape, dtype=int)
-        begin = 0
-        for ele, spins, n in zip(
-            self._elements_on_lattice, self._spins_on_lattice, self._cell.n_atoms
-        ):
-            if len(spins) > 1:
-                end = begin + n
-                for e, s in zip(ele, spins):
-                    spins_assigned[:, begin:end][labelings[:, begin:end] == e] = s
-                begin = end
+        if labelings.ndim == 2:
+            begin = 0
+            for ele, spins, n in zip(
+                self._elements_on_lattice, self._spins_on_lattice, self._cell.n_atoms
+            ):
+                if len(spins) > 1:
+                    end = begin + n
+                    for e, s in zip(ele, spins):
+                        spins_assigned[:, begin:end][labelings[:, begin:end] == e] = s
+                    begin = end
+        elif labelings.ndim == 1:
+            spins_assigned = np.zeros(labelings.shape, dtype=int)
+            begin = 0
+            for ele, spins, n in zip(
+                self._elements_on_lattice, self._spins_on_lattice, self._cell.n_atoms
+            ):
+                if len(spins) > 1:
+                    end = begin + n
+                    for e, s in zip(ele, spins):
+                        spins_assigned[begin:end][labelings[begin:end] == e] = s
+                    begin = end
         return spins_assigned
 
     def get_spin_polynomials(self, basis_ids: np.ndarray):
