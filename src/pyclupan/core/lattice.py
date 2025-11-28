@@ -110,6 +110,9 @@ class Lattice:
         self._n_elements = max([e2 for e in elements for e2 in e]) + 1
         self._set_spins()
 
+        spins = self._spins_on_lattice
+        self._active_spins = [s2 for s in spins if len(s) > 1 for s2 in s]
+
     def _set_spins(self):
         """Set spin values and point cluster functions."""
         spin_info = set_spins(self._elements_on_lattice)

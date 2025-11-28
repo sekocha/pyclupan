@@ -1,6 +1,6 @@
 """API class for performing Monte Carlo simulations."""
 
-# from typing import Optional
+from typing import Literal, Optional
 
 import numpy as np
 
@@ -31,11 +31,6 @@ class PyclupanMC:
         )
         np.set_printoptions(legacy="1.21")
 
-    def set_init(self, compositions: tuple):
-        """Set initial conditions."""
-        self._mc.set_init(compositions)
-        return self
-
     def set_supercell(self, supercell_matrix: np.ndarray, refine: bool = False):
         """Set supercell.
 
@@ -49,6 +44,50 @@ class PyclupanMC:
             matrix for the refined cell.
         """
         self._mc.set_supercell(supercell_matrix=supercell_matrix, refine=refine)
+        return self
+
+    def set_parameters(
+        self,
+        n_steps_init: int = 100,
+        n_steps_eq: int = 1000,
+        temperature: float = 1000,
+        temperatures: Optional[np.ndarray] = None,
+        temperature_init: Optional[float] = None,
+        temperature_final: Optional[float] = None,
+        temperature_step: Optional[float] = None,
+        ensemble: Literal["canonical", "semi_grand_canonical"] = "canonical",
+    ):
+        """Set parameters.
+
+        Parameters
+        ----------
+        TODO: Add docstrings.
+        """
+        self._mc.set_parameters(
+            n_steps_init=n_steps_init,
+            n_steps_eq=n_steps_eq,
+            temperature=temperature,
+            temperatures=temperatures,
+            temperature_init=temperature_init,
+            temperature_final=temperature_final,
+            temperature_step=temperature_step,
+            ensemble=ensemble,
+        )
+        return self
+
+    def set_init(self, compositions: tuple):
+        """Set initial conditions.
+
+        Parameters
+        ----------
+        TODO: Add docstrings.
+        """
+        self._mc.set_init(compositions)
+        return self
+
+    def run(self):
+        """Run MC simulation."""
+        self._mc.run()
         return self
 
 

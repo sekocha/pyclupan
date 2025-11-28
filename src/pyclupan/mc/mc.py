@@ -1,6 +1,6 @@
 """Class for performing Monte Carlo simulations."""
 
-from typing import Optional
+from typing import Literal, Optional
 
 import numpy as np
 
@@ -35,8 +35,12 @@ class MC:
 
         self._lattice_unitcell = self._cf.lattice_unitcell
         self._lattice_supercell = None
-        self._mc_attr = MCAttr()
-        self._mc_params = MCParams()
+
+        self._mc_params = None
+        self._mc_attr = MCAttr(
+            active_element_species=self._lattice_unitcell._active_elements,
+            spin_species=self._lattice_unitcell._active_spins,
+        )
         np.set_printoptions(legacy="1.21")
 
     def set_supercell(self, supercell_matrix: np.ndarray, refine: bool = False):
@@ -64,19 +68,28 @@ class MC:
         return self
 
     def _set_init_structure_random(self, compositions: tuple):
-        """Set initial structure randomly."""
+        """Set initial structure randomly.
+
+        Parameters
+        ----------
+        compositions: Compositions for active elements.
+            Array indices correspond to element IDs.
+            The compositions are defined as
+            (number of atoms) / (number of active sites).
+        """
         if not np.isclose(np.sum(compositions), 1.0):
             raise RuntimeError("Sum of given compositions is not one.")
 
         n_sites = len(self._lattice_supercell.active_sites)
-        elements = self._lattice_supercell._active_elements
+        elements = self._mc_attr.active_element_species
         n_atoms = np.array([compositions[ele] * n_sites for ele in elements])
         if not np.allclose(n_atoms - np.round(n_atoms), 0.0):
             raise RuntimeError("Given supercell cannot express compositions.")
 
         n_atoms = np.round(n_atoms).astype(int)
         if self._verbose:
-            print("Number of active sites:", n_sites, flush=True)
+            print("Initial structure:", flush=True)
+            print("- Number of active sites:", n_sites, flush=True)
             for e, n in zip(elements, n_atoms):
                 print("- Active element", e, ":", n, flush=True)
 
@@ -94,7 +107,7 @@ class MC:
     def set_init_structure(self, compositions: Optional[tuple] = None):
         """Set initial structure."""
         if self._lattice_supercell is None:
-            raise RuntimeError("Set supercell first.")
+            raise RuntimeError("Supercell not found.")
 
         if compositions is not None:
             active_spins = self._set_init_structure_random(compositions)
@@ -102,6 +115,52 @@ class MC:
             pass
 
         self._mc_attr.active_spins = active_spins
+        return self
+
+    def set_init_properties(self):
+        """Set initial properties."""
+        if self._verbose:
+            print("Constructing cluster orbits in supercell.", flush=True)
+        self._cf.get_orbit_supercell(self._lattice_supercell)
+
+        if self._verbose:
+            print("Calculating cluster functions of initial structure.", flush=True)
+
+        cluster_functions = self._cf.eval_from_labelings(
+            self._lattice_supercell,
+            active_spins=np.array([self._mc_attr.active_spins]),
+        )[0]
+        self._mc_attr.energy = self._model.eval(cluster_functions)
+        self._mc_attr.cluster_functions = cluster_functions
+        return self
+
+    def set_parameters(
+        self,
+        n_steps_init: int = 100,
+        n_steps_eq: int = 1000,
+        temperature: float = 1000,
+        temperatures: Optional[np.ndarray] = None,
+        temperature_init: Optional[float] = None,
+        temperature_final: Optional[float] = None,
+        temperature_step: Optional[float] = None,
+        ensemble: Literal["canonical", "semi_grand_canonical"] = "canonical",
+    ):
+        """Set parameters."""
+        self._mc_params = MCParams(
+            n_steps_init=n_steps_init,
+            n_steps_eq=n_steps_eq,
+            temperature=temperature,
+            temperatures=temperatures,
+            ensemble=ensemble,
+        )
+        if temperature_init is not None:
+            if temperature_final is None:
+                raise RuntimeError("Final temperature not found.")
+            if temperature_step is None:
+                raise RuntimeError("Temperature step not found.")
+            self._mc_params.set_temperature_range(
+                temperature_init, temperature_final, temperature_step
+            )
         return self
 
     def set_init(self, compositions: Optional[tuple] = None):
@@ -118,27 +177,37 @@ class MC:
             raise RuntimeError("Set supercell first.")
 
         self.set_init_structure(compositions=compositions)
-
-        if self._verbose:
-            print("Constructing cluster orbits in supercell.", flush=True)
-        self._cf.get_orbit_supercell(self._lattice_supercell)
-
-        if self._verbose:
-            print("Calculating cluster functions of initial structure.", flush=True)
-        cluster_functions = self._cf.eval_from_labelings(
-            self._lattice_supercell,
-            active_spins=np.array([self._mc_attr.active_spins]),
-        )[0]
-        energy = self._model.eval(cluster_functions)
-        if self._verbose:
-            print("Initial structures:", flush=True)
-            print("- Cluster functions:", flush=True)
-            print(cluster_functions, flush=True)
-            print("- Energy:", energy, flush=True)
-
-        self._mc_attr.cluster_functions = cluster_functions
-        self._mc_attr.energy = energy
+        self.set_init_properties()
         return self
+
+    def run(self):
+        """Run MC simulation."""
+        if self._verbose:
+            print("Run MC simulation.", flush=True)
+        if self._lattice_supercell is None:
+            raise RuntimeError("Simulation supercell not found.")
+        if self._mc_attr.active_spins is None:
+            raise RuntimeError("Initial configuration not found.")
+        if self._mc_params is None:
+            raise RuntimeError("Parameters not found.")
+
+        if self._verbose:
+            self._mc_params.print_parameters()
+            self._mc_attr.print_attrs()
+
+        if self._mc_params.ensemble == "canonical":
+            self.run_cmc()
+        elif self._mc_params.ensemble == "semi_grand_canonical":
+            self.run_sgcmc()
+        return self
+
+    def run_cmc(self):
+        """Run canoncial MC simulation."""
+        pass
+
+    def run_sgcmc(self):
+        """Run semi-grand canoncial MC simulation."""
+        pass
 
     @property
     def unitcell(self):
@@ -154,6 +223,11 @@ class MC:
     def mc_attr(self):
         """Return attributes from MC."""
         return self._mc_attr
+
+    @property
+    def mc_params(self):
+        """Return parameters used for MC."""
+        return self._mc_params
 
 
 #     @property
