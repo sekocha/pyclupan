@@ -72,3 +72,35 @@ def test_eval_cluster_functions():
     cf = eval_cluster_functions(coeffs, spins_from_orbit)
     cf_true = [0.21650635, -0.21650635]
     np.testing.assert_allclose(cf, cf_true, atol=1e-6)
+
+    spins_from_orbit = np.array(
+        [
+            [0, -1],
+            [0, 0],
+            [0, -1],
+            [0, 0],
+            [-1, 0],
+            [-1, 0],
+            [0, -1],
+            [-1, 0],
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [-1, 0],
+            [-1, -1],
+            [-1, 0],
+            [-1, -1],
+            [0, -1],
+            [0, -1],
+            [-1, 0],
+            [0, -1],
+            [-1, -1],
+            [-1, -1],
+            [-1, -1],
+            [-1, -1],
+        ]
+    )
+    cf = eval_cluster_functions(coeffs, spins_from_orbit)
+    cf_true = 0.21650635
+    np.testing.assert_allclose(cf, cf_true, atol=1e-6)

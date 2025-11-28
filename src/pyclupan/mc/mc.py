@@ -5,7 +5,9 @@ from typing import Literal, Optional
 import numpy as np
 
 from pyclupan.core.cell_utils import supercell_general
+from pyclupan.features.cluster_functions_utils import ClusterFunctionsMC
 from pyclupan.features.run_correlation import ClusterFunctions
+from pyclupan.mc.mc_runs import cmc, sgcmc
 from pyclupan.mc.mc_utils import MCAttr, MCParams
 from pyclupan.regression.regression_utils import load_ecis
 
@@ -32,6 +34,7 @@ class MC:
         self._cf.spin_basis_clusters = self._model.nonzero_spin_basis(
             self._cf.spin_basis_clusters
         )
+        self._cf_mc = None
 
         self._lattice_unitcell = self._cf.lattice_unitcell
         self._lattice_supercell = None
@@ -65,6 +68,11 @@ class MC:
             verbose=self._verbose,
         )
         self._lattice_supercell = self._lattice_unitcell.lattice_supercell(sup)
+        self._cf_mc = ClusterFunctionsMC(
+            self._cf,
+            self._lattice_supercell,
+            verbose=self._verbose,
+        )
         return self
 
     def _set_init_structure_random(self, compositions: tuple):
@@ -120,16 +128,9 @@ class MC:
     def set_init_properties(self):
         """Set initial properties."""
         if self._verbose:
-            print("Constructing cluster orbits in supercell.", flush=True)
-        self._cf.get_orbit_supercell(self._lattice_supercell)
-
-        if self._verbose:
             print("Calculating cluster functions of initial structure.", flush=True)
 
-        cluster_functions = self._cf.eval_from_labelings(
-            self._lattice_supercell,
-            active_spins=np.array([self._mc_attr.active_spins]),
-        )[0]
+        cluster_functions = self._cf_mc.eval_from_spins(self._mc_attr.active_spins)
         self._mc_attr.energy = self._model.eval(cluster_functions)
         self._mc_attr.cluster_functions = cluster_functions
         return self
@@ -182,16 +183,15 @@ class MC:
 
     def run(self):
         """Run MC simulation."""
-        if self._verbose:
-            print("Run MC simulation.", flush=True)
-        if self._lattice_supercell is None:
-            raise RuntimeError("Simulation supercell not found.")
+        if self._cf_mc is None:
+            raise RuntimeError("Supercell and calculator not found.")
         if self._mc_attr.active_spins is None:
             raise RuntimeError("Initial configuration not found.")
         if self._mc_params is None:
             raise RuntimeError("Parameters not found.")
 
         if self._verbose:
+            print("Run MC simulation.", flush=True)
             self._mc_params.print_parameters()
             self._mc_attr.print_attrs()
 
@@ -203,11 +203,21 @@ class MC:
 
     def run_cmc(self):
         """Run canoncial MC simulation."""
-        pass
+        for temp in self._mc_params.temperatures:
+            cmc(
+                temp,
+                self._mc_attr,
+                self._mc_params,
+                self._cf_mc,
+                self._model,
+                verbose=self._verbose,
+            )
 
     def run_sgcmc(self):
         """Run semi-grand canoncial MC simulation."""
-        pass
+        for temp in self._mc_params.temperatures:
+            sgcmc()
+            # sgcmc(self._mc_attr, self._mc_params, temp)
 
     @property
     def unitcell(self):

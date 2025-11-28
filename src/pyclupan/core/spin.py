@@ -129,14 +129,24 @@ def eval_cluster_functions(coeffs: np.ndarray, spins_from_orbit: np.ndarray):
             shape: (n_sites, cluster_order)
     spins_from_orbit: Spin values of clusters in structures.
             shape: (n_structure, orbit_size, cluster_order)
+                    or (orbit_size, cluster_order)
 
     Return
     ------
     Cluster functions.
-        shape: (n_structure)
+        shape: (n_structure) or float
     """
     vals = np.zeros(spins_from_orbit.shape)
-    for i, c in enumerate(coeffs):
-        vals[:, :, i] = np.polyval(c, spins_from_orbit[:, :, i])
-    cf = np.average(np.prod(vals, axis=2), axis=1)
+    if spins_from_orbit.ndim == 3:
+        for i, c in enumerate(coeffs):
+            vals[:, :, i] = np.polyval(c, spins_from_orbit[:, :, i])
+        cf = np.average(np.prod(vals, axis=2), axis=1)
+    elif spins_from_orbit.ndim == 2:
+        for i, c in enumerate(coeffs):
+            vals[:, i] = np.polyval(c, spins_from_orbit[:, i])
+        cf = np.average(np.prod(vals, axis=1))
     return cf
+    # vals = np.zeros(spins_from_orbit.shape)
+    # for i, c in enumerate(coeffs):
+    #     vals[:, :, i] = np.polyval(c, spins_from_orbit[:, :, i])
+    # cf = np.average(np.prod(vals, axis=2), axis=1)
