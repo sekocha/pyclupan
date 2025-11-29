@@ -40,7 +40,6 @@ def test_eval_diff_fcc1():
     cf_diff34 = cf_mc.eval_from_spin_swap(spins, [2, 3])
     spins[2], spins[3] = spins[3], spins[2]
     cf_calc4 = cf_mc.eval_from_spins(spins)
-    print(cf_calc3 + cf_diff34)
     np.testing.assert_allclose(cf_calc4, cf_calc3 + cf_diff34, atol=1e-8)
 
 
@@ -72,5 +71,4 @@ def test_eval_diff_fcc2():
     cf_diff34 = cf_mc.eval_from_spin_swap(spins, [2, 3])
     spins[2], spins[3] = spins[3], spins[2]
     cf_calc4 = cf_mc.eval_from_spins(spins)
-    print(cf_calc3 + cf_diff34)
     np.testing.assert_allclose(cf_calc4, cf_calc3 + cf_diff34, atol=1e-8)

@@ -30,6 +30,7 @@ def cmc(
     mc_params: MCParams,
     cf: ClusterFunctionsMC,
     model: CEmodel,
+    assert_direct: bool = True,
     verbose: bool = False,
 ):
     """Run canonical MC."""
@@ -44,7 +45,6 @@ def cmc(
         for mc_iter in range(n_steps):
             t1 = time.time()
             i, j = _select_two_sites(spins, mc_attr.spin_species)
-            # spins[i], spins[j] = spins[j], spins[i]
             t2 = time.time()
 
             # TODO: Time consuming part.
@@ -53,15 +53,18 @@ def cmc(
             t3 = time.time()
             energy_new = model.eval(cfs_new)
 
-            # spins[i], spins[j] = spins[j], spins[i]
-            # cfs_new = cf.eval_from_spins(spins)
-            # energy_new = model.eval(cfs_new)
-            # spins[i], spins[j] = spins[j], spins[i]
-            # t4 = time.time()
-            # t3 = time.time()
-            # print("Original:", cfs)
-            # print("DIRECT:  ", cfs_new)
-            # print("DIFF:    ", cfs_new2)
+            if assert_direct:
+                spins[i], spins[j] = spins[j], spins[i]
+                cfs_new_direct = cf.eval_from_spins(spins)
+                energy_new_direct = model.eval(cfs_new_direct)
+                spins[i], spins[j] = spins[j], spins[i]
+                print("DIRECT:  ")
+                print(cfs_new_direct)
+                print("DIFF:    ")
+                print(cfs_new)
+                print("Energy:", energy_new_direct, energy_new)
+
+                np.testing.assert_allclose(cfs_new, cfs_new_direct, atol=1e-8)
 
             delta_e = energy_new - energy
             # TODO: Use supercell energy unit
@@ -72,6 +75,7 @@ def cmc(
                 spins[i], spins[j] = spins[j], spins[i]
             t4 = time.time()
             print(t2 - t1, t3 - t2, t4 - t3)
+
             if verbose and (mc_iter + 1) % 1000 == 0:
                 print("Iter", mc_iter + 1, energy, flush=True)
 

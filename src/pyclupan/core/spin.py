@@ -145,14 +145,16 @@ def eval_cluster_functions(
         for i, c in enumerate(coeffs):
             vals[:, :, i] = np.polyval(c, spins_from_orbit[:, :, i])
         if return_sum:
-            cf = np.sum(np.prod(vals, axis=2), axis=1)
+            # cf = np.sum(np.prod(vals, axis=2), axis=1)
+            cf = np.prod(vals, axis=2)
         else:
             cf = np.average(np.prod(vals, axis=2), axis=1)
     elif spins_from_orbit.ndim == 2:
         for i, c in enumerate(coeffs):
             vals[:, i] = np.polyval(c, spins_from_orbit[:, i])
         if return_sum:
-            cf = np.sum(np.prod(vals, axis=1))
+            # cf = np.sum(np.prod(vals, axis=1))
+            cf = np.prod(vals, axis=1)
         else:
             cf = np.average(np.prod(vals, axis=1))
     return cf
