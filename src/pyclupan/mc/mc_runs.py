@@ -30,7 +30,8 @@ def cmc(
     mc_params: MCParams,
     cf: ClusterFunctionsMC,
     model: CEmodel,
-    assert_direct: bool = True,
+    assert_direct: bool = False,
+    # assert_direct: bool = True,
     verbose: bool = False,
 ):
     """Run canonical MC."""
@@ -77,7 +78,7 @@ def cmc(
             print(t2 - t1, t3 - t2, t4 - t3)
 
             if verbose and (mc_iter + 1) % 1000 == 0:
-                print("Iter", mc_iter + 1, energy, flush=True)
+                print("Iter", mc_iter + 1, ":", energy, flush=True)
 
     mc_attr.active_spins = spins
     mc_attr.energy = energy
