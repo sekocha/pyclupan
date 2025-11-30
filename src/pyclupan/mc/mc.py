@@ -5,8 +5,8 @@ from typing import Literal, Optional
 import numpy as np
 
 from pyclupan.core.cell_utils import supercell_general
-from pyclupan.features.cluster_functions_utils import ClusterFunctionsMC
-from pyclupan.features.run_correlation import ClusterFunctions
+from pyclupan.features.cluster_functions import ClusterFunctions
+from pyclupan.features.cluster_functions_mc import ClusterFunctionsMC
 from pyclupan.mc.mc_runs import cmc, sgcmc
 from pyclupan.mc.mc_utils import MCAttr, MCParams
 from pyclupan.regression.regression_utils import load_ecis

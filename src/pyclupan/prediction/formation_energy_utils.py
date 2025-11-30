@@ -9,8 +9,8 @@ from scipy.spatial import ConvexHull
 from pyclupan.core.composition import Composition
 from pyclupan.core.model import CEmodel
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
+from pyclupan.features.cluster_functions import ClusterFunctions
 from pyclupan.features.features_utils import get_chemical_compositions
-from pyclupan.features.run_correlation import ClusterFunctions
 
 
 def _calc_cluster_functions_endmembers(

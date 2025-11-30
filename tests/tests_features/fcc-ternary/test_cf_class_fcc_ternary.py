@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from pyclupan.core.pypolymlp_utils import Poscar
-from pyclupan.features.run_correlation import ClusterFunctions
+from pyclupan.features.cluster_functions import ClusterFunctions
 
 cwd = Path(__file__).parent
 

@@ -11,11 +11,11 @@ from pyclupan.derivative.derivative_utils import (
     load_sample_attrs_yaml,
 )
 from pyclupan.derivative.run_sample import run_sampling_derivatives
+from pyclupan.features.cluster_functions import ClusterFunctions
 from pyclupan.features.features_utils import (
     load_cluster_functions_hdf5,
     save_cluster_functions_hdf5,
 )
-from pyclupan.features.run_correlation import ClusterFunctions
 from pyclupan.prediction.formation_energy_utils import (
     append_formation_energies_endmembers,
     find_convex_hull,

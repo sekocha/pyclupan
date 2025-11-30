@@ -6,7 +6,7 @@ import numpy as np
 
 from pyclupan.core.model import CEmodel
 from pyclupan.core.pypolymlp_utils import KbEV
-from pyclupan.features.cluster_functions_utils import ClusterFunctionsMC
+from pyclupan.features.cluster_functions_mc import ClusterFunctionsMC
 from pyclupan.mc.mc_utils import MCAttr, MCParams
 
 # from typing import Optional

@@ -1,17 +1,12 @@
 """Class for calculating cluster functions."""
 
-# from typing import Optional
-
-import copy
-import time
-
 import numpy as np
 
 from pyclupan.core.cell_utils import get_unitcell_reps
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.spin import eval_cluster_functions
+from pyclupan.features.cluster_functions import ClusterFunctions
 from pyclupan.features.orbit_utils import find_orbit_supercell, get_map_positions
-from pyclupan.features.run_correlation import ClusterFunctions
 
 
 class ClusterFunctionsMC:
@@ -160,27 +155,8 @@ class ClusterFunctionsMC:
     ):
         """Calculate products of cluster functions."""
         if self._binary:
-            # t0 = time.time()
-            # a = active_spins[orbit_i]
-            # # a = a.astype(np.int16)
-            # t1 = time.time()
-            # b = np.prod(a, axis=1)
-            # t2 = time.time()
-            # c = np.sum(b)
-            # t3 = time.time()
-            # print(t1-t0, t2-t1, t3-t2)
-            # slice_i = np.ascontiguousarray(active_spins[orbit_i])
-            # cf_sum_i = np.sum(np.prod(slice_i, axis=1))
-
-            sub = active_spins[orbit_i]
-            cf_sum_i = np.sum(np.multiply.reduce(sub, axis=1))
-            sub = active_spins[orbit_j]
-            cf_sum_j = np.sum(np.multiply.reduce(sub, axis=1))
-            # slice_j = np.ascontiguousarray(active_spins[orbit_i])
-            # cf_sum_j = np.sum(np.prod(slice_j, axis=1))
-
-            # cf_sum_i = np.sum(np.prod(active_spins[orbit_i], axis=1))
-            # cf_sum_j = np.sum(np.prod(active_spins[orbit_j], axis=1))
+            cf_sum_i = np.sum(np.multiply.reduce(active_spins[orbit_i], axis=1))
+            cf_sum_j = np.sum(np.multiply.reduce(active_spins[orbit_j], axis=1))
             return cf_sum_i + cf_sum_j
 
         cf_sum_i = np.sum(
@@ -206,13 +182,12 @@ class ClusterFunctionsMC:
     ):
         """Evaluate cluster function changes from spin swap."""
 
-        # TODO: Check when more than binary.
+        # TODO: Check when more than binary and multilattice systems.
         if len(sites) != 2:
             raise RuntimeError("Size of sites must be two.")
 
         i, j = sites[0], sites[1]
-        spin_i = copy.deepcopy(active_spins[i])
-        spin_j = copy.deepcopy(active_spins[j])
+        spin_i, spin_j = active_spins[i], active_spins[j]
         dspin = spin_j - spin_i
 
         diff_cluster_functions = []
@@ -220,6 +195,7 @@ class ClusterFunctionsMC:
             coeffs = self._poly_coeffs[spin_cl_id]
             cluster_size = coeffs.shape[0]
             orbit = self._orbit_sites_supercell[cl.cluster_id]
+            orbit_size = self._orbit_sizes[spin_cl_id]
 
             if not self._independent[i, j]:
                 duplicate_i = np.sum(orbit[i] == j, axis=1).astype(float)
@@ -232,13 +208,10 @@ class ClusterFunctionsMC:
                 )
 
             if self._independent[i, j] or independent:
-                t1 = time.time()
                 active_spins[i], active_spins[j] = dspin, -dspin
                 cf = self._calc_sum_products(active_spins, orbit[i], orbit[j], coeffs)
-                diff_cf = cf * cluster_size / self._orbit_sizes[spin_cl_id]
                 active_spins[i], active_spins[j] = spin_i, spin_j
-                t2 = time.time()
-                print(t2 - t1)
+                diff_cf = cf * cluster_size / orbit_size
             else:
                 weight_i = cluster_size / duplicate_i
                 weight_j = cluster_size / duplicate_j
@@ -257,8 +230,7 @@ class ClusterFunctionsMC:
 
                 diff_cf = (cf_new - cf_old) / self._orbit_sizes[spin_cl_id]
             diff_cluster_functions.append(diff_cf)
-        diff_cluster_functions = np.array(diff_cluster_functions)
-        return diff_cluster_functions
+        return np.array(diff_cluster_functions)
 
     def eval_from_spin_swap_stable(
         self,

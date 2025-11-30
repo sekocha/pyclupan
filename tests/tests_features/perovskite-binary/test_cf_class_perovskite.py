@@ -6,7 +6,7 @@ import numpy as np
 
 from pyclupan.core.pypolymlp_utils import Poscar
 from pyclupan.derivative.derivative_utils import load_derivatives_yaml
-from pyclupan.features.run_correlation import ClusterFunctions
+from pyclupan.features.cluster_functions import ClusterFunctions
 
 cwd = Path(__file__).parent
 

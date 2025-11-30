@@ -152,7 +152,9 @@ def eval_cluster_functions(
         for i, c in enumerate(coeffs):
             vals[:, i] = np.polyval(c, spins_from_orbit[:, i])
         if return_array:
-            cf = np.prod(vals, axis=1)
+            # cf = np.prod(vals, axis=1)
+            cf = np.multiply.reduce(vals, axis=1)
         else:
-            cf = np.average(np.prod(vals, axis=1))
+            # cf = np.average(np.prod(vals, axis=1))
+            cf = np.average(np.multiply.reduce(vals, axis=1))
     return cf
