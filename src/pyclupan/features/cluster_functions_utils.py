@@ -41,6 +41,7 @@ class ClusterFunctionsMC:
 
         self._get_orbit_supercell()
         self._binary = self._is_binary()
+        self._independent = self._check_neighbors()
 
     def _is_binary(self):
         """Check if configuration is binary."""
@@ -53,6 +54,20 @@ class ClusterFunctionsMC:
                 self._binary = False
                 break
         return self._binary
+
+    def _check_neighbors(self):
+        """Check if every two sites are connected."""
+        if self._verbose:
+            print("Check if every two sites are connected.", flush=True)
+
+        n_sites = len(self._lattice_supercell.active_sites)
+        self._independent = np.ones((n_sites, n_sites), dtype=bool)
+        for cl in self._spin_basis_clusters:
+            orbit = self._orbit_sites_supercell[cl.cluster_id]
+            # TODO: Check if this works for multilattice systems.
+            for i in range(n_sites):
+                self._independent[i, orbit[i].reshape(-1)] = False
+        return self._independent
 
     def _get_orbit_supercell(self, decimals: int = 5):
         """Return orbit for supercell."""
@@ -81,6 +96,7 @@ class ClusterFunctionsMC:
                 for k, v in orbit.items():
                     # TODO: Check results when active sites
                     #       and entire sites are different.
+                    #       key must be changed?
                     orbit[k] = np.array(self._lattice_supercell.to_active_site_rep(v))
                     n_duplicate = np.sum(orbit[k] == k, axis=1).astype(float)
                     self._duplicate_n_sites[(i, k)] = n_duplicate
@@ -150,28 +166,30 @@ class ClusterFunctionsMC:
             orbit = self._orbit_sites_supercell[cl.cluster_id]
             t2 = time.time()
 
-            duplicate_i = np.sum(orbit[i] == j, axis=1).astype(float)
-            duplicate_i += self._duplicate_n_sites[(cl.cluster_id, i)]
-            weight_i = np.reciprocal(duplicate_i) * cluster_size
+            if not self._independent[i, j]:
+                duplicate_i = np.sum(orbit[i] == j, axis=1).astype(float)
+                duplicate_i += self._duplicate_n_sites[(cl.cluster_id, i)]
+                duplicate_j = np.sum(orbit[j] == i, axis=1).astype(float)
+                duplicate_j += self._duplicate_n_sites[(cl.cluster_id, j)]
+                sum_i, sum_j = np.sum(duplicate_i), np.sum(duplicate_j)
+                independent = (
+                    sum_i == duplicate_i.shape[0] and sum_j == duplicate_j.shape[0]
+                )
 
-            duplicate_j = np.sum(orbit[j] == i, axis=1).astype(float)
-            duplicate_j += self._duplicate_n_sites[(cl.cluster_id, j)]
-            weight_j = np.reciprocal(duplicate_j) * cluster_size
             t3 = time.time()
-
-            sum_i, sum_j = np.sum(duplicate_i), np.sum(duplicate_j)
-            if sum_i == duplicate_i.shape[0] and sum_j == duplicate_j.shape[0]:
+            if self._independent[i, j] or independent:
                 t4 = time.time()
-
                 active_spins[i], active_spins[j] = dspin, -dspin
-                prods_i = self._calc_products(active_spins, orbit[i], coeffs)
-                prods_j = self._calc_products(active_spins, orbit[j], coeffs)
-                diff_cf = prods_i @ weight_i + prods_j @ weight_j
+                cf_sum_i = np.sum(self._calc_products(active_spins, orbit[i], coeffs))
+                cf_sum_j = np.sum(self._calc_products(active_spins, orbit[j], coeffs))
+                diff_cf = (cf_sum_i + cf_sum_j) * cluster_size
                 diff_cf /= self._orbit_sizes[spin_cl_id]
                 active_spins[i], active_spins[j] = spin_i, spin_j
                 t5 = time.time()
                 print(t2 - t1, t3 - t2, t4 - t3, t5 - t4)
             else:
+                weight_i = cluster_size / duplicate_i
+                weight_j = cluster_size / duplicate_j
                 cf_new, cf_old = 0.0, 0.0
                 prods = self._calc_products(active_spins, orbit[i], coeffs)
                 cf_old += prods @ weight_i
