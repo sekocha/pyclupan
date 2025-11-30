@@ -3,6 +3,7 @@
 # from typing import Optional
 
 import copy
+import time
 
 import numpy as np
 
@@ -42,6 +43,7 @@ class ClusterFunctionsMC:
         self._get_orbit_supercell()
         self._binary = self._is_binary()
         self._independent = self._check_neighbors()
+        self._poly_coeffs = self._set_polynomial_coeffs()
 
     def _is_binary(self):
         """Check if configuration is binary."""
@@ -68,6 +70,14 @@ class ClusterFunctionsMC:
             for i in range(n_sites):
                 self._independent[i, orbit[i].reshape(-1)] = False
         return self._independent
+
+    def _set_polynomial_coeffs(self):
+        """Set polynomial coefficients of clusters."""
+        self._poly_coeffs = [
+            self._lattice_supercell.get_spin_polynomials(cl.spin_basis)
+            for cl in self._spin_basis_clusters
+        ]
+        return self._poly_coeffs
 
     def _get_orbit_supercell(self, decimals: int = 5):
         """Return orbit for supercell."""
@@ -141,6 +151,54 @@ class ClusterFunctionsMC:
             )
         return prods
 
+    def _calc_sum_products(
+        self,
+        active_spins: np.ndarray,
+        orbit_i: np.ndarray,
+        orbit_j: np.ndarray,
+        coeffs: np.ndarray,
+    ):
+        """Calculate products of cluster functions."""
+        if self._binary:
+            # t0 = time.time()
+            # a = active_spins[orbit_i]
+            # # a = a.astype(np.int16)
+            # t1 = time.time()
+            # b = np.prod(a, axis=1)
+            # t2 = time.time()
+            # c = np.sum(b)
+            # t3 = time.time()
+            # print(t1-t0, t2-t1, t3-t2)
+            # slice_i = np.ascontiguousarray(active_spins[orbit_i])
+            # cf_sum_i = np.sum(np.prod(slice_i, axis=1))
+
+            sub = active_spins[orbit_i]
+            cf_sum_i = np.sum(np.multiply.reduce(sub, axis=1))
+            sub = active_spins[orbit_j]
+            cf_sum_j = np.sum(np.multiply.reduce(sub, axis=1))
+            # slice_j = np.ascontiguousarray(active_spins[orbit_i])
+            # cf_sum_j = np.sum(np.prod(slice_j, axis=1))
+
+            # cf_sum_i = np.sum(np.prod(active_spins[orbit_i], axis=1))
+            # cf_sum_j = np.sum(np.prod(active_spins[orbit_j], axis=1))
+            return cf_sum_i + cf_sum_j
+
+        cf_sum_i = np.sum(
+            eval_cluster_functions(
+                coeffs,
+                active_spins[orbit_i],
+                return_array=True,
+            )
+        )
+        cf_sum_j = np.sum(
+            eval_cluster_functions(
+                coeffs,
+                active_spins[orbit_j],
+                return_array=True,
+            )
+        )
+        return cf_sum_i + cf_sum_j
+
     def eval_from_spin_swap(
         self,
         active_spins: np.array,
@@ -151,7 +209,6 @@ class ClusterFunctionsMC:
         # TODO: Check when more than binary.
         if len(sites) != 2:
             raise RuntimeError("Size of sites must be two.")
-        import time
 
         i, j = sites[0], sites[1]
         spin_i = copy.deepcopy(active_spins[i])
@@ -160,11 +217,9 @@ class ClusterFunctionsMC:
 
         diff_cluster_functions = []
         for spin_cl_id, cl in enumerate(self._spin_basis_clusters):
-            t1 = time.time()
-            coeffs = self._lattice_supercell.get_spin_polynomials(cl.spin_basis)
+            coeffs = self._poly_coeffs[spin_cl_id]
             cluster_size = coeffs.shape[0]
             orbit = self._orbit_sites_supercell[cl.cluster_id]
-            t2 = time.time()
 
             if not self._independent[i, j]:
                 duplicate_i = np.sum(orbit[i] == j, axis=1).astype(float)
@@ -176,17 +231,14 @@ class ClusterFunctionsMC:
                     sum_i == duplicate_i.shape[0] and sum_j == duplicate_j.shape[0]
                 )
 
-            t3 = time.time()
             if self._independent[i, j] or independent:
-                t4 = time.time()
+                t1 = time.time()
                 active_spins[i], active_spins[j] = dspin, -dspin
-                cf_sum_i = np.sum(self._calc_products(active_spins, orbit[i], coeffs))
-                cf_sum_j = np.sum(self._calc_products(active_spins, orbit[j], coeffs))
-                diff_cf = (cf_sum_i + cf_sum_j) * cluster_size
-                diff_cf /= self._orbit_sizes[spin_cl_id]
+                cf = self._calc_sum_products(active_spins, orbit[i], orbit[j], coeffs)
+                diff_cf = cf * cluster_size / self._orbit_sizes[spin_cl_id]
                 active_spins[i], active_spins[j] = spin_i, spin_j
-                t5 = time.time()
-                print(t2 - t1, t3 - t2, t4 - t3, t5 - t4)
+                t2 = time.time()
+                print(t2 - t1)
             else:
                 weight_i = cluster_size / duplicate_i
                 weight_j = cluster_size / duplicate_j

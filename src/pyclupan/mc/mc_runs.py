@@ -38,7 +38,7 @@ def cmc(
     n_sites = mc_attr.n_sites
     n_steps_array = [mc_params.n_steps_init * n_sites, mc_params.n_steps_eq * n_sites]
 
-    spins = mc_attr.active_spins
+    spins = mc_attr.active_spins.astype(np.int32)
     energy = mc_attr.energy
     cfs = mc_attr.cluster_functions
     beta = 1.0 / (KbEV * temp)
