@@ -111,7 +111,7 @@ class Lattice:
         self._set_spins()
 
         spins = self._spins_on_lattice
-        self._active_spins = [s2 for s in spins if len(s) > 1 for s2 in s]
+        self._active_spins = np.array([s2 for s in spins if len(s) > 1 for s2 in s])
 
     def _set_spins(self):
         """Set spin values and point cluster functions."""

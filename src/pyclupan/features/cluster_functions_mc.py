@@ -137,7 +137,7 @@ class ClusterFunctionsMC:
     ):
         """Calculate products of cluster functions."""
         if self._binary:
-            prods = np.prod(active_spins[orbit_per_site], axis=1)
+            prods = np.multiply.reduce(active_spins[orbit_per_site], axis=1)
         else:
             prods = eval_cluster_functions(
                 coeffs,
@@ -160,18 +160,10 @@ class ClusterFunctionsMC:
             return cf_sum_i + cf_sum_j
 
         cf_sum_i = np.sum(
-            eval_cluster_functions(
-                coeffs,
-                active_spins[orbit_i],
-                return_array=True,
-            )
+            eval_cluster_functions(coeffs, active_spins[orbit_i], return_array=True)
         )
         cf_sum_j = np.sum(
-            eval_cluster_functions(
-                coeffs,
-                active_spins[orbit_j],
-                return_array=True,
-            )
+            eval_cluster_functions(coeffs, active_spins[orbit_j], return_array=True)
         )
         return cf_sum_i + cf_sum_j
 
@@ -209,26 +201,26 @@ class ClusterFunctionsMC:
 
             if self._independent[i, j] or independent:
                 active_spins[i], active_spins[j] = dspin, -dspin
-                cf = self._calc_sum_products(active_spins, orbit[i], orbit[j], coeffs)
+                val = self._calc_sum_products(active_spins, orbit[i], orbit[j], coeffs)
                 active_spins[i], active_spins[j] = spin_i, spin_j
-                diff_cf = cf * cluster_size / orbit_size
+                diff_cf = val * cluster_size / orbit_size
             else:
                 weight_i = cluster_size / duplicate_i
                 weight_j = cluster_size / duplicate_j
-                cf_new, cf_old = 0.0, 0.0
-                prods = self._calc_products(active_spins, orbit[i], coeffs)
-                cf_old += prods @ weight_i
-                prods = self._calc_products(active_spins, orbit[j], coeffs)
-                cf_old += prods @ weight_j
+
+                prods_i = self._calc_products(active_spins, orbit[i], coeffs)
+                prods_j = self._calc_products(active_spins, orbit[j], coeffs)
+                cf_old = prods_i @ weight_i + prods_j @ weight_j
 
                 active_spins[i], active_spins[j] = active_spins[j], active_spins[i]
-                prods = self._calc_products(active_spins, orbit[i], coeffs)
-                cf_new += prods @ weight_i
-                prods = self._calc_products(active_spins, orbit[j], coeffs)
-                cf_new += prods @ weight_j
+
+                prods_i = self._calc_products(active_spins, orbit[i], coeffs)
+                prods_j = self._calc_products(active_spins, orbit[j], coeffs)
+                cf_new = prods_i @ weight_i + prods_j @ weight_j
+
                 active_spins[i], active_spins[j] = active_spins[j], active_spins[i]
 
-                diff_cf = (cf_new - cf_old) / self._orbit_sizes[spin_cl_id]
+                diff_cf = (cf_new - cf_old) / orbit_size
             diff_cluster_functions.append(diff_cf)
         return np.array(diff_cluster_functions)
 
@@ -278,3 +270,37 @@ class ClusterFunctionsMC:
             diff_cluster_functions.append(diff_cf)
         diff_cluster_functions = np.array(diff_cluster_functions)
         return diff_cluster_functions
+
+    def eval_from_spin_flip(
+        self,
+        active_spins: np.array,
+        site: int,
+        spin_new: int,
+    ):
+        """Evaluate cluster function changes from spin swap."""
+
+        # TODO: Check when more than binary and multilattice systems.
+        i = site
+        spin_i = active_spins[i]
+        dspin = spin_new - spin_i
+
+        diff_cluster_functions = []
+        for spin_cl_id, cl in enumerate(self._spin_basis_clusters):
+            coeffs = self._poly_coeffs[spin_cl_id]
+            cluster_size = coeffs.shape[0]
+            orbit = self._orbit_sites_supercell[cl.cluster_id]
+            orbit_size = self._orbit_sizes[spin_cl_id]
+
+            active_spins[i] = dspin
+            if self._binary:
+                val = np.sum(np.multiply.reduce(active_spins[orbit[i]], axis=1))
+            else:
+                val = np.sum(
+                    eval_cluster_functions(
+                        coeffs, active_spins[orbit[i]], return_array=True
+                    )
+                )
+            active_spins[i] = spin_i
+            diff_cf = val * cluster_size / orbit_size
+            diff_cluster_functions.append(diff_cf)
+        return np.array(diff_cluster_functions)

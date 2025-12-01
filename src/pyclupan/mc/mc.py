@@ -145,6 +145,7 @@ class MC:
         temperature_final: Optional[float] = None,
         temperature_step: Optional[float] = None,
         ensemble: Literal["canonical", "semi_grand_canonical"] = "canonical",
+        mu: Optional[float] = None,
     ):
         """Set parameters."""
         self._mc_params = MCParams(
@@ -153,6 +154,7 @@ class MC:
             temperature=temperature,
             temperatures=temperatures,
             ensemble=ensemble,
+            mu=mu,
         )
         if temperature_init is not None:
             if temperature_final is None:
@@ -216,7 +218,14 @@ class MC:
     def run_sgcmc(self):
         """Run semi-grand canoncial MC simulation."""
         for temp in self._mc_params.temperatures:
-            sgcmc()
+            sgcmc(
+                temp,
+                self._mc_attr,
+                self._mc_params,
+                self._cf_mc,
+                self._model,
+                verbose=self._verbose,
+            )
 
     @property
     def unitcell(self):

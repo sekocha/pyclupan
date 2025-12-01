@@ -56,6 +56,7 @@ class PyclupanMC:
         temperature_final: Optional[float] = None,
         temperature_step: Optional[float] = None,
         ensemble: Literal["canonical", "semi_grand_canonical"] = "canonical",
+        mu: Optional[float] = None,
     ):
         """Set parameters.
 
@@ -72,6 +73,7 @@ class PyclupanMC:
             temperature_final=temperature_final,
             temperature_step=temperature_step,
             ensemble=ensemble,
+            mu=mu,
         )
         return self
 

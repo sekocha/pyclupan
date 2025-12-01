@@ -57,6 +57,7 @@ class MCParams:
     n_steps_eq: int = 1000
     temperature: float = 1000
     ensemble: Literal["canonical", "semi_grand_canonical"] = "canonical"
+    mu: Optional[float] = None
 
     temperatures: Optional[np.ndarray] = None
 
@@ -64,6 +65,9 @@ class MCParams:
         """Post init method."""
         if self.temperatures is None:
             self.temperatures = np.array([self.temperature])
+
+        if self.ensemble == "semi_grand_canonical" and self.mu is None:
+            raise RuntimeError("Chemical potential for SGCMC not found.")
 
     def set_temperature_range(
         self, temp_init: float, temp_final: float, temp_step: float
