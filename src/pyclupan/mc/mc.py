@@ -206,7 +206,7 @@ class MC:
     def run_cmc(self):
         """Run canoncial MC simulation."""
         for temp in self._mc_params.temperatures:
-            cmc(
+            self._mc_attr = cmc(
                 temp,
                 self._mc_attr,
                 self._mc_params,
@@ -218,7 +218,7 @@ class MC:
     def run_sgcmc(self):
         """Run semi-grand canoncial MC simulation."""
         for temp in self._mc_params.temperatures:
-            sgcmc(
+            self._mc_attr = sgcmc(
                 temp,
                 self._mc_attr,
                 self._mc_params,

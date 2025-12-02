@@ -16,11 +16,14 @@ class MCAttr:
     """
 
     active_spins: Optional[np.ndarray] = None
+    energy: Optional[float] = None
     cluster_functions: Optional[np.ndarray] = None
-    energy: Optional[np.ndarray] = None
 
     active_element_species: Optional[np.ndarray] = None
     spin_species: Optional[np.ndarray] = None
+
+    average_energy: Optional[float] = None
+    average_cluster_functions: Optional[np.ndarray] = None
 
     @property
     def n_sites(self):
