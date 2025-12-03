@@ -5,6 +5,9 @@ from typing import Literal, Optional
 
 import numpy as np
 
+from pyclupan.core.model import CEmodel
+from pyclupan.core.pypolymlp_utils import PolymlpStructure
+
 
 @dataclass
 class MCAttr:
@@ -36,9 +39,9 @@ class MCAttr:
         """Print attributes."""
         print("----------------------------------------------", flush=True)
         print("Lattices:", flush=True)
-        print("  Number of active sites:", self.n_sites, flush=True)
-        print("  Elements:              ", self.active_element_species, flush=True)
-        print("  Spins:                 ", self.spin_species, flush=True)
+        print("  Number of sites:", self.n_sites, flush=True)
+        print("  Elements:       ", list(self.active_element_species), flush=True)
+        print("  Spins:          ", list(self.spin_species), flush=True)
         print("----------------------------------------------", flush=True)
         print("Properties:", flush=True)
         print("  Cluster functions:", flush=True)
@@ -92,3 +95,48 @@ class MCParams:
         for temp in self.temperatures:
             print("  -", temp, flush=True)
         print("----------------------------------------------", flush=True)
+
+
+def save_mc_yaml(
+    model: CEmodel,
+    mc_attr: MCAttr,
+    mc_params: MCParams,
+    average_energies: np.array,
+    average_cluster_functions: np.array,
+    supercell: PolymlpStructure,
+    filename: str = "pyclupan_mc.yaml",
+):
+    """Save properties from MC."""
+    np.set_printoptions(suppress=True)
+    with open(filename, "w") as f:
+        print("mc_parameters:", file=f)
+        n_sites = mc_attr.n_sites
+        supercell_matrix = supercell.supercell_matrix.astype(int)
+        print("  supercell_matrix:", file=f)
+        print("  -", list(supercell_matrix[0]), file=f)
+        print("  -", list(supercell_matrix[1]), file=f)
+        print("  -", list(supercell_matrix[2]), file=f)
+        print("  n_sites:        ", n_sites, file=f)
+
+        print("  elements:       ", list(mc_attr.active_element_species), file=f)
+        print("  spins:          ", list(mc_attr.spin_species), file=f)
+        print("  ensemble:       ", mc_params.ensemble, file=f)
+        if mc_params.ensemble == "canonical":
+            print("  n_elements:     ", list(supercell.n_atoms), file=f)
+        elif mc_params.ensemble == "semi_grand_canonical":
+            print("  mu:             ", mc_params.mu, file=f)
+
+        print("  n_steps_init:   ", mc_params.n_steps_init * n_sites, file=f)
+        print("  n_steps_average:", mc_params.n_steps_eq * n_sites, file=f)
+        print(file=f)
+
+        print("mc_results:", file=f)
+        for temp, e, cfs in zip(
+            mc_params.temperatures, average_energies, average_cluster_functions
+        ):
+            print("- temperature:", temp, file=f)
+            print("  energy:     ", e, file=f)
+            print("  cluster_functions:", file=f)
+            for cluster_id, cf in zip(model.cluster_ids, cfs):
+                print("  - id:   ", cluster_id, file=f)
+                print("    value:", np.round(cf, 7), file=f)

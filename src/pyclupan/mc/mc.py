@@ -1,5 +1,6 @@
 """Class for performing Monte Carlo simulations."""
 
+import copy
 from typing import Literal, Optional
 
 import numpy as np
@@ -8,7 +9,7 @@ from pyclupan.core.cell_utils import supercell_general
 from pyclupan.features.cluster_functions import ClusterFunctions
 from pyclupan.features.cluster_functions_mc import ClusterFunctionsMC
 from pyclupan.mc.mc_runs import cmc, sgcmc
-from pyclupan.mc.mc_utils import MCAttr, MCParams
+from pyclupan.mc.mc_utils import MCAttr, MCParams, save_mc_yaml
 from pyclupan.regression.regression_utils import load_ecis
 
 
@@ -44,6 +45,9 @@ class MC:
             active_element_species=self._lattice_unitcell._active_elements,
             spin_species=self._lattice_unitcell._active_spins,
         )
+
+        self._average_energies = None
+        self._average_cfs = None
         np.set_printoptions(legacy="1.21")
 
     def set_supercell(self, supercell_matrix: np.ndarray, refine: bool = False):
@@ -120,6 +124,7 @@ class MC:
         if compositions is not None:
             active_spins = self._set_init_structure_random(compositions)
         else:
+            # TODO: Starting from given initial structure
             pass
 
         self._mc_attr.active_spins = active_spins
@@ -198,13 +203,15 @@ class MC:
             self._mc_attr.print_attrs()
 
         if self._mc_params.ensemble == "canonical":
-            self.run_cmc()
+            self._run_cmc()
         elif self._mc_params.ensemble == "semi_grand_canonical":
-            self.run_sgcmc()
+            self._run_sgcmc()
+
         return self
 
-    def run_cmc(self):
+    def _run_cmc(self):
         """Run canoncial MC simulation."""
+        self._average_energies, self._average_cfs = [], []
         for temp in self._mc_params.temperatures:
             self._mc_attr = cmc(
                 temp,
@@ -214,9 +221,13 @@ class MC:
                 self._model,
                 verbose=self._verbose,
             )
+            self._average_energies.append(self._mc_attr.average_energy)
+            self._average_cfs.append(self._mc_attr.average_cluster_functions)
+        return self
 
-    def run_sgcmc(self):
+    def _run_sgcmc(self):
         """Run semi-grand canoncial MC simulation."""
+        self._average_energies, self._average_cfs = [], []
         for temp in self._mc_params.temperatures:
             self._mc_attr = sgcmc(
                 temp,
@@ -226,6 +237,9 @@ class MC:
                 self._model,
                 verbose=self._verbose,
             )
+            self._average_energies.append(self._mc_attr.average_energy)
+            self._average_cfs.append(self._mc_attr.average_cluster_functions)
+        return self
 
     @property
     def unitcell(self):
@@ -247,8 +261,35 @@ class MC:
         """Return parameters used for MC."""
         return self._mc_params
 
+    @property
+    def average_energies(self):
+        """Return average energies."""
+        return self._average_energies
 
-#     @property
-#     def structures(self):
-#         """Return structures."""
-#         return self._structures
+    @property
+    def average_cluster_functions(self):
+        """Return average cluster functions."""
+        return self._average_cfs
+
+    @property
+    def structure(self):
+        """Return final structure."""
+        active_spins = self._mc_attr.active_spins
+        labeling = self._lattice_supercell.to_labelings(active_spins)
+
+        st = copy.deepcopy(self.supercell)
+        st.types = labeling
+        st.elements = [e + str(t) for e, t in zip(st.elements, labeling)]
+        return st.reorder()
+
+    def save_mc_yaml(self, filename: str = "pyclupan_mc.yaml"):
+        """Save properties from MC."""
+        save_mc_yaml(
+            self._model,
+            self._mc_attr,
+            self._mc_params,
+            self._average_energies,
+            self._average_cfs,
+            self.supercell,
+            filename=filename,
+        )

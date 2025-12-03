@@ -4,6 +4,7 @@ from typing import Literal, Optional
 
 import numpy as np
 
+from pyclupan.core.pypolymlp_utils import write_poscar_file
 from pyclupan.mc.mc import MC
 
 
@@ -92,57 +93,16 @@ class PyclupanMC:
         self._mc.run()
         return self
 
+    @property
+    def structure(self):
+        """Return final structure."""
+        return self._mc.structure
 
-#     @property
-#     def structures(self):
-#         """Return structures."""
-#         return self._structures
-#
-#     @structures.setter
-#     def structures(self, strs: list[PolymlpStructure]):
-#         """Set structures to be calculated.
-#
-#         Parameter
-#         ---------
-#         str: List of structures to be calculated.
-#         """
-#         self._structures = self._cf.structures = strs
-#         self._structure_ids = ["str-" + str(i) for i in range(len(strs))]
-#
-#     @property
-#     def element_strings(self):
-#         """Return element strings."""
-#         return self._cf.element_strings
-#
-#     @element_strings.setter
-#     def element_strings(self, element_strings: tuple):
-#         """Set element strings.
-#
-#         Parameter
-#         ---------
-#         element_strings: Element strings.
-#             The location index corresponds to label integer.
-#             For example, element_strings are ("Ag", "Au"),
-#             labels 0 and 1 indicate elements Ag and Au, respectively.
-#         """
-#         self._cf.element_strings = element_strings
-#
-#     @property
-#     def cluster_functions(self):
-#         """Return cluster functions."""
-#         return self._cluster_functions
-#
-#     @property
-#     def energies(self):
-#         """Return energies (per unitcell)."""
-#         return self._energies
-#
-#     @property
-#     def formation_energies(self):
-#         """Return formation energies (per unitcell)."""
-#         return self._formation_energies
-#
-#     @property
-#     def convexhull(self):
-#         """Return convex hull of formation energies."""
-#         return self._convex
+    def save_structure(self, filename: str = "POSCAR", header: str = "MC by clupan"):
+        """Save structure to POSCAR file."""
+        write_poscar_file(self.structure, filename=filename, header=header)
+
+    def save_mc_yaml(self, filename: str = "pyclupan_mc.yaml"):
+        """Save properties from MC."""
+        self._mc.save_mc_yaml(filename=filename)
+        return self
