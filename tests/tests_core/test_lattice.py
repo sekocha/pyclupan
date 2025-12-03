@@ -79,6 +79,8 @@ def test_lattice_binary_fcc():
     labelings_single = np.array([0, 0, 1])
     spins = lattice_supercell.to_spins(labelings_single)
     np.testing.assert_equal(spins, [1, 1, -1])
+    labelings_converted = lattice_supercell.to_labelings(spins)
+    np.testing.assert_equal(labelings_converted, labelings_single)
 
     labelings = np.array(
         [
@@ -91,6 +93,9 @@ def test_lattice_binary_fcc():
     spins = lattice_supercell.to_spins(labelings)
     spins_true = np.array([[1, 1, 1], [1, 1, -1], [1, -1, -1], [-1, -1, -1]])
     np.testing.assert_equal(spins, spins_true)
+
+    labelings_converted = lattice_supercell.to_labelings(spins)
+    np.testing.assert_equal(labelings_converted, labelings)
 
     assert lattice_supercell.elements_on_lattice == elements
     assert lattice_supercell.n_elements == 2
@@ -159,6 +164,9 @@ def test_lattice_binary_perovskite():
     spins = lattice_supercell.to_spins(labelings_single)
     np.testing.assert_equal(spins, [1, -1, 1, -1, 1, -1])
 
+    labelings_converted = lattice_supercell.to_labelings(spins)
+    np.testing.assert_equal(labelings_converted, labelings_single)
+
     labelings = np.array(
         [
             [2, 2, 2, 3, 2, 2],
@@ -181,6 +189,9 @@ def test_lattice_binary_perovskite():
         ]
     )
     np.testing.assert_equal(spins, spins_true)
+
+    labelings_converted = lattice_supercell.to_labelings(spins)
+    np.testing.assert_equal(labelings_converted, labelings)
 
     assert lattice_supercell.elements_on_lattice == elements
     assert lattice_supercell.n_elements == 4
