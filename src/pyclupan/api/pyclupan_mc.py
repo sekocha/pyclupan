@@ -117,6 +117,21 @@ class PyclupanMC:
         """Return final structure."""
         return self._mc.structure
 
+    @property
+    def temperatures(self):
+        """Return simulation temperatures."""
+        return self._mc.temperatures
+
+    @property
+    def average_energies(self):
+        """Return average energies for simulation temperatures."""
+        return self._mc.average_energies
+
+    @property
+    def average_cluster_functions(self):
+        """Return average cluster functions for simulation temperatures."""
+        return self._mc.average_cluster_functions
+
     def save_structure(self, filename: str = "POSCAR", header: str = "MC by clupan"):
         """Save structure to POSCAR file."""
         write_poscar_file(self.structure, filename=filename, header=header)

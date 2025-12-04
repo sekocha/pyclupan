@@ -313,14 +313,19 @@ class MC:
         return self._mc_params
 
     @property
+    def temperatures(self):
+        """Return simulation temperatures."""
+        return self._mc_params.temperatures
+
+    @property
     def average_energies(self):
         """Return average energies."""
-        return self._average_energies
+        return np.array(self._average_energies)
 
     @property
     def average_cluster_functions(self):
         """Return average cluster functions."""
-        return self._average_cfs
+        return np.array(self._average_cfs)
 
     @property
     def structure(self):
