@@ -91,7 +91,12 @@ class PyclupanRegression:
         return self
 
     def run_ridge(self, alphas: tuple = (1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1)):
-        """Run Ridge solver."""
+        """Run Ridge solver.
+
+        Parameter
+        ---------
+        alphas: Regularization parameters.
+        """
         if self._verbose:
             print("Use Ridge solver.", flush=True)
 
@@ -105,7 +110,12 @@ class PyclupanRegression:
         return self
 
     def run_lasso(self, alphas: tuple = (1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1)):
-        """Run Lasso solver."""
+        """Run Lasso solver.
+
+        Parameter
+        ---------
+        alphas: Regularization parameters.
+        """
         if self._verbose:
             print("Use Lasso solver.", flush=True)
 
@@ -119,7 +129,12 @@ class PyclupanRegression:
         return self
 
     def save(self, filename: str = "pyclupan_ecis.yaml"):
-        """Save coefficients and intercept."""
+        """Save coefficients and intercept.
+
+        Parameter
+        ---------
+        filename: Filename to save ECIs.
+        """
         save_ecis(self.coeffs, self.intercept, filename=filename)
         return self
 

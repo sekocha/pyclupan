@@ -9,8 +9,6 @@ from pyclupan.core.pypolymlp_utils import KbEV
 from pyclupan.features.cluster_functions_mc import ClusterFunctionsMC
 from pyclupan.mc.mc_utils import MCAttr, MCParams
 
-# from typing import Optional
-
 
 def _select_one_site(spins: np.ndarray, spin_species: np.ndarray):
     """Select two sites with different spins."""
@@ -83,8 +81,7 @@ def cmc(
                 np.testing.assert_allclose(cfs_new, cfs_new_direct, atol=1e-8)
 
             delta_e = energy_new - energy
-            # TODO: Use supercell energy unit
-            threshold = np.exp(-beta * delta_e * n_sites)
+            threshold = np.exp(-beta * delta_e)
             if np.random.rand() < threshold:
                 energy = energy_new
                 cfs = cfs_new
@@ -156,8 +153,7 @@ def sgcmc(
             delta_mu = mu if spin_new == -1 else -mu
 
             delta_e = energy_new - energy
-            # TODO: Use supercell energy unit
-            threshold = np.exp(-beta * (delta_e * n_sites - delta_mu))
+            threshold = np.exp(-beta * (delta_e - delta_mu))
             if np.random.rand() < threshold:
                 energy = energy_new
                 cfs = cfs_new

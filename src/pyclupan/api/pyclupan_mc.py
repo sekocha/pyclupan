@@ -63,7 +63,15 @@ class PyclupanMC:
 
         Parameters
         ----------
-        TODO: Add docstrings.
+        n_steps_init: Number of steps for initialization.
+        n_steps_eq: Number of steps for taking avarages.
+        temperature: Single temperature.
+        temperatures: Multiple temperatures.
+        temperature_init: Initial temperature to set temperatures automatically.
+        temperature_final: Final temperature to set temperatures automatically.
+        temperature_step: Temperature step to set temperatures automatically.
+        ensemble: Ensemble. Set "canonical" or "semi_grand_canonical".
+        mu: Chemical potential difference.
         """
         self._mc.set_parameters(
             n_steps_init=n_steps_init,
@@ -88,7 +96,9 @@ class PyclupanMC:
 
         Parameters
         ----------
-        TODO: Add docstrings.
+        structure: Initial structure for MC simulation.
+        element_strings: Element strings to define element IDs.
+        compositions: Compositions.
         """
         self._mc.set_init(
             structure=structure,

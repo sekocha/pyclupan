@@ -26,3 +26,7 @@ def test_CEmodel():
     )
     energies = model.eval(cfs)
     np.testing.assert_allclose(energies, [-0.077121, 1.092333, 0.111778], atol=1e-6)
+
+    model.supercell(3)
+    energies = model.eval(cfs)
+    np.testing.assert_allclose(energies, [-0.231362, 3.277, 0.335334], atol=1e-6)

@@ -15,7 +15,15 @@ class MCAttr:
 
     Parameters
     ----------
-    TODO: Add document.
+    active_spins: Active spins on MC lattice.
+    energy: Energy value of spin configuration.
+    cluster_functions: Cluster functions of spin_configuration.
+
+    active_element_species: Element IDs activated in MC.
+    spin_species: Spin values activated in MC.
+
+    average_energy: Average energy from MC simulation.
+    average_cluster_functions: Average cluster functions from MC simulation.
     """
 
     active_spins: Optional[np.ndarray] = None
@@ -56,7 +64,12 @@ class MCParams:
 
     Parameters
     ----------
-    TODO: Add document.
+    n_steps_init: Number of steps for initialization.
+    n_steps_eq: Number of steps for taking avarages.
+    temperature: Single temperature.
+    ensemble: Ensemble. Set "canonical" or "semi_grand_canonical".
+    mu: Chemical potential difference.
+    temperatures: Multiple temperatures.
     """
 
     n_steps_init: int = 100

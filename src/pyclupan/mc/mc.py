@@ -79,6 +79,8 @@ class MC:
             self._lattice_supercell,
             verbose=self._verbose,
         )
+        n_expand = np.linalg.det(sup.supercell_matrix)
+        self._model.supercell(n_expand)
         return self
 
     def _set_init_structure_random(self, compositions: tuple):
@@ -94,8 +96,11 @@ class MC:
         if not np.isclose(np.sum(compositions), 1.0):
             raise RuntimeError("Sum of given compositions is not one.")
 
-        n_sites = len(self._lattice_supercell.active_sites)
         elements = self._mc_attr.active_element_species
+        if len(elements) != len(compositions):
+            raise RuntimeError("Size of given compositions is not consistent.")
+
+        n_sites = len(self._lattice_supercell.active_sites)
         n_atoms = np.array([compositions[ele] * n_sites for ele in elements])
         if not np.allclose(n_atoms - np.round(n_atoms), 0.0):
             raise RuntimeError("Given supercell cannot express compositions.")
@@ -118,7 +123,9 @@ class MC:
         active_spins = self._lattice_supercell.to_spins(active_labelings)
         return active_spins
 
-    def _set_init_structure(self, structure: PolymlpStructure, element_strings: tuple):
+    def _set_init_structure_file(
+        self, structure: PolymlpStructure, element_strings: tuple
+    ):
         """Set initial structure using given structure."""
         supercell = self._lattice_supercell.cell
         supercell_matrix = np.linalg.inv(structure.axis) @ supercell.axis
@@ -138,7 +145,7 @@ class MC:
         active_spins = self._lattice_supercell.to_spins(active_labelings)
         return active_spins
 
-    def set_init_structure(
+    def _set_init_structure(
         self,
         structure: Optional[PolymlpStructure] = None,
         element_strings: Optional[tuple] = None,
@@ -151,13 +158,15 @@ class MC:
             raise RuntimeError("Supercell not found.")
 
         if structure is not None:
-            active_spins = self._set_init_structure(structure, element_strings)
+            if element_strings is None:
+                print("Element strings required.")
+            active_spins = self._set_init_structure_file(structure, element_strings)
         elif compositions is not None:
             active_spins = self._set_init_structure_random(compositions)
         self._mc_attr.active_spins = active_spins
         return self
 
-    def set_init_properties(self):
+    def _set_init_properties(self):
         """Set initial properties."""
         if self._verbose:
             print("Calculating cluster functions of initial structure.", flush=True)
@@ -165,6 +174,32 @@ class MC:
         cluster_functions = self._cf_mc.eval_from_spins(self._mc_attr.active_spins)
         self._mc_attr.energy = self._model.eval(cluster_functions)
         self._mc_attr.cluster_functions = cluster_functions
+        return self
+
+    def set_init(
+        self,
+        structure: Optional[PolymlpStructure] = None,
+        element_strings: Optional[tuple] = None,
+        compositions: Optional[tuple] = None,
+    ):
+        """Set initial conditions.
+
+        Parameters
+        ----------
+        compositions: Compositions for active elements.
+            Array indices correspond to element IDs.
+            The compositions are defined as
+            (number of atoms) / (number of active sites).
+        """
+        if self._lattice_supercell is None:
+            raise RuntimeError("Set supercell first.")
+
+        self._set_init_structure(
+            structure=structure,
+            element_strings=element_strings,
+            compositions=compositions,
+        )
+        self._set_init_properties()
         return self
 
     def set_parameters(
@@ -198,32 +233,6 @@ class MC:
             )
         return self
 
-    def set_init(
-        self,
-        structure: Optional[PolymlpStructure] = None,
-        element_strings: Optional[tuple] = None,
-        compositions: Optional[tuple] = None,
-    ):
-        """Set initial conditions.
-
-        Parameters
-        ----------
-        compositions: Compositions for active elements.
-            Array indices correspond to element IDs.
-            The compositions are defined as
-            (number of atoms) / (number of active sites).
-        """
-        if self._lattice_supercell is None:
-            raise RuntimeError("Set supercell first.")
-
-        self.set_init_structure(
-            structure=structure,
-            element_strings=element_strings,
-            compositions=compositions,
-        )
-        self.set_init_properties()
-        return self
-
     def run(self):
         """Run MC simulation."""
         if self._cf_mc is None:
@@ -249,6 +258,9 @@ class MC:
         """Run canoncial MC simulation."""
         self._average_energies, self._average_cfs = [], []
         for temp in self._mc_params.temperatures:
+            if self._verbose:
+                print("--- Temperature:", temp, "---", flush=True)
+
             self._mc_attr = cmc(
                 temp,
                 self._mc_attr,
@@ -265,6 +277,9 @@ class MC:
         """Run semi-grand canoncial MC simulation."""
         self._average_energies, self._average_cfs = [], []
         for temp in self._mc_params.temperatures:
+            if self._verbose:
+                print("--- Temperature:", temp, "---", flush=True)
+
             self._mc_attr = sgcmc(
                 temp,
                 self._mc_attr,
