@@ -4,9 +4,16 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.mc.mc_utils import MCParams
+from pyclupan.mc.mc_utils import MCAttr, MCParams
 
 cwd = Path(__file__).parent
+
+
+def test_mc_attr():
+    """Test MCAttr."""
+    active_spins = np.array([1, -1, 1, -1, 1, -1])
+    mc_attr = MCAttr(active_spins=active_spins)
+    assert mc_attr.n_sites == 6
 
 
 def test_mc_params():
