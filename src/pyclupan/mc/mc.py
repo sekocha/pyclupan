@@ -5,9 +5,11 @@ from typing import Literal, Optional
 
 import numpy as np
 
-from pyclupan.core.cell_utils import supercell_general
+from pyclupan.core.cell_utils import get_matching_positions, supercell_general
+from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.features.cluster_functions import ClusterFunctions
 from pyclupan.features.cluster_functions_mc import ClusterFunctionsMC
+from pyclupan.features.features_utils import element_strings_to_labeling
 from pyclupan.mc.mc_runs import cmc, sgcmc
 from pyclupan.mc.mc_utils import MCAttr, MCParams, save_mc_yaml
 from pyclupan.regression.regression_utils import load_ecis
@@ -116,17 +118,42 @@ class MC:
         active_spins = self._lattice_supercell.to_spins(active_labelings)
         return active_spins
 
-    def set_init_structure(self, compositions: Optional[tuple] = None):
+    def _set_init_structure(self, structure: PolymlpStructure, element_strings: tuple):
+        """Set initial structure using given structure."""
+        supercell = self._lattice_supercell.cell
+        supercell_matrix = np.linalg.inv(structure.axis) @ supercell.axis
+        if not np.allclose(supercell_matrix - np.round(supercell_matrix), 0.0):
+            raise RuntimeError(
+                "Axis of given structure not consistent with MC supercell."
+            )
+
+        if self._verbose:
+            print("Constructing supercell of given structure.")
+        st_sup = supercell_general(structure, supercell_matrix, refine=False)
+
+        labeling = element_strings_to_labeling(st_sup.elements, element_strings)
+        order = get_matching_positions(supercell.positions, st_sup.positions)
+        labeling = labeling[order]
+        active_labelings = labeling[self._lattice_supercell.active_sites]
+        active_spins = self._lattice_supercell.to_spins(active_labelings)
+        return active_spins
+
+    def set_init_structure(
+        self,
+        structure: Optional[PolymlpStructure] = None,
+        element_strings: Optional[tuple] = None,
+        compositions: Optional[tuple] = None,
+    ):
         """Set initial structure."""
+        if structure is None and compositions is None:
+            raise RuntimeError("Structure or compositions required.")
         if self._lattice_supercell is None:
             raise RuntimeError("Supercell not found.")
 
-        if compositions is not None:
+        if structure is not None:
+            active_spins = self._set_init_structure(structure, element_strings)
+        elif compositions is not None:
             active_spins = self._set_init_structure_random(compositions)
-        else:
-            # TODO: Starting from given initial structure
-            pass
-
         self._mc_attr.active_spins = active_spins
         return self
 
@@ -171,7 +198,12 @@ class MC:
             )
         return self
 
-    def set_init(self, compositions: Optional[tuple] = None):
+    def set_init(
+        self,
+        structure: Optional[PolymlpStructure] = None,
+        element_strings: Optional[tuple] = None,
+        compositions: Optional[tuple] = None,
+    ):
         """Set initial conditions.
 
         Parameters
@@ -184,7 +216,11 @@ class MC:
         if self._lattice_supercell is None:
             raise RuntimeError("Set supercell first.")
 
-        self.set_init_structure(compositions=compositions)
+        self.set_init_structure(
+            structure=structure,
+            element_strings=element_strings,
+            compositions=compositions,
+        )
         self.set_init_properties()
         return self
 

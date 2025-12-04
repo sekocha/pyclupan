@@ -66,7 +66,11 @@ def supercell_general(
         if verbose:
             print("Supercell matrix:", flush=True)
             print(supercell_matrix, flush=True)
-        sup = supercell(unitcell_rev, supercell_matrix=supercell_matrix)
+        if np.allclose(supercell_matrix, np.diag(np.diagonal(supercell_matrix))):
+            size = np.rint(np.diagonal(supercell_matrix)).astype(int)
+            sup = supercell_diagonal(unitcell_rev, size=size)
+        else:
+            sup = supercell(unitcell_rev, supercell_matrix=supercell_matrix)
 
     elif np.array(supercell_matrix).size == 3:
         if verbose:

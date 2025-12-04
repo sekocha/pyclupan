@@ -4,7 +4,7 @@ from typing import Literal, Optional
 
 import numpy as np
 
-from pyclupan.core.pypolymlp_utils import write_poscar_file
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, write_poscar_file
 from pyclupan.mc.mc import MC
 
 
@@ -78,14 +78,23 @@ class PyclupanMC:
         )
         return self
 
-    def set_init(self, compositions: tuple):
+    def set_init(
+        self,
+        structure: Optional[PolymlpStructure] = None,
+        element_strings: Optional[tuple] = None,
+        compositions: Optional[tuple] = None,
+    ):
         """Set initial conditions.
 
         Parameters
         ----------
         TODO: Add docstrings.
         """
-        self._mc.set_init(compositions)
+        self._mc.set_init(
+            structure=structure,
+            element_strings=element_strings,
+            compositions=compositions,
+        )
         return self
 
     def run(self):
