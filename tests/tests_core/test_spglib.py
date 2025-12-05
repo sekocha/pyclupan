@@ -10,9 +10,23 @@ from pyclupan.core.spglib_utils import (
     get_permutation,
     get_rotations,
     get_symmetry,
+    refine_cell,
 )
 
 cwd = Path(__file__).parent
+
+
+def test_refine_cell():
+    """Test refine cell."""
+    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
+    ref_cell = refine_cell(unitcell)
+    np.testing.assert_allclose(
+        ref_cell.axis, [[5.393, 0.0, 0.0], [0.0, 5.393, 0.0], [0.0, 0.0, 5.393]]
+    )
+    np.testing.assert_allclose(
+        ref_cell.positions,
+        [[0.0, 0.0, 0.5, 0.5], [0.0, 0.5, 0.0, 0.5], [0.0, 0.5, 0.5, 0.0]],
+    )
 
 
 def test_symmetry():
