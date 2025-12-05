@@ -1,13 +1,7 @@
 [build-system]
 requires = [
-#    "scikit-build-core",
     "setuptools_scm[toml]>=6.0",
-#    "cmake",
-#    "pybind11",
-#    "pybind11-global",
-#    "eigen",
 ]
-# build-backend = "scikit_build_core.build"
 
 [project]
 name = "pyclupan"
@@ -20,15 +14,20 @@ requires-python = ">=3.9"
 dependencies = [
     "numpy !=2.0.*",
     "scipy",
+    "scikit-learn",
     "PyYAML >= 5.3",
     "setuptools >= 61.0",
+    "spglib",
+    "phonopy",
+    "pypolymlp >= 0.16.0",
+
 ]
 license = { file = "LICENSE" }
 
 [project.optional-dependencies]
 graphillion = ["graphillion"]
-spglib = ["spglib"]
-tools = ["spglib", "graphillion"]
+# spglib = ["spglib"]
+tools = ["graphillion"]
 
 [project.urls]
 Homepage = "https://github.com/sekocha/pyclupan"
@@ -37,30 +36,7 @@ Repository = "https://github.com/sekocha/pyclupan"
 [project.scripts]
 pyclupan = "pyclupan.api.run_pyclupan:run"
 pyclupan-calc = "pyclupan.api.run_pyclupan_calc:run"
-
-# [tool.scikit-build]
-# cmake.verbose = true
-# logging.level = "INFO"
-# cmake.source-dir = "./src/pyclupan/cxx"
-
-# sdist.exclude = [
-#     "conda-recipes",
-#     "dist",
-#     "src/pypolymlp/polyinv",
-#     "src/pypolymlp/deprecated",
-#     "src/pypolymlp/dev",
-#     "src/pypolymlp/test",
-#     "src/pypolymlp/cxx/build*",
-#     "src/pypolymlp/mlp_opt/candidates",
-#     "*__pycache__*",
-# ]
-
-# metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
-#
-# [tool.setuptools_scm]
-# write_to = "_version.py"
-# version_scheme = "post-release"
-# local_scheme = "no-local-version"
+pyclupan-mc = "pyclupan.api.run_pyclupan_mc:run"
 
 [tool.setuptools_scm]
 write_to = "./src/pyclupan/_version.py"

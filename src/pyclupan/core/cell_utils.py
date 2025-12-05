@@ -15,7 +15,6 @@ from pyclupan.core.pypolymlp_utils import PolymlpStructure, ReducedCell
 from pyclupan.core.spglib_utils import refine_cell
 
 supercell = pypolymlp_utils.supercell
-# supercell_diagonal = pypolymlp_utils.supercell_diagonal
 
 
 def supercell_diagonal(st: PolymlpStructure, size: tuple = (2, 2, 2)):

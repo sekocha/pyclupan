@@ -4,7 +4,7 @@ from typing import Literal, Optional
 
 import numpy as np
 
-from pyclupan.core.pypolymlp_utils import PolymlpStructure, write_poscar_file
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar, write_poscar_file
 from pyclupan.mc.mc import MC
 
 
@@ -124,6 +124,7 @@ class PyclupanMC:
     def set_init(
         self,
         structure: Optional[PolymlpStructure] = None,
+        poscar: Optional[str] = None,
         element_strings: Optional[tuple] = None,
         compositions: Optional[tuple] = None,
     ):
@@ -132,9 +133,13 @@ class PyclupanMC:
         Parameters
         ----------
         structure: Initial structure for MC simulation.
+        poscar: POSCAR file of initial structure for MC simulation.
         element_strings: Element strings to define element IDs.
         compositions: Compositions.
         """
+        if poscar is not None:
+            structure = Poscar(poscar).structure
+
         self._mc.set_init(
             structure=structure,
             element_strings=element_strings,

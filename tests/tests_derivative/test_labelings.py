@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.core.labelings_utils import (
+from pyclupan.derivative.labelings_utils import (
     eliminate_superperiodic_labelings,
     get_nonequivalent_labelings,
 )

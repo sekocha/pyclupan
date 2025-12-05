@@ -5,15 +5,15 @@ from typing import Optional
 
 import numpy as np
 
-from pyclupan.core.labelings_utils import (
-    eliminate_superperiodic_labelings,
-    get_nonequivalent_labelings,
-)
 from pyclupan.core.lattice import Lattice, get_complete_labelings
 from pyclupan.core.linalg_utils import get_nonequivalent_hnf
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.derivative.derivative_utils import Derivatives, DerivativesSet
 from pyclupan.derivative.init_utils import set_charges, set_compositions
+from pyclupan.derivative.labelings_utils import (
+    eliminate_superperiodic_labelings,
+    get_nonequivalent_labelings,
+)
 from pyclupan.zdd.pyclupan_zdd import PyclupanZdd
 
 
