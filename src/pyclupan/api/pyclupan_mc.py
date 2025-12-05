@@ -71,6 +71,9 @@ class PyclupanMC:
         temperature_final: Final temperature to set temperatures automatically.
         temperature_step: Temperature step to set temperatures automatically.
         ensemble: Ensemble. Set "canonical" or "semi_grand_canonical".
+        simulated_annealing: Perform simulated annealing.
+            Three variables of temperature_init, temperature_final,
+            and temperature_step are needed.
         mu: Chemical potential difference.
         """
         self._mc.set_parameters(
@@ -83,6 +86,38 @@ class PyclupanMC:
             temperature_step=temperature_step,
             ensemble=ensemble,
             mu=mu,
+        )
+        return self
+
+    def set_parameters_simulated_annealing(
+        self,
+        n_steps_init: int = 100,
+        n_steps_eq: int = 1000,
+        temperature_init: float = 1000.0,
+        temperature_final: float = 1.0,
+        n_temperatures: int = 10,
+    ):
+        """Set parameters for performing simulated annealing.
+
+        Parameters
+        ----------
+        n_steps_init: Number of steps for initialization.
+        n_steps_eq: Number of steps for taking avarages.
+        temperature_init: Initial temperature to set temperatures automatically.
+        temperature_final: Final temperature to set temperatures automatically.
+        n_temperatures: Number of temperatures.
+        """
+        if temperature_init < temperature_final:
+            raise RuntimeError(
+                "Final temperature must be smaller than initial temperature."
+            )
+        init, final = np.log10(temperature_init), np.log10(temperature_final)
+        temperatures = np.logspace(init, final, num=n_temperatures)
+        self._mc.set_parameters(
+            n_steps_init=n_steps_init,
+            n_steps_eq=n_steps_eq,
+            temperatures=temperatures,
+            ensemble="canonical",
         )
         return self
 

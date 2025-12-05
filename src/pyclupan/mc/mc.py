@@ -317,6 +317,11 @@ class MC:
         """Return simulation temperatures."""
         return self._mc_params.temperatures
 
+    @temperatures.setter
+    def temperatures(self, temperatures: tuple):
+        """Setter of simulation temperatures."""
+        self._mc_params.temperatures = temperatures
+
     @property
     def average_energies(self):
         """Return average energies."""
