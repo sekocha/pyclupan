@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from pyclupan.core.pypolymlp_utils import Vasprun
+from pyclupan.core.pypolymlp_utils import PolymlpStructure, Vasprun
 
 
 def load_vasp_results(vaspruns: list):
@@ -27,3 +27,20 @@ def load_vasp_results(vaspruns: list):
         structures.append(vasp.structure)
 
     return structure_ids, np.array(energies), structures
+
+
+def save_energy_dat(
+    vaspruns: list,
+    unitcell: PolymlpStructure,
+    filename: str = "energy.dat",
+):
+    """Save energy.dat used for regression."""
+    n_atom_unitcell = np.sum(unitcell.n_atoms)
+    ids, energies, structures = load_vasp_results(vaspruns)
+
+    n_cell = np.array([np.sum(st.n_atoms) / n_atom_unitcell for st in structures])
+    energies = energies / n_cell
+
+    with open(filename, "w") as f:
+        for i, e in zip(ids, energies):
+            print(i, e, file=f)
