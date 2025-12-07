@@ -1,14 +1,13 @@
 """Command lines for running pyclupan functions."""
 
 import argparse
-import glob
 import signal
 
 import numpy as np
 
 from pyclupan.api.api_utils import print_credit
 from pyclupan.api.pyclupan_utils import save_energy_dat
-from pyclupan.api.pypolymlp_utils import Poscar
+from pyclupan.core.pypolymlp_utils import Poscar
 
 
 def run():
@@ -36,5 +35,5 @@ def run():
     np.set_printoptions(legacy="1.21")
 
     unitcell = Poscar(args.poscar).structure
-    vaspruns = sorted(glob.glob(args.vaspruns))
+    vaspruns = sorted(args.vaspruns)
     save_energy_dat(vaspruns, unitcell, filename="energy.dat")

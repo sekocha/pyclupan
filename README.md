@@ -51,6 +51,7 @@ pip install . -vvv
 - Ternary alloy system (Cu-Ag-Au system)
 
 ### Command-Line Interface
-- [Enumeration of derivative structures](docs/calc_derivative.md)
-- [Enumeration of clusters and cluster function forms](docs/cluster_search.md)
-- [Cluster function calculations](docs/calc_features.md)
+- [Enumeration of Derivative Structures](docs/calc_derivative.md)
+- [Enumeration of Clusters and Cluster Function Forms](docs/cluster_search.md)
+- [Cluster Function Calculations](docs/calc_features.md)
+- [Cluster Expansion Model Estimation](docs/regression.md)
