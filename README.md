@@ -45,6 +45,12 @@ conda install -c conda-forge numpy scipy spglib
 pip install . -vvv
 ```
 
-## How to use pyclupan
+## How to Use Pyclupan
+### Tutorials
+- Binary alloy system (Ag-Au system)
+- Ternary alloy system (Cu-Ag-Au system)
 
+### Command-Line Interface
 - [Enumeration of derivative structures](docs/calc_derivative.md)
+- [Enumeration of clusters and cluster function forms](docs/cluster_search.md)
+- [Cluster function calculations](docs/calc_features.md)
