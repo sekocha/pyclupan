@@ -55,3 +55,4 @@ pip install . -vvv
 - [Enumeration of Clusters and Cluster Function Forms](docs/cluster_search.md)
 - [Cluster Function Calculations](docs/calc_features.md)
 - [Cluster Expansion Model Estimation](docs/regression.md)
+- [Lattice Monte Carlo Simulations](docs/mc.md)

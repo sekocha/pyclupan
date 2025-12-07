@@ -15,10 +15,10 @@ def run():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-c",
-        "--cluster",
+        "--clusters",
         type=str,
         required=True,
-        default="pyclupan_cluster.yaml",
+        default="pyclupan_clusters.yaml",
         help="Cluster search result file.",
     )
     parser.add_argument(
@@ -57,7 +57,7 @@ def run():
 
     print_credit()
     np.set_printoptions(legacy="1.21")
-    clupan = PyclupanCalc(args.cluster, verbose=True)
+    clupan = PyclupanCalc(args.clusters, verbose=True)
     if args.derivatives:
         for d in args.derivatives:
             clupan.load_derivatives_yaml(d)

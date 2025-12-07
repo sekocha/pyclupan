@@ -116,7 +116,7 @@ def run():
     pyclupan.set_init(
         poscar=args.poscar,
         element_strings=args.element_strings,
-        compositions=args.comps,
+        compositions=args.comp,
     )
 
     if args.simulated_annealing:
@@ -129,7 +129,7 @@ def run():
         )
     else:
         ensemble = "semi_grand_canonical" if args.mu is not None else "canonical"
-        if args.temperatures is None and args.temp_init is not None:
+        if args.temps is None and args.temp_init is not None:
             args.temperatures = np.linspace(
                 args.temp_init,
                 args.temp_final,
@@ -139,7 +139,7 @@ def run():
         pyclupan.set_parameters(
             n_steps_init=args.n_steps[0],
             n_steps_eq=args.n_steps[1],
-            temperatures=args.temperatures,
+            temperatures=args.temps,
             ensemble=ensemble,
             mu=args.mu,
         )
