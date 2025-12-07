@@ -165,7 +165,7 @@ class ClusterSearch:
         if len(cutoffs) != max_order - 1:
             raise RuntimeError("Cutoff size must be equal to max_order - 1.")
 
-        if cutoffs != tuple(reversed(sorted(cutoffs))):
+        if not np.allclose(cutoffs, list(reversed(sorted(cutoffs)))):
             raise RuntimeError(
                 "Cutoffs must be smaller or equal to those for smaller orders."
             )

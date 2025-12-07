@@ -59,10 +59,11 @@ def run():
     clupan = Pyclupan(verbose=True)
 
     clupan.load_poscar(args.poscar)
+    print(args.cutoffs)
     clupan.run_cluster(
         occupation=args.occupation,
         elements=args.elements,
         max_order=args.order,
-        cutoffs=args.cutoff,
+        cutoffs=args.cutoffs,
         filename="pyclupan_clusters.yaml",
     )
