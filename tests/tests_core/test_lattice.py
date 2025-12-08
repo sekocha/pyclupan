@@ -5,41 +5,10 @@ from pathlib import Path
 import numpy as np
 
 from pyclupan.core.cell_utils import supercell_reduced
-from pyclupan.core.lattice import (
-    Lattice,
-    get_complete_labelings,
-    set_elements_on_sublattices,
-)
+from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
-
-
-def test_elements_on_sublattices():
-    """Test set_elements_on_sublattices."""
-    n_sites = [1]
-    elements = [[0, 1]]
-    elements_lattice = set_elements_on_sublattices(n_sites)
-    assert elements == elements_lattice
-
-    occupation = [[0], [0]]
-    elements_lattice = set_elements_on_sublattices(n_sites, occupation=occupation)
-    assert elements == elements_lattice
-
-    n_sites = [1, 1, 3]
-    elements = [[0], [1], [2, 3]]
-    elements_lattice = set_elements_on_sublattices(n_sites, elements=elements)
-    assert elements == elements_lattice
-
-    elements = [[0], [1], [2, 3]]
-    occupation = [[0], [1], [2], [2]]
-    elements_lattice = set_elements_on_sublattices(n_sites, occupation=occupation)
-    assert elements == elements_lattice
-
-    elements = [[0, 1], [0, 1, 2, 3], [4, 5, 6]]
-    occupation = [[0, 1], [0, 1], [1], [1], [2], [2], [2]]
-    elements_lattice = set_elements_on_sublattices(n_sites, occupation=occupation)
-    assert elements == elements_lattice
 
 
 def test_lattice_binary_fcc():
@@ -215,18 +184,3 @@ def test_lattice_binary_perovskite():
     spin_poly = lattice_supercell.get_spin_polynomials([0, 0])
     np.isclose(spin_poly[0][0], 1.0)
     np.isclose(spin_poly[1][0], 1.0)
-
-
-def test_get_complete_labelings():
-    """Test get_complete_labelings."""
-    active_labelings = np.array([[0, 0, 1, 1, 2, 2], [0, 1, 2, 0, 2, 1]])
-    inactive_labeling = [3, 3, 4, 4, 4]
-    active_sites = [0, 1, 2, 5, 6, 7]
-    inactive_sites = [3, 4, 8, 9, 10]
-    labelings = get_complete_labelings(
-        active_labelings, inactive_labeling, active_sites, inactive_sites
-    )
-    labelings_true = np.array(
-        [[0, 0, 1, 3, 3, 1, 2, 2, 4, 4, 4], [0, 1, 2, 3, 3, 0, 2, 1, 4, 4, 4]]
-    )
-    np.testing.assert_equal(labelings, labelings_true)

@@ -57,6 +57,13 @@ def run():
         default=None,
         help="Yaml file for derivative structures sampled.",
     )
+    parser.add_argument(
+        "--end_poscars",
+        nargs="*",
+        type=str,
+        default=None,
+        help="POSCAR files for end members.",
+    )
 
     args = parser.parse_args()
 
@@ -84,16 +91,18 @@ def run():
 
     clupan.eval_cluster_functions()
 
-    if calc_energy:
-        # energies = clupan.eval_energies()
-        _ = clupan.eval_energies()
+    if not calc_energy:
+        clupan.save_features()
+    else:
+        clupan.eval_energies()
         clupan.save_energies()
-
-        # TODO: Consider how to input end members.
-        # fenergies, compositions, convex = pyclupan.eval_formation_energies(
-        #     labelings_endmembers=np.array([[0], [1]])
-        # )
-        # pyclupan.save_formation_energies()
-        # pyclupan.save_convex_hull_yaml()
-        # pyclupan.load_formation_energies()
-        # pyclupan.save_convex_hull_poscars_from_derivatives(element_strings=("Ag", "Au"))
+        clupan.eval_formation_energies(
+            poscars_endmembers=args.end_poscars,
+            element_strings=args.element_strings,
+        )
+        clupan.save_formation_energies()
+        clupan.save_convex_hull_yaml()
+        clupan.load_formation_energies()
+        clupan.save_convex_hull_poscars_from_derivatives(
+            element_strings=args.element_strings
+        )

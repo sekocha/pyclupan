@@ -248,6 +248,7 @@ class PyclupanCalc:
     def eval_formation_energies(
         self,
         structures_endmembers: Optional[list[PolymlpStructure]] = None,
+        poscars_endmembers: Optional[list[PolymlpStructure]] = None,
         element_strings: Optional[tuple] = None,
         labelings_endmembers: Optional[np.ndarray] = None,
         supercell_matrices_endmembers: Optional[np.ndarray] = None,
@@ -260,6 +261,7 @@ class PyclupanCalc:
         Parameters
         ----------
         structures_endmembers: Structures of endmembers.
+        poscars_endmembers: POSCAR files of endmembers.
         element_strings: Element strings.
             The location index corresponds to label integer.
             For example, element_strings are ("Ag", "Au"),
@@ -274,6 +276,9 @@ class PyclupanCalc:
             raise RuntimeError("CE model not found.")
         if self._cf.n_atoms_array is None:
             raise RuntimeError("Number of atoms not found.")
+
+        if poscars_endmembers is not None:
+            structures_endmembers = [Poscar(p).structure for p in poscars_endmembers]
 
         self._formation_energies, self._compositions = get_formation_energies(
             self._energies,

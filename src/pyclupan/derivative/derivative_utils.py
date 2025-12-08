@@ -295,6 +295,9 @@ class DerivativesSet:
 
     def save(self, element_strings: tuple, path: str = "poscars"):
         """Save derivative structures sampled."""
+        if element_strings is None:
+            element_strings = self[0].lattice_unitcell.element_strings
+
         os.makedirs(path, exist_ok=True)
         filename = "pyclupan_sample_attrs.yaml"
         with open(path + "/" + filename, "w") as f:

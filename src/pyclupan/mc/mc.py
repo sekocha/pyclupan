@@ -343,9 +343,10 @@ class MC:
         st = copy.deepcopy(self.supercell)
         st.types = labeling
         if self._element_strings is None:
-            st.elements = [e + str(t) for e, t in zip(st.elements, labeling)]
-        else:
-            st.elements = [self._element_strings[t] for t in labeling]
+            self._element_strings = self._lattice_supercell.element_strings
+            # st.elements = [e + str(t) for e, t in zip(st.elements, labeling)]
+        # else:
+        st.elements = [self._element_strings[t] for t in labeling]
         return st.reorder()
 
     def save_mc_yaml(self, filename: str = "pyclupan_mc.yaml"):

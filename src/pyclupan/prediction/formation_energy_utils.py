@@ -65,6 +65,9 @@ def get_formation_energies(
     energies: Energies per unitcell for structure set.
     model: CEmodel instance used for calculating formation energies.
     """
+    if structures_endmembers is None and labelings_endmembers is None:
+        labelings_endmembers = cf.lattice_unitcell.labelings_endmembers
+
     cluster_functions = _calc_cluster_functions_endmembers(
         cf,
         structures=structures_endmembers,

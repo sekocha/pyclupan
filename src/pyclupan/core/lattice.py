@@ -12,7 +12,9 @@ from pyclupan.core.lattice_utils import (
     get_inactive_labeling,
     is_active_size,
     map_active_array,
+    set_element_strings,
     set_elements_on_sublattices,
+    set_labelings_endmembers,
 )
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, save_cell
 from pyclupan.core.spin import set_spins
@@ -252,3 +254,15 @@ class Lattice:
         if isinstance(file, str):
             f.close()
         return self
+
+    @property
+    def labelings_endmembers(self):
+        """Return labelings of endmembers."""
+        return set_labelings_endmembers(self._elements_on_lattice)
+
+    @property
+    def element_strings(self):
+        """Return element strings using lattice attributes."""
+        return set_element_strings(
+            self._cell, self._elements_on_lattice, self._n_elements
+        )

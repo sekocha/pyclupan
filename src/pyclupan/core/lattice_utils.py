@@ -49,6 +49,39 @@ def set_elements_on_sublattices(
     return elements_lattice
 
 
+def set_labelings_endmembers(elements_on_lattice: list):
+    """Set active labelings of endmembers automatically."""
+    active_elements_on_lattice = [ele for ele in elements_on_lattice if len(ele) > 1]
+    if len(active_elements_on_lattice) > 1:
+        raise RuntimeError("Automatic setting of endmembers has been failed.")
+
+    labelings_endmembers = [[e] for e in active_elements_on_lattice[0]]
+    return labelings_endmembers
+
+
+def set_element_strings(
+    cell: PolymlpStructure,
+    elements_on_lattice: list,
+    n_elements: int,
+):
+    """Set element strings from lattice."""
+
+    idx = 0
+    elements = []
+    for n in cell.n_atoms:
+        elements.append(cell.elements[idx])
+        idx += n
+
+    element_strings = [None for i in range(n_elements)]
+    for ele, labels in zip(elements, elements_on_lattice):
+        if len(labels) > 1:
+            for l in labels:
+                element_strings[l] = ele + str(l)
+        else:
+            element_strings[labels[0]] = ele
+    return element_strings
+
+
 def get_complete_labelings(
     active_labelings: np.ndarray,
     inactive_labeling: np.ndarray,
