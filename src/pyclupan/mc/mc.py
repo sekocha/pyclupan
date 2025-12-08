@@ -41,6 +41,7 @@ class MC:
 
         self._lattice_unitcell = self._cf.lattice_unitcell
         self._lattice_supercell = None
+        self._element_strings = None
 
         self._mc_params = None
         self._mc_attr = MCAttr(
@@ -194,6 +195,7 @@ class MC:
         if self._lattice_supercell is None:
             raise RuntimeError("Set supercell first.")
 
+        self._element_strings = element_strings
         self._set_init_structure(
             structure=structure,
             element_strings=element_strings,
@@ -340,7 +342,10 @@ class MC:
 
         st = copy.deepcopy(self.supercell)
         st.types = labeling
-        st.elements = [e + str(t) for e, t in zip(st.elements, labeling)]
+        if self._element_strings is None:
+            st.elements = [e + str(t) for e, t in zip(st.elements, labeling)]
+        else:
+            st.elements = [self._element_strings[t] for t in labeling]
         return st.reorder()
 
     def save_mc_yaml(self, filename: str = "pyclupan_mc.yaml"):

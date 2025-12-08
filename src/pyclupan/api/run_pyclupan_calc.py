@@ -22,6 +22,14 @@ def run():
         help="Cluster search result file.",
     )
     parser.add_argument(
+        "-e",
+        "--ecis",
+        type=str,
+        default="pyclupan_ecis.yaml",
+        help="ECIs obtained from regression.",
+    )
+
+    parser.add_argument(
         "-p",
         "--poscars",
         nargs="*",
@@ -68,5 +76,24 @@ def run():
             raise RuntimeError("Element strings are required.")
         clupan.load_poscars(args.poscars, element_strings=args.element_strings)
 
+    calc_energy = True
+    try:
+        clupan.load_ecis(args.ecis)
+    except:
+        calc_energy = False
+
     clupan.eval_cluster_functions()
-    clupan.save_features(filename="pyclupan_features.hdf5")
+
+    if calc_energy:
+        # energies = clupan.eval_energies()
+        _ = clupan.eval_energies()
+        clupan.save_energies()
+
+        # TODO: Consider how to input end members.
+        # fenergies, compositions, convex = pyclupan.eval_formation_energies(
+        #     labelings_endmembers=np.array([[0], [1]])
+        # )
+        # pyclupan.save_formation_energies()
+        # pyclupan.save_convex_hull_yaml()
+        # pyclupan.load_formation_energies()
+        # pyclupan.save_convex_hull_poscars_from_derivatives(element_strings=("Ag", "Au"))

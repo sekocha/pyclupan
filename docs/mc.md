@@ -5,6 +5,9 @@
 ```shell
 > pyclupan-mc --comp 0.5 0.5 --clusters ./pyclupan_clusters.yaml --ecis ./pyclupan_ecis.yaml --supercell 3 3 3 --n_steps 100 1000 -t 500
 ```
+When the numbers of atoms in primitive cells and the conventional unitcell are different, the given primitive cell will be refined using `spglib`.
+In this situation, a supercell is constructed by the expansion of the refined cell and its expansion size corresponds to the given supercell size.
+
 
 ### From a given initial configuration
 ```shell
