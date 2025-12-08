@@ -5,7 +5,11 @@ from pathlib import Path
 import numpy as np
 
 from pyclupan.core.lattice_utils import (
+    extract_sites,
     get_complete_labelings,
+    get_inactive_labeling,
+    is_active_size,
+    map_active_array,
     set_element_strings,
     set_elements_on_sublattices,
     set_labelings_endmembers,
@@ -83,3 +87,73 @@ def test_get_complete_labelings():
         [[0, 0, 1, 3, 3, 1, 2, 2, 4, 4, 4], [0, 1, 2, 3, 3, 0, 2, 1, 4, 4, 4]]
     )
     np.testing.assert_equal(labelings, labelings_true)
+
+
+def test_extract_sites():
+    """Test extract_sites."""
+    unitcell = Poscar(str(cwd) + "/poscar-perovskite").structure
+    sites = extract_sites(unitcell, [0, 1])
+    np.testing.assert_equal(sites, [0, 1])
+
+    sites = extract_sites(unitcell, [2])
+    np.testing.assert_equal(sites, [2, 3, 4])
+
+
+def test_get_inactive_labeling():
+    """Test get_inactive_labeling."""
+    unitcell = Poscar(str(cwd) + "/poscar-perovskite").structure
+    elements_lattice = [[0], [1], [2, 3]]
+    inactive_lattice = [0, 1]
+    labeling = get_inactive_labeling(unitcell, elements_lattice, inactive_lattice)
+    np.testing.assert_equal(labeling, [0, 1])
+
+
+def test_is_active_size():
+    """Test is_active_size."""
+    active_sites = np.array([2, 3, 4])
+    labelings = np.array([[2, 2, 3], [2, 3, 3]])
+    assert is_active_size(labelings, active_sites) == True
+    labelings = np.array([2, 2, 3, 3])
+    assert is_active_size(labelings, active_sites) == False
+
+
+def test_map_active_array():
+    """Test map_active_array."""
+    unitcell = Poscar(str(cwd) + "/poscar-perovskite").structure
+    active_sites = np.array([2, 3, 4])
+    elements_lattice = [[0], [1], [2, 3]]
+    spin_lattice = [[-1000], [-1000], [1, -1]]
+
+    labeling = [2, 2, 3]
+    spins = [1, 1, -1]
+
+    assigned = map_active_array(
+        labeling, active_sites, unitcell, elements_lattice, spin_lattice
+    )
+    np.testing.assert_equal(assigned, spins)
+
+    assigned = map_active_array(
+        spins,
+        active_sites,
+        unitcell,
+        spin_lattice,
+        elements_lattice,
+    )
+    np.testing.assert_equal(assigned, labeling)
+
+    labelings = [[2, 2, 3], [2, 3, 3]]
+    spins = [[1, 1, -1], [1, -1, -1]]
+
+    assigned = map_active_array(
+        labelings, active_sites, unitcell, elements_lattice, spin_lattice
+    )
+    np.testing.assert_equal(assigned, spins)
+
+    assigned = map_active_array(
+        spins,
+        active_sites,
+        unitcell,
+        spin_lattice,
+        elements_lattice,
+    )
+    np.testing.assert_equal(assigned, labelings)
