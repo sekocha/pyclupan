@@ -28,7 +28,8 @@ def check_data(
     order_y = find_matching_ids(structure_ids_y, structure_ids_x)
     x = np.array([features[ix] for ix, iy in enumerate(order_y) if iy is not None])
     y = np.array([energies[iy] for iy in order_y if iy is not None])
-    return x, y
+    ids = np.array([structure_ids_y[iy] for iy in order_y if iy is not None])
+    return x, y, ids
 
 
 def load_energy_dat(energy_dat: str):

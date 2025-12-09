@@ -40,4 +40,5 @@ def run():
     pyclupan.load_energies(energy_dat=args.energy)
 
     pyclupan.run_lasso()
+    pyclupan.save_predictions()
     pyclupan.save()

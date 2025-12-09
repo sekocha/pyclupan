@@ -21,6 +21,7 @@ class PyclupanRegression:
 
         self._structure_ids_x = None
         self._structure_ids_y = None
+        self._structure_ids = None
 
         self._x = None
         self._y = None
@@ -71,7 +72,7 @@ class PyclupanRegression:
         if self._energies is None:
             raise RuntimeError("Energy data not found.")
 
-        self._x, self._y = check_data(
+        self._x, self._y, self._structure_ids = check_data(
             self._features,
             self._energies,
             self._structure_ids_x,
@@ -127,6 +128,18 @@ class PyclupanRegression:
             verbose=self._verbose,
         )
         return self
+
+    def save_predictions(self, filename: str = "pyclupan_prediction.dat"):
+        """Save predicted values for dataset."""
+        if self._model is None:
+            raise RuntimeError("CE model not found.")
+
+        pred = self._model.eval(self._x)
+        with open(filename, "w") as f:
+            print("# DFT (eV/cell), CE (eV/cell), Error (meV/cell)", file=f)
+            for y1, y2, idx in zip(self._y, pred, self._structure_ids):
+                diff = (y2 - y1) * 1000
+                print(idx, np.round(y1, 8), np.round(y2, 8), np.round(diff, 5), file=f)
 
     def save(self, filename: str = "pyclupan_ecis.yaml"):
         """Save coefficients and intercept.
