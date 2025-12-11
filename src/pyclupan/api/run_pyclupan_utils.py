@@ -36,4 +36,4 @@ def run():
 
     unitcell = Poscar(args.poscar).structure
     vaspruns = sorted(args.vaspruns)
-    save_energy_dat(vaspruns, unitcell, filename="energy.dat")
+    save_energy_dat(vaspruns, unitcell, filename="pyclupan_energy.dat")

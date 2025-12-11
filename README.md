@@ -1,13 +1,13 @@
-# pyclupan: Cluster expansion tools for alloy and substitutional ionic systems
+# pyclupan: Cluster Expansion Tools for Alloy and Substitutional Ionic Systems
 
 `pyclupan` is a Python package for developing substitutional cluster expansion models based on datasets obtained from density functional theory (DFT) calculations.
 The code also enables the enumeration of nonequivalent substitutional derivative structures, the calculation of correlation (cluster) functions, Monte Carlo simulations, and the evaluation of free energies for multicomponent substitutional systems.
 
-## Citation of pyclupan
+## Citation of Pyclupan
 
 "Cluster expansion method for multicomponent systems based on optimal selection of structures for density-functional theory calculations", [A. Seko et al., Phys. Rev. B 80, 165122 (2009)](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.80.165122)
 
-## Required libraries and python modules
+## Required Libraries and Python Modules
 
 - python >= 3.9
 - numpy != 2.0.*
@@ -25,7 +25,7 @@ The code also enables the enumeration of nonequivalent substitutional derivative
 - scikit-learn
 
 
-## How to install pyclupan
+## How to Install Pyclupan
 
 - Install from PyPI
 ```
@@ -47,8 +47,8 @@ pip install . -vvv
 
 ## How to Use Pyclupan
 ### Tutorials
-- Binary alloy system (Ag-Au system)
-- Ternary alloy system (Cu-Ag-Au system)
+- [CE Model Estimation for Binary Alloy System (Ag-Au)](docs/tutorial-Ag-Au.md)
+- [CE Model Estimation for Ternary Slloy System (Cu-Ag-Au)](docs/tutorial-Cu-Ag-Au.md)
 
 ### Command-Line Interface
 - [Enumeration of Derivative Structures](docs/calc_derivative.md)
