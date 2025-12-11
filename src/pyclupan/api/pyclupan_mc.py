@@ -57,7 +57,7 @@ class PyclupanMC:
         temperature_final: Optional[float] = None,
         temperature_step: Optional[float] = None,
         ensemble: Literal["canonical", "semi_grand_canonical"] = "canonical",
-        mu: Optional[float] = None,
+        mu: Optional[tuple] = None,
     ):
         """Set parameters.
 
@@ -74,7 +74,7 @@ class PyclupanMC:
         simulated_annealing: Perform simulated annealing.
             Three variables of temperature_init, temperature_final,
             and temperature_step are needed.
-        mu: Chemical potential difference.
+        mu: Chemical potential differences.
         """
         self._mc.set_parameters(
             n_steps_init=n_steps_init,

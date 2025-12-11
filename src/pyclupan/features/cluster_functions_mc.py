@@ -174,7 +174,7 @@ class ClusterFunctionsMC:
     ):
         """Evaluate cluster function changes from spin swap."""
 
-        # TODO: Check when more than binary and multilattice systems.
+        # TODO: Check when multilattice systems.
         if len(sites) != 2:
             raise RuntimeError("Size of sites must be two.")
 
@@ -200,8 +200,21 @@ class ClusterFunctionsMC:
                 )
 
             if self._independent[i, j] or independent:
-                active_spins[i], active_spins[j] = dspin, -dspin
-                val = self._calc_sum_products(active_spins, orbit[i], orbit[j], coeffs)
+                if self._binary:
+                    active_spins[i], active_spins[j] = dspin, -dspin
+                    val = self._calc_sum_products(
+                        active_spins, orbit[i], orbit[j], coeffs
+                    )
+                else:
+                    # TODO: Implement efficient algorithm
+                    val1 = self._calc_sum_products(
+                        active_spins, orbit[i], orbit[j], coeffs
+                    )
+                    active_spins[i], active_spins[j] = spin_j, spin_i
+                    val2 = self._calc_sum_products(
+                        active_spins, orbit[i], orbit[j], coeffs
+                    )
+                    val = val2 - val1
                 active_spins[i], active_spins[j] = spin_i, spin_j
                 diff_cf = val * cluster_size / orbit_size
             else:
@@ -232,7 +245,6 @@ class ClusterFunctionsMC:
         """Evaluate cluster function changes from spin swap."""
         if len(sites) != 2:
             raise RuntimeError("Size of sites must be two.")
-        # TODO: Check when more than binary.
 
         i, j = sites[0], sites[1]
         diff_cluster_functions = []
@@ -279,7 +291,7 @@ class ClusterFunctionsMC:
     ):
         """Evaluate cluster function changes from spin swap."""
 
-        # TODO: Check when more than binary and multilattice systems.
+        # TODO: Check when multilattice systems.
         i = site
         spin_i = active_spins[i]
         dspin = spin_new - spin_i
@@ -291,15 +303,22 @@ class ClusterFunctionsMC:
             orbit = self._orbit_sites_supercell[cl.cluster_id]
             orbit_size = self._orbit_sizes[spin_cl_id]
 
-            active_spins[i] = dspin
             if self._binary:
+                active_spins[i] = dspin
                 val = np.sum(np.multiply.reduce(active_spins[orbit[i]], axis=1))
             else:
-                val = np.sum(
+                val1 = np.sum(
                     eval_cluster_functions(
                         coeffs, active_spins[orbit[i]], return_array=True
                     )
                 )
+                active_spins[i] = spin_new
+                val2 = np.sum(
+                    eval_cluster_functions(
+                        coeffs, active_spins[orbit[i]], return_array=True
+                    )
+                )
+                val = val2 - val1
             active_spins[i] = spin_i
             diff_cf = val * cluster_size / orbit_size
             diff_cluster_functions.append(diff_cf)

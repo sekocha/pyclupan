@@ -214,9 +214,13 @@ class MC:
         temperature_final: Optional[float] = None,
         temperature_step: Optional[float] = None,
         ensemble: Literal["canonical", "semi_grand_canonical"] = "canonical",
-        mu: Optional[float] = None,
+        mu: Optional[tuple] = None,
     ):
         """Set parameters."""
+        elements = self._mc_attr.active_element_species
+        if mu is not None and len(mu) != len(elements) - 1:
+            raise RuntimeError("Size of chemical potentials is not consistent.")
+
         self._mc_params = MCParams(
             n_steps_init=n_steps_init,
             n_steps_eq=n_steps_eq,

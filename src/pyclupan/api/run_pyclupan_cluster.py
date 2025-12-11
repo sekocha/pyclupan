@@ -59,7 +59,6 @@ def run():
     clupan = Pyclupan(verbose=True)
 
     clupan.load_poscar(args.poscar)
-    print(args.cutoffs)
     clupan.run_cluster(
         occupation=args.occupation,
         elements=args.elements,

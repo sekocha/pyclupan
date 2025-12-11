@@ -25,7 +25,7 @@ def run():
         "-e",
         "--ecis",
         type=str,
-        default="pyclupan_ecis.yaml",
+        default=None,
         help="ECIs obtained from regression.",
     )
 

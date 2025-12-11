@@ -111,7 +111,8 @@ def sgcmc(
     mc_params: MCParams,
     cf: ClusterFunctionsMC,
     model: CEmodel,
-    assert_direct=False,
+    assert_direct: bool = False,
+    # assert_direct: bool = True,
     verbose_interval: int = 10000,
     verbose: bool = False,
 ):
@@ -125,19 +126,26 @@ def sgcmc(
     cfs = mc_attr.cluster_functions
     beta = 1.0 / (KbEV * temp)
 
-    # TODO: Define chemical potential for multicomponent systems
-    mu = mc_params.mu
+    mu = np.array([0.0] + list(mc_params.mu))
+    spin_species = np.array(mc_attr.spin_species)
+
+    delta_mu_dict = dict()
+    for spin1 in spin_species:
+        mu1 = mu[np.where(spin_species == spin1)[0][0]]
+        for spin2 in spin_species:
+            mu2 = mu[np.where(spin_species == spin2)[0][0]]
+            delta_mu_dict[(spin1, spin2)] = mu2 - mu1
 
     for n_steps in [mc_params.n_steps_init * n_sites, mc_params.n_steps_eq * n_sites]:
         average_energy = 0.0
         average_cfs = np.zeros(len(cfs))
         for mc_iter in range(n_steps):
-            i, spin_new = _select_one_site(spins, mc_attr.spin_species)
+            i, spin_new = _select_one_site(spins, spin_species)
+            spin_old = spins[i]
             cfs_new = cfs + cf.eval_from_spin_flip(spins, i, spin_new)
             energy_new = model.eval(cfs_new)
 
             if assert_direct:
-                spin_old = spins[i]
                 spins[i] = spin_new
                 cfs_new_direct = cf.eval_from_spins(spins)
                 energy_new_direct = model.eval(cfs_new_direct)
@@ -149,9 +157,7 @@ def sgcmc(
                 print("Energy:", energy_new_direct, energy_new)
                 np.testing.assert_allclose(cfs_new, cfs_new_direct, atol=1e-8)
 
-            # TODO: Define chemical potential for multicomponent systems
-            delta_mu = mu if spin_new == -1 else -mu
-
+            delta_mu = delta_mu_dict[(spin_old, spin_new)]
             delta_e = energy_new - energy
             threshold = np.exp(-beta * (delta_e - delta_mu))
             if np.random.rand() < threshold:

@@ -96,9 +96,10 @@ def run():
     )
     parser.add_argument(
         "--mu",
+        nargs="*",
         type=float,
         default=None,
-        help="Chemical potential (eV).",
+        help="Chemical potentials (eV).",
     )
 
     args = parser.parse_args()
