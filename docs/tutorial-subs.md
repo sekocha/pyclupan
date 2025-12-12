@@ -3,8 +3,10 @@ In this tutorial, a cluster expansion model will be constructed for the pseudobi
 The required files for this tutorial can be found in the `examples/SrCuOx` directory
 
 ### 1. Enumeration of Derivative Structures
-Starting from the perovskite lattice specified by `perovskite-unitcell`, derivative structures with a given maximum number of atoms are enumerated.
-When the maximum supercell size is given as three, derivative structure enumeration is performed for each number of atoms up to six as follows.
+Starting from the perovskite lattice specified by `perovskite-unitcell`, derivative structures with a given maximum supercell size are enumerated.
+When the maximum supercell size is set to four, derivative structure enumeration is performed for supercells containing 3, 6, 9, and 12 sites, as follows.
+In addition, the lower bound for the composition is specified corresponding to SrCuO2.
+
 ```shell
 > for i in {1..4};do
 >   pyclupan -p perovskite-unitcell --supercell_size $i -e 0 -e 1 -e 2 3 --comp_lb 2 0.665
@@ -13,29 +15,32 @@ When the maximum supercell size is given as three, derivative structure enumerat
 ```
 
 ### 2. Derivative Structure Sampling
-Coming soon.
-- Generation of POSCAR files used for DFT calculations.
+In this tutorial, POSCAR files for all derivative structures are generated as follows:
+```shell
+> pyclupan-sample --yaml pyclupan_derivatives_* --method all --element_strings Sr Cu O V
+```
+In the generated POSCAR files, the oxygen vacancy is represented by V.
+Therefore, these sites must be removed from the POSCAR files before performing DFT calculations.
+
 
 ### 3. DFT Calculations for Sampled Structures
 DFT calculations are performed for the sampled structures.
-In this tutorial, we consider that results from DFT calculations are obtained as found in the directories `examples/Ag-Au/DFT` and `examples/Cu-Ag-Au/DFT`.
+In this tutorial, we consider that results from DFT calculations are obtained as found in the directory `examples/SrCuOx/DFT`.
 
 ### 4. Nonequivalent Cluster Search
 Symmetrycally nonequivalent clusters are enumerated using given cutoff distances.
-In this tutorial, we consider clusters up to four-body and their cutoff distances are all 6.0 angstroms.
+In this tutorial, we consider clusters up to four-body.
+The cutoff distance for pairs is set to 10.0 angstroms, while the cutoff distances for all other interactions are set to 6.0 angstroms.
 
 ```shell
-# Binary
-> pyclupan-cluster -p fcc-primitive -e 0 1 --order 4 --cutoffs 6.0 6.0 6.0
-# Ternary
-> pyclupan-cluster -p fcc-primitive -e 0 1 2 --order 4 --cutoffs 6.0 6.0 6.0
+pyclupan-cluster -p perovskite-unitcell -e 0 -e 1 -e 2 3 --cutoffs 10.0 6.0 6.0
 ```
 
 ### 5. Estimation of Cluster Expansion Model
 #### 5-1. Extract energies from Results of DFT calculations
 To prepare a training dataset, energy values from DFT calculations are collected to a file as follows.
 ```shell
-> pyclupan-utils -p fcc-primitive -v DFT/*-*-*/vasprun.xml
+> pyclupan-utils -p perovskite-unitcell -v DFT/*-*-*/vasprun.xml
 ```
 File `pyclupan_energy.dat` will be generated.
 
