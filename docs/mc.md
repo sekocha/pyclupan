@@ -53,6 +53,7 @@ A random configuration is generated based on the composition given by the `--com
 ```
 
 ### Initialization from a Given Initial Configuration
+
 To provide an initial configuration, a `POSCAR` file and element strings are required to
 assign spins corresponding to the elements.
 These element strings must be the same as those used when estimating the ECIs.
@@ -71,7 +72,7 @@ For example, if `--mu 0.2 -0.2` is given, the chemical potential differences bet
 elements 1 and 0, and between elements 2 and 0, are 0.2 and –0.2, respectively.
 
 
-### Initialiation From a random configuration
+### Initialization from a Random Configuration
 
 A random configuration is generated based on the composition given by the `--comp` option.
 
@@ -82,7 +83,7 @@ A random configuration is generated based on the composition given by the `--com
 > pyclupan-mc --mu 0.25 0.1 --comp 0.25 0.5 0.25 --clusters pyclupan_clusters.yaml --ecis pyclupan_ecis.yaml --supercell 3 3 3 --n_steps 100 1000 -t 500
 ```
 
-### Initialiation From a given initial configuration
+### Initialization from a Given Initial Configuration
 
 To provide an initial configuration, a `POSCAR` file and element strings are required to
 assign spins corresponding to the elements.

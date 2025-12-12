@@ -1,7 +1,6 @@
-# Development of Cluster Expansion Model in the Binary Ag-Au System
-In this tutorial, a cluster expansion model will be constructed for the binary Ag–Au
-system.
-The required files for this tutorial can be found in the `examples/Ag-Au` directory.
+# Cluster Expansion Model Estimation for Alloy Systems
+In this tutorial, a cluster expansion model will be constructed for the binary Ag–Au and ternary Cu-Ag-Au systems.
+The required files for this tutorial can be found in the `examples/Ag-Au` and `examples/Cu-Ag-Au` directories.
 
 ### 1. Enumeration of Derivative Structures
 Starting from the FCC lattice specified by `fcc-primitive`, derivative structures with a given maximum number of atoms are enumerated.
@@ -13,20 +12,28 @@ When the maximum number of atoms is given as six, derivative structure enumerati
 > done
 ```
 
+For the ternary system, `-e` option can be used to specify ternary elements as follows:
+```shell
+> pyclupan -p fcc-primitive --supercell_size $i -e 0 1 2;
+```
+
 ### 2. Derivative Structure Sampling
 Coming soon.
 - Generation of POSCAR files used for DFT calculations.
 
 ### 3. DFT Calculations for Sampled Structures
 DFT calculations are performed for the sampled structures.
-In this tutorial, we consider that results from DFT calculations are obtained as found in the directory `examples/Ag-Au/DFT`.
+In this tutorial, we consider that results from DFT calculations are obtained as found in the directories `examples/Ag-Au/DFT` and `examples/Cu-Ag-Au/DFT`.
 
 ### 4. Nonequivalent Cluster Search
 Symmetrycally nonequivalent clusters are enumerated using given cutoff distances.
 In this tutorial, we consider clusters up to four-body and their cutoff distances are all 6.0 angstroms.
 
 ```shell
+# Binary
 > pyclupan-cluster -p fcc-primitive -e 0 1 --order 4 --cutoffs 6.0 6.0 6.0
+# Ternary
+> pyclupan-cluster -p fcc-primitive -e 0 1 2 --order 4 --cutoffs 6.0 6.0 6.0
 ```
 
 ### 5. Estimation of Cluster Expansion Model

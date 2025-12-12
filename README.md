@@ -47,8 +47,7 @@ pip install . -vvv
 
 ## How to Use Pyclupan
 ### Tutorials
-- [CE Model Estimation for Binary Alloy System (Ag-Au)](docs/tutorial-Ag-Au.md)
-- [CE Model Estimation for Ternary Slloy System (Cu-Ag-Au)](docs/tutorial-Cu-Ag-Au.md)
+- [CE Model Estimation for Alloy Systems (Binary Ag-Au and Ternary Cu-Ag-Au)](docs/tutorial-alloy.md)
 
 ### Command-Line Interface
 - [Enumeration of Derivative Structures](docs/calc_derivative.md)
