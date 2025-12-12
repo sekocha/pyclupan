@@ -2,6 +2,10 @@
 In this tutorial, a cluster expansion model will be constructed for the binary Ag–Au and ternary Cu-Ag-Au systems.
 The required files for this tutorial can be found in the `examples/Ag-Au` and `examples/Cu-Ag-Au` directories.
 
+In the Ag-Au system, element indices 0 and 1 represent elements Ag and Au, respectively.
+In the Cu-Ag-Au system, element indices 0, 1, and 2 represent elements Cu, Ag and Au, respectively.
+
+
 ### 1. Enumeration of Derivative Structures
 Starting from the FCC lattice specified by `fcc-primitive`, derivative structures with a given maximum number of atoms are enumerated.
 When the maximum number of atoms is given as six, derivative structure enumeration is performed for each number of atoms up to six as follows.
@@ -18,14 +22,26 @@ For the ternary system, `-e` option can be used to specify ternary elements as f
 ```
 
 ### 2. Derivative Structure Sampling
-Coming soon.
-- Generation of POSCAR files used for DFT calculations.
+
+In this tutorial, the total number of derivative structures is small because the maximum number of atoms is limited to six.
+Therefore, POSCAR files for all derivative structures can be generated as follows:
+```shell
+# Binary
+> pyclupan-sample --yaml pyclupan_derivatives_* --method all --element_strings Ag Au
+# Ternary
+> pyclupan-sample --yaml pyclupan_derivatives_* --method all --element_strings Cu Ag Au
+```
+The generated derivative structures in POSCAR format will be saved in the `poscars` directory.
+
 
 ### 3. DFT Calculations for Sampled Structures
+
 DFT calculations are performed for the sampled structures.
-In this tutorial, we consider that results from DFT calculations are obtained as found in the directories `examples/Ag-Au/DFT` and `examples/Cu-Ag-Au/DFT`.
+In this tutorial, we assume that the results of the DFT calculations are already available in the directories `examples/Ag-Au/DFT` and `examples/Cu-Ag-Au/DFT`.
+
 
 ### 4. Nonequivalent Cluster Search
+
 Symmetrycally nonequivalent clusters are enumerated using given cutoff distances.
 In this tutorial, we consider clusters up to four-body and their cutoff distances are all 6.0 angstroms.
 

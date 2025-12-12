@@ -10,11 +10,12 @@ from pyclupan.derivative.derivative_utils import DerivativesSet, load_derivative
 def run_sampling_derivatives(
     files: Optional[Union[str, list]] = None,
     ds_set: Optional[DerivativesSet] = None,
-    element_strings: Optional[tuple] = None,
     keys: Optional[list] = None,
-    n_samples: int = 100,
     method: Literal["all", "uniform", "random"] = "uniform",
+    n_samples: int = 100,
+    element_strings: Optional[tuple] = None,
     save_poscars: bool = True,
+    path_poscars: str = "poscars",
 ):
     """Enumerate derivative structures.
 
@@ -43,5 +44,5 @@ def run_sampling_derivatives(
             _ = ds_set.random(n_samples=n_samples)
 
     if save_poscars:
-        ds_set.save(element_strings)
+        ds_set.save(element_strings, path=path_poscars)
     return ds_set

@@ -6,6 +6,8 @@ import numpy as np
 
 from pyclupan.cluster.run_cluster import run_cluster
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
+from pyclupan.derivative.derivative_utils import DerivativesSet
+from pyclupan.derivative.run_sample import run_sampling_derivatives
 
 
 class Pyclupan:
@@ -162,11 +164,18 @@ class Pyclupan:
 
         Parameter
         ---------
-        filename: YAML file for derivative structures.
+        filename: Single YAML file or multiple YAML files for derivative structures.
         """
         from pyclupan.derivative.derivative_utils import load_derivatives_yaml
 
-        self._derivs_set = load_derivatives_yaml(filename=filename)
+        if isinstance(filename, str):
+            self._derivs_set = load_derivatives_yaml(filename)
+        elif isinstance(filename, (list, tuple, np.ndarray)):
+            self._derivs_set = DerivativesSet([])
+            for f in filename:
+                ds = load_derivatives_yaml(f)
+                self._derivs_set.append(ds)
+
         return self
 
     def sample_derivatives(
@@ -178,20 +187,25 @@ class Pyclupan:
     ):
         """Parse derivatives.yaml.
 
-        Returns
-        -------
-        TODO: ***
+        Parameters
+        ----------
+        method: Sampling method.
+                Methods of "all", "uniform", and "random" are available.
+        n_samples: Number of sample structures.
+        path: Directory path for saving structure files.
+        elements: Element strings used to save structure files.
         """
         if self._derivs_set is None:
             raise RuntimeError("Derivative structures not found.")
 
-        if method == "all":
-            self._derivs_set.all()
-        elif method == "uniform":
-            self._derivs_set.uniform(n_samples=n_samples)
-        elif method == "random":
-            self._derivs_set.random(n_samples=n_samples)
-        self._derivs_set.save(path=path, elements=elements)
+        run_sampling_derivatives(
+            ds_set=self._derivs_set,
+            n_samples=n_samples,
+            method=method,
+            path_poscars=path,
+            element_strings=elements,
+            save_poscars=True,
+        )
 
     @property
     def derivative_structures(self):

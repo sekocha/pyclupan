@@ -51,6 +51,7 @@ pip install . -vvv
 
 ### Command-Line Interface
 - [Enumeration of Derivative Structures](docs/calc_derivative.md)
+- [Derivative Structure Sampling](docs/sample_derivative.md)
 - [Enumeration of Clusters and Cluster Function Forms](docs/cluster_search.md)
 - [Cluster Function Calculations](docs/calc_features.md)
 - [Cluster Expansion Model Estimation](docs/regression.md)
