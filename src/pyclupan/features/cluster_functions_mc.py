@@ -40,40 +40,6 @@ class ClusterFunctionsMC:
         self._independent = self._check_neighbors()
         self._poly_coeffs = self._set_polynomial_coeffs()
 
-    def _is_binary(self):
-        """Check if configuration is binary."""
-        self._binary = True
-        for cl in self._spin_basis_clusters:
-            coeffs = self._lattice_supercell.get_spin_polynomials(cl.spin_basis)
-            if not np.allclose(coeffs[:, 0], 1.0) and not np.allclose(
-                coeffs[:, 1], 0.0
-            ):
-                self._binary = False
-                break
-        return self._binary
-
-    def _check_neighbors(self):
-        """Check if every two sites are connected."""
-        if self._verbose:
-            print("Check if every two sites are connected.", flush=True)
-
-        n_sites = len(self._lattice_supercell.active_sites)
-        self._independent = np.ones((n_sites, n_sites), dtype=bool)
-        for cl in self._spin_basis_clusters:
-            orbit = self._orbit_sites_supercell[cl.cluster_id]
-            # TODO: Check if this works for multilattice systems.
-            for i in range(n_sites):
-                self._independent[i, orbit[i].reshape(-1)] = False
-        return self._independent
-
-    def _set_polynomial_coeffs(self):
-        """Set polynomial coefficients of clusters."""
-        self._poly_coeffs = [
-            self._lattice_supercell.get_spin_polynomials(cl.spin_basis)
-            for cl in self._spin_basis_clusters
-        ]
-        return self._poly_coeffs
-
     def _get_orbit_supercell(self, decimals: int = 5):
         """Return orbit for supercell."""
         unitcell = self._lattice_unitcell.cell
@@ -98,17 +64,53 @@ class ClusterFunctionsMC:
                     return_array=False,
                 )
 
+                orbit_active_site_rep = dict()
                 for k, v in orbit.items():
-                    # TODO: Check results when active sites
-                    #       and entire sites are different.
-                    #       key must be changed?
-                    orbit[k] = np.array(self._lattice_supercell.to_active_site_rep(v))
-                    n_duplicate = np.sum(orbit[k] == k, axis=1).astype(float)
-                    self._duplicate_n_sites[(i, k)] = n_duplicate
+                    site = self._lattice_supercell.to_active_site_rep([k])[0]
+                    orbit_active_site_rep[site] = np.array(
+                        self._lattice_supercell.to_active_site_rep(v)
+                    )
+                    n_duplicate = np.sum(
+                        orbit_active_site_rep[site] == site, axis=1
+                    ).astype(float)
+                    self._duplicate_n_sites[(i, site)] = n_duplicate
 
-                self._orbit_sites_supercell[i] = orbit
+                self._orbit_sites_supercell[i] = orbit_active_site_rep
 
         return self
+
+    def _is_binary(self):
+        """Check if configuration is binary."""
+        self._binary = True
+        for cl in self._spin_basis_clusters:
+            coeffs = self._lattice_supercell.get_spin_polynomials(cl.spin_basis)
+            if not np.allclose(coeffs[:, 0], 1.0) and not np.allclose(
+                coeffs[:, 1], 0.0
+            ):
+                self._binary = False
+                break
+        return self._binary
+
+    def _check_neighbors(self):
+        """Check if every two sites are connected."""
+        if self._verbose:
+            print("Check if every two sites are connected.", flush=True)
+
+        n_sites = len(self._lattice_supercell.active_sites)
+        self._independent = np.ones((n_sites, n_sites), dtype=bool)
+        for cl in self._spin_basis_clusters:
+            orbit = self._orbit_sites_supercell[cl.cluster_id]
+            for i in range(n_sites):
+                self._independent[i, orbit[i].reshape(-1)] = False
+        return self._independent
+
+    def _set_polynomial_coeffs(self):
+        """Set polynomial coefficients of clusters."""
+        self._poly_coeffs = [
+            self._lattice_supercell.get_spin_polynomials(cl.spin_basis)
+            for cl in self._spin_basis_clusters
+        ]
+        return self._poly_coeffs
 
     def eval_from_spins(self, active_spins: np.ndarray):
         """Evaluate cluster functions from active labelings."""
@@ -174,7 +176,6 @@ class ClusterFunctionsMC:
     ):
         """Evaluate cluster function changes from spin swap."""
 
-        # TODO: Check when multilattice systems.
         if len(sites) != 2:
             raise RuntimeError("Size of sites must be two.")
 
@@ -290,8 +291,6 @@ class ClusterFunctionsMC:
         spin_new: int,
     ):
         """Evaluate cluster function changes from spin swap."""
-
-        # TODO: Check when multilattice systems.
         i = site
         spin_i = active_spins[i]
         dspin = spin_new - spin_i
