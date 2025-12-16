@@ -50,7 +50,7 @@ def test_cmc_fcc_binary():
         temperature_final=100,
         temperature_step=50,
         ensemble="semi_grand_canonical",
-        mu=-0.5,
+        mu=[-0.5],
     )
     pyclupan.run()
     assert pyclupan.average_energies.shape[0] == 3
@@ -76,7 +76,7 @@ def test_cmc_fcc_binary_from_poscar():
         temperature_final=100,
         temperature_step=50,
         ensemble="semi_grand_canonical",
-        mu=-0.5,
+        mu=[-0.5],
     )
     pyclupan.run()
 

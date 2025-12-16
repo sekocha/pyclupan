@@ -75,12 +75,16 @@ def run():
     clupan = PyclupanCalc(args.clusters, verbose=True)
     if args.derivatives:
         for d in args.derivatives:
+            print("Loading", d, flush=True)
             clupan.load_derivatives_yaml(d)
     elif args.samples:
+        print("Loading", args.sample, flush=True)
         clupan.load_sample_attrs_yaml(args.samples)
     elif args.poscars:
         if args.element_strings is None:
             raise RuntimeError("Element strings are required.")
+        for p in args.poscars:
+            print("Loading", p, flush=True)
         clupan.load_poscars(args.poscars, element_strings=args.element_strings)
 
     calc_energy = True

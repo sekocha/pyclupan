@@ -51,9 +51,11 @@ def define_spins(n_type: int):
     elif n_type == 4:
         spin_array = [2, 1, 0, -1]
     elif n_type == 5:
-        spin_array = [2, 1, 0, -1, 2]
+        spin_array = [2, 1, 0, -1, -2]
     elif n_type == 6:
-        spin_array = [3, 2, 1, 0, -1, 2]
+        spin_array = [3, 2, 1, 0, -1, -2]
+    elif n_type == 7:
+        spin_array = [3, 2, 1, 0, -1, -2, -3]
     else:
         raise RuntimeError("Spin values not defined.")
 

@@ -34,7 +34,10 @@ def calc_correlation(
     spin_basis_clusters: list,
     verbose: bool = False,
 ):
-    """Calculate cluster functions without loading cluster yaml file."""
+    """Calculate cluster functions without loading cluster yaml file.
+
+    labelings must be composed of active ones.
+    """
     if not lattice_supercell.is_active_size(labelings):
         raise RuntimeError("Size of given labelings not consistent with lattice.")
     if not lattice_supercell.is_active_element(labelings):
@@ -83,7 +86,10 @@ class ClusterFunctions:
         ---------
         clusters_yaml: Name of output file for cluster search results.
         """
+        if verbose:
+            print("Loading", clusters_yaml, flush=True)
         cluster_attrs = load_clusters_yaml(clusters_yaml)
+
         self._lattice_unitcell = cluster_attrs[0]
         self._clusters = cluster_attrs[1]
         self._spin_basis_clusters = cluster_attrs[3]
@@ -270,6 +276,8 @@ class ClusterFunctions:
             self._cluster_functions = self._eval_from_derivatives()
         else:
             raise RuntimeError("Structures or labelings not found.")
+        for i, cl in enumerate(self._cluster_functions[1]):
+            print(i, cl)
         return self._cluster_functions
 
     @property
