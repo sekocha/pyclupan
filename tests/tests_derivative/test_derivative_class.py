@@ -7,16 +7,17 @@ import numpy as np
 from pyclupan.derivative.derivative_utils import DerivativesSet, load_derivatives_yaml
 
 cwd = Path(__file__).parent
+path_file = str(cwd) + "/../files/binary_fcc/"
 
 
 def test_derivatives_classes():
     """Test Derivatives and DerivativesSet."""
-    ds_set = load_derivatives_yaml(str(cwd) + "/pyclupan_derivatives_3.yaml")
+    ds_set = load_derivatives_yaml(path_file + "/pyclupan_derivatives_3.yaml")
     assert len(ds_set) == 3
 
     files = [
-        str(cwd) + "/pyclupan_derivatives_3.yaml",
-        str(cwd) + "/pyclupan_derivatives_4.yaml",
+        path_file + "/pyclupan_derivatives_3.yaml",
+        path_file + "/pyclupan_derivatives_4.yaml",
     ]
     ds_set = DerivativesSet([])
     for f in files:
