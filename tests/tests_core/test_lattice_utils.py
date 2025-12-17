@@ -14,9 +14,9 @@ from pyclupan.core.lattice_utils import (
     set_elements_on_sublattices,
     set_labelings_endmembers,
 )
-from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
+path_file = str(cwd) + "/../"
 
 
 def test_elements_on_sublattices():
@@ -57,20 +57,33 @@ def test_set_labelings_endmembers():
     np.testing.assert_equal(endmembers, [[0], [1], [2]])
 
 
-def test_set_element_strings():
+def test_set_element_strings(fcc_primitive_cell):
     """Test set_element_strings."""
-    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
     elements_lattice = [[0, 1]]
-    element_strings = set_element_strings(unitcell, elements_lattice, n_elements=2)
+    element_strings = set_element_strings(
+        fcc_primitive_cell,
+        elements_lattice,
+        n_elements=2,
+    )
     np.testing.assert_equal(element_strings, ["Bi0", "Bi1"])
 
     elements_lattice = [[0, 1, 2]]
-    element_strings = set_element_strings(unitcell, elements_lattice, n_elements=3)
+    element_strings = set_element_strings(
+        fcc_primitive_cell,
+        elements_lattice,
+        n_elements=3,
+    )
     np.testing.assert_equal(element_strings, ["Bi0", "Bi1", "Bi2"])
 
-    unitcell = Poscar(str(cwd) + "/poscar-perovskite").structure
+
+def test_set_element_strings2(perovskite_unitcell):
+    """Test set_element_strings."""
     elements_lattice = [[0], [1], [2, 3]]
-    element_strings = set_element_strings(unitcell, elements_lattice, n_elements=4)
+    element_strings = set_element_strings(
+        perovskite_unitcell,
+        elements_lattice,
+        n_elements=4,
+    )
     np.testing.assert_equal(element_strings, ["Sr", "Ti", "O2", "O3"])
 
 
@@ -89,22 +102,24 @@ def test_get_complete_labelings():
     np.testing.assert_equal(labelings, labelings_true)
 
 
-def test_extract_sites():
+def test_extract_sites(perovskite_unitcell):
     """Test extract_sites."""
-    unitcell = Poscar(str(cwd) + "/poscar-perovskite").structure
-    sites = extract_sites(unitcell, [0, 1])
+    sites = extract_sites(perovskite_unitcell, [0, 1])
     np.testing.assert_equal(sites, [0, 1])
 
-    sites = extract_sites(unitcell, [2])
+    sites = extract_sites(perovskite_unitcell, [2])
     np.testing.assert_equal(sites, [2, 3, 4])
 
 
-def test_get_inactive_labeling():
+def test_get_inactive_labeling(perovskite_unitcell):
     """Test get_inactive_labeling."""
-    unitcell = Poscar(str(cwd) + "/poscar-perovskite").structure
     elements_lattice = [[0], [1], [2, 3]]
     inactive_lattice = [0, 1]
-    labeling = get_inactive_labeling(unitcell, elements_lattice, inactive_lattice)
+    labeling = get_inactive_labeling(
+        perovskite_unitcell,
+        elements_lattice,
+        inactive_lattice,
+    )
     np.testing.assert_equal(labeling, [0, 1])
 
 
@@ -117,9 +132,8 @@ def test_is_active_size():
     assert is_active_size(labelings, active_sites) == False
 
 
-def test_map_active_array():
+def test_map_active_array(perovskite_unitcell):
     """Test map_active_array."""
-    unitcell = Poscar(str(cwd) + "/poscar-perovskite").structure
     active_sites = np.array([2, 3, 4])
     elements_lattice = [[0], [1], [2, 3]]
     spin_lattice = [[-1000], [-1000], [1, -1]]
@@ -128,14 +142,14 @@ def test_map_active_array():
     spins = [1, 1, -1]
 
     assigned = map_active_array(
-        labeling, active_sites, unitcell, elements_lattice, spin_lattice
+        labeling, active_sites, perovskite_unitcell, elements_lattice, spin_lattice
     )
     np.testing.assert_equal(assigned, spins)
 
     assigned = map_active_array(
         spins,
         active_sites,
-        unitcell,
+        perovskite_unitcell,
         spin_lattice,
         elements_lattice,
     )
@@ -145,14 +159,14 @@ def test_map_active_array():
     spins = [[1, 1, -1], [1, -1, -1]]
 
     assigned = map_active_array(
-        labelings, active_sites, unitcell, elements_lattice, spin_lattice
+        labelings, active_sites, perovskite_unitcell, elements_lattice, spin_lattice
     )
     np.testing.assert_equal(assigned, spins)
 
     assigned = map_active_array(
         spins,
         active_sites,
-        unitcell,
+        perovskite_unitcell,
         spin_lattice,
         elements_lattice,
     )

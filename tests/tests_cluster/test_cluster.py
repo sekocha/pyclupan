@@ -22,7 +22,7 @@ def _calc_num_ele_combs(clusters: dict):
 def test_perovskite():
     """Test cluster search in perovskite."""
     clupan = Pyclupan(verbose=False)
-    clupan.load_poscar(str(cwd) + "/poscar-perovskite")
+    clupan.load_poscar(str(cwd) + "/../files/poscar-perovskite-unitcell")
     elements = [[0, 1], [0, 1], [2]]
 
     clupan.run_cluster(
@@ -60,7 +60,7 @@ def test_perovskite():
 def test_fcc():
     """Test cluster search in fcc."""
     clupan = Pyclupan(verbose=False)
-    clupan.load_poscar(str(cwd) + "/poscar-fcc")
+    clupan.load_poscar(str(cwd) + "/../files/poscar-fcc-primitive")
     elements = [[0, 1, 2]]
 
     clupan.run_cluster(
@@ -81,15 +81,17 @@ def test_fcc():
 
 def test_load_clusters():
     """Test load clusters.yaml"""
-    filename = str(cwd) + "/pyclupan_clusters.yaml"
+    filename = str(cwd) + "/../files/binary_fcc/pyclupan_clusters.yaml"
     unitcell, clusters, el_clusters, _ = load_clusters_yaml(filename)
     assert len(clusters) == 52
     assert len(el_clusters) == 467
 
+    cl = clusters[-1]
+    assert cl.sites_unitcell == (0, 0, 0, 0)
+    cell_true = np.array([[0, -2, -1, -1], [0, 1, 1, 2], [0, 0, 1, -1]])
+    np.testing.assert_equal(cl.cells_unitcell, cell_true)
+
     cl = el_clusters[-2]
     assert cl.cluster_id == 51
     assert cl.colored_cluster_id == 465
-    assert cl.sites_unitcell == (0, 0, 0, 0)
     assert cl.elements == (0, 1, 1, 1)
-    cell_true = np.array([[0, -2, -1, -1], [0, 1, 1, 2], [0, 0, 1, -1]])
-    np.testing.assert_equal(cl.cells_unitcell, cell_true)

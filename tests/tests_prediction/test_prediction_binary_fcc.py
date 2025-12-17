@@ -8,14 +8,15 @@ from pyclupan.api.pyclupan_calc import PyclupanCalc
 from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
+path_file = str(cwd) + "/../files/binary_fcc/"
 
 
 def test_prediction_from_poscars():
     """Test energy prediction using poscars."""
-    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
-    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
+    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
 
-    poscars = [str(cwd) + "/derivative-1", str(cwd) + "/derivative-2"]
+    poscars = [path_file + "/derivative-1", path_file + "/derivative-2"]
     pyclupan.load_poscars(poscars)
     pyclupan.element_strings = ("Ag", "Au")
     pyclupan.eval_cluster_functions()
@@ -23,16 +24,15 @@ def test_prediction_from_poscars():
     labelings_end = np.array([[0], [1]])
     _ = pyclupan.eval_formation_energies(labelings_endmembers=labelings_end)
 
-    energies_true = np.array([-2.99605414, -3.11993823])
-    f_energies_true = np.array([-0.02735838, -0.02568571])
+    energies_true = np.array([-2.99605414, -3.014142])
+    f_energies_true = np.array([-0.02735838, -0.045446])
     np.testing.assert_allclose(pyclupan.energies, energies_true, atol=1e-6)
     np.testing.assert_allclose(pyclupan.formation_energies, f_energies_true, atol=1e-6)
 
     ch_true = np.array(
         [
             [1.0, 0.0, 0.0],
-            [0.5, 0.5, -0.027358375542346547],
-            [0.25, 0.75, -0.025685706225164306],
+            [0.5, 0.5, -0.045446],
             [0.0, 1.0, 0.0],
         ]
     )
@@ -42,27 +42,26 @@ def test_prediction_from_poscars():
 
 def test_prediction_from_structures():
     """Test energy prediction using structures."""
-    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
-    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
+    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
 
-    st1 = Poscar(str(cwd) + "/derivative-1").structure
-    st2 = Poscar(str(cwd) + "/derivative-2").structure
+    st1 = Poscar(path_file + "/derivative-1").structure
+    st2 = Poscar(path_file + "/derivative-2").structure
     pyclupan.structures = [st1, st2]
     pyclupan.element_strings = ("Ag", "Au")
     pyclupan.eval_energies()
     labelings_end = np.array([[0], [1]])
     _ = pyclupan.eval_formation_energies(labelings_endmembers=labelings_end)
 
-    energies_true = np.array([-2.99605414, -3.11993823])
-    f_energies_true = np.array([-0.02735838, -0.02568571])
+    energies_true = np.array([-2.99605414, -3.014142])
+    f_energies_true = np.array([-0.02735838, -0.045446])
     np.testing.assert_allclose(pyclupan.energies, energies_true, atol=1e-6)
     np.testing.assert_allclose(pyclupan.formation_energies, f_energies_true, atol=1e-6)
 
     ch_true = np.array(
         [
             [1.0, 0.0, 0.0],
-            [0.5, 0.5, -0.027358375542346547],
-            [0.25, 0.75, -0.025685706225164306],
+            [0.5, 0.5, -0.045446],
             [0.0, 1.0, 0.0],
         ]
     )
@@ -70,12 +69,11 @@ def test_prediction_from_structures():
     np.testing.assert_allclose(ch_pred, ch_true, atol=1e-6)
 
 
-def test_prediction_from_labelings():
+def test_prediction_from_labelings(fcc_primitive_cell):
     """Test energy prediction using structures."""
-    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
-    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
+    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
 
-    unitcell = Poscar(str(cwd) + "/fcc-primitive").structure
     hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 4]])
     labelings = np.array(
         [
@@ -88,7 +86,7 @@ def test_prediction_from_labelings():
         ]
     )
     pyclupan.set_labelings(
-        unitcell=unitcell,
+        unitcell=fcc_primitive_cell,
         supercell_matrix=hnf,
         active_labelings=labelings,
     )
@@ -118,11 +116,11 @@ def test_prediction_from_labelings():
 
 def test_prediction_from_derivatives():
     """Test energy prediction using derivatives."""
-    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
-    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
-    pyclupan.load_derivatives_yaml(str(cwd) + "/pyclupan_derivatives_2.yaml")
-    pyclupan.load_derivatives_yaml(str(cwd) + "/pyclupan_derivatives_3.yaml")
-    pyclupan.load_derivatives_yaml(str(cwd) + "/pyclupan_derivatives_4.yaml")
+    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
+    pyclupan.load_derivatives_yaml(path_file + "/pyclupan_derivatives_2.yaml")
+    pyclupan.load_derivatives_yaml(path_file + "/pyclupan_derivatives_3.yaml")
+    pyclupan.load_derivatives_yaml(path_file + "/pyclupan_derivatives_4.yaml")
 
     energies_true = np.array(
         [
@@ -192,8 +190,8 @@ def test_prediction_from_derivatives():
     res = pyclupan.eval_formation_energies(labelings_endmembers=labelings_end)
     np.testing.assert_allclose(res[0], formation_energies_true, atol=1e-6)
 
-    st_end1 = Poscar(str(cwd) + "/poscar-end1").structure
-    st_end2 = Poscar(str(cwd) + "/poscar-end2").structure
+    st_end1 = Poscar(path_file + "/poscar-end1").structure
+    st_end2 = Poscar(path_file + "/poscar-end2").structure
     res = pyclupan.eval_formation_energies(
         structures_endmembers=[st_end1, st_end2],
         element_strings=("Ag", "Au"),
@@ -218,9 +216,9 @@ def test_prediction_from_derivatives():
 
 def test_prediction_from_cluster_functions():
     """Test energy prediction using cluster_functions."""
-    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
-    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
-    pyclupan.load_features(str(cwd) + "/pyclupan_features.hdf5")
+    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
+    pyclupan.load_features(path_file + "/pyclupan_features.hdf5")
 
     formation_energies_true = np.array(
         [
@@ -274,9 +272,9 @@ def test_prediction_from_cluster_functions():
 
 def test_prediction_from_energies():
     """Test energy prediction using energies."""
-    pyclupan = PyclupanCalc(clusters_yaml=str(cwd) + "/pyclupan_clusters.yaml")
-    pyclupan.load_ecis(str(cwd) + "/pyclupan_ecis.yaml")
-    pyclupan.load_energies(str(cwd) + "/pyclupan_energies.hdf5")
+    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
+    pyclupan.load_energies(path_file + "/pyclupan_energies.hdf5")
 
     formation_energies_true = np.array(
         [

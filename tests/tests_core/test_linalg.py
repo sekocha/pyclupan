@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import numpy as np
-from pypolymlp.core.interface_vasp import Poscar
 
 from pyclupan.core.linalg_utils import enumerate_hnf, get_nonequivalent_hnf
 
@@ -17,33 +16,29 @@ def test_entire_hnfs():
     np.testing.assert_equal(n_hnfs, n_refs)
 
 
-def test_fcc_hnfs():
+def test_fcc_hnfs(fcc_primitive_cell):
     """Test number of non-equivalent HNFs for FCC."""
-    st = Poscar(str(cwd) + "/poscar-fcc").structure
-    n_hnfs = [len(get_nonequivalent_hnf(n, st)) for n in range(2, 11)]
+    n_hnfs = [len(get_nonequivalent_hnf(n, fcc_primitive_cell)) for n in range(2, 11)]
     n_refs = [2, 3, 7, 5, 10, 7, 20, 14, 18]
     np.testing.assert_equal(n_hnfs, n_refs)
 
 
-def test_sc_hnfs():
+def test_sc_hnfs(sc_primitive_cell):
     """Test number of non-equivalent HNFs for SC."""
-    st = Poscar(str(cwd) + "/poscar-sc").structure
-    n_hnfs = [len(get_nonequivalent_hnf(n, st)) for n in range(2, 11)]
+    n_hnfs = [len(get_nonequivalent_hnf(n, sc_primitive_cell)) for n in range(2, 11)]
     n_refs = [3, 3, 9, 5, 13, 7, 24, 14, 23]
     np.testing.assert_equal(n_hnfs, n_refs)
 
 
-def test_tetra_hnfs():
+def test_tetra_hnfs(tetra_primitive_cell):
     """Test number of non-equivalent HNFs for a tetragonal structure."""
-    st = Poscar(str(cwd) + "/poscar-tetra").structure
-    n_hnfs = [len(get_nonequivalent_hnf(n, st)) for n in range(2, 11)]
+    n_hnfs = [len(get_nonequivalent_hnf(n, tetra_primitive_cell)) for n in range(2, 11)]
     n_refs = [5, 5, 17, 9, 29, 13, 51, 28, 53]
     np.testing.assert_equal(n_hnfs, n_refs)
 
 
-def test_perovskite_hnfs():
+def test_perovskite_hnfs(perovskite_unitcell):
     """Test number of non-equivalent HNFs for cubic perovskite."""
-    st = Poscar(str(cwd) + "/poscar-perovskite").structure
-    n_hnfs = [len(get_nonequivalent_hnf(n, st)) for n in range(2, 11)]
+    n_hnfs = [len(get_nonequivalent_hnf(n, perovskite_unitcell)) for n in range(2, 11)]
     n_refs = [3, 3, 9, 5, 13, 7, 24, 14, 23]
     np.testing.assert_equal(n_hnfs, n_refs)

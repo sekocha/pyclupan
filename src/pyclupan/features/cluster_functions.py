@@ -276,8 +276,6 @@ class ClusterFunctions:
             self._cluster_functions = self._eval_from_derivatives()
         else:
             raise RuntimeError("Structures or labelings not found.")
-        for i, cl in enumerate(self._cluster_functions[1]):
-            print(i, cl)
         return self._cluster_functions
 
     @property

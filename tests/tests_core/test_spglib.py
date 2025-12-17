@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.core.pypolymlp_utils import Poscar, supercell
+from pyclupan.core.pypolymlp_utils import supercell
 from pyclupan.core.spglib_utils import (
     apply_symmetry_operations,
     get_permutation,
@@ -16,12 +16,11 @@ from pyclupan.core.spglib_utils import (
 cwd = Path(__file__).parent
 
 
-def test_refine_cell():
+def test_refine_cell(fcc_primitive_cell):
     """Test refine cell."""
-    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
-    ref_cell = refine_cell(unitcell)
+    ref_cell = refine_cell(fcc_primitive_cell)
     np.testing.assert_allclose(
-        ref_cell.axis, [[5.393, 0.0, 0.0], [0.0, 5.393, 0.0], [0.0, 0.0, 5.393]]
+        ref_cell.axis, [[4.0, 0.0, 0.0], [0.0, 4.0, 0.0], [0.0, 0.0, 4.0]]
     )
     np.testing.assert_allclose(
         ref_cell.positions,
@@ -29,20 +28,18 @@ def test_refine_cell():
     )
 
 
-def test_symmetry():
+def test_symmetry(fcc_primitive_cell):
     """Test get_rotations and get_symmetry."""
-    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
-    rotations = get_rotations(unitcell)
-    rotations2, translations = get_symmetry(unitcell)
+    rotations = get_rotations(fcc_primitive_cell)
+    rotations2, translations = get_symmetry(fcc_primitive_cell)
     np.testing.assert_allclose(rotations, rotations2, atol=1e-8)
     np.testing.assert_allclose(translations, 0.0, atol=1e-8)
 
 
-def test_permutation():
+def test_permutation(fcc_primitive_cell):
     """Test permutation."""
-    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
     hnf = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 4]])
-    sup = supercell(unitcell, supercell_matrix=hnf)
+    sup = supercell(fcc_primitive_cell, supercell_matrix=hnf)
     permutation = get_permutation(sup, superperiodic=False)
     permutation_true = np.array(
         [
@@ -103,10 +100,9 @@ def test_permutation():
     np.testing.assert_equal(perm_lt, perm_lt_true)
 
 
-def test_apply_symmetry_operations():
+def test_apply_symmetry_operations(fcc_primitive_cell):
     """Test apply_symmetry_operations."""
-    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
-    rotations, translations = get_symmetry(unitcell)
+    rotations, translations = get_symmetry(fcc_primitive_cell)
 
     positions = np.array([[0, 0, 1], [0, 1, 2]]).T
     fracs, cells = apply_symmetry_operations(

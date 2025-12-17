@@ -15,19 +15,15 @@ from pyclupan.core.cell_utils import (
     supercell_reduced,
     unitcell_reps_to_supercell_reps,
 )
-from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
 
 
-def test_supercell_diagonal():
+def test_supercell_diagonal(fcc_primitive_cell):
     """Test supercell diagonal."""
-    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
-    sup = supercell_diagonal(unitcell, size=(1, 2, 2))
+    sup = supercell_diagonal(fcc_primitive_cell, size=(1, 2, 2))
 
-    axis_true = np.array(
-        [[0.0, 5.393, 5.393], [2.6965, 0.0, 5.393], [2.6965, 5.393, 0.0]]
-    )
+    axis_true = np.array([[0.0, 4, 4], [2, 0.0, 4], [2, 4, 0.0]])
     positions_true = np.array(
         [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.5, 0.5], [0.0, 0.5, 0.0, 0.5]]
     )
@@ -38,15 +34,12 @@ def test_supercell_diagonal():
     assert list(sup.types) == types_true
 
 
-def test_supercell_reduced():
+def test_supercell_reduced(fcc_primitive_cell):
     """Test reduced function."""
-    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
     hnf = np.array([[1, 0, 0], [0, 1, 0], [2, 0, 3]])
-    supercell = supercell_reduced(unitcell, supercell_matrix=hnf)
+    supercell = supercell_reduced(fcc_primitive_cell, supercell_matrix=hnf)
 
-    axis_true = np.array(
-        [[-2.6965, -2.6965, 2.6965], [-0.0, 0.0, 8.0895], [-2.6965, 2.6965, -0.0]]
-    )
+    axis_true = np.array([[-2.0, -2.0, 2.0], [-0.0, 0.0, 6.0], [-2.0, 2.0, -0.0]])
     positions_true = np.array(
         [
             [0.0, 0.666667, 0.333333],
@@ -61,12 +54,11 @@ def test_supercell_reduced():
     assert list(supercell.types) == types_true
 
 
-def test_supercell_reduced2():
+def test_supercell_reduced2(perovskite_unitcell):
     """Test reduced function."""
-    unitcell = Poscar(str(cwd) + "/poscar-perovskite").structure
     hnf = np.array([[1, 0, 0], [1, 1, 0], [1, 2, 1]])
 
-    supercell = supercell_reduced(unitcell, supercell_matrix=hnf)
+    supercell = supercell_reduced(perovskite_unitcell, supercell_matrix=hnf)
 
     axis_true = np.array([[4.0, 0.0, -0.0], [0.0, -4.0, -0.0], [0.0, 0.0, -4.0]])
     positions_true = np.array(
@@ -137,22 +129,21 @@ def test_get_matching_positions():
     np.testing.assert_equal(sites, sites_true)
 
 
-def test_get_unitcell_reps():
+def test_get_unitcell_reps(fcc_primitive_cell):
     """Test reduced function."""
-    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
     hnf = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 3]])
-    sup = supercell(unitcell, supercell_matrix=hnf)
-    map_utos = get_unitcell_reps(unitcell, sup)
+    sup = supercell(fcc_primitive_cell, supercell_matrix=hnf)
+    map_utos = get_unitcell_reps(fcc_primitive_cell, sup)
     assert map_utos[(0, (0, 0, 0))] == 0
     assert map_utos[(0, (0, 0, 1))] == 1
     assert map_utos[(0, (0, 0, 2))] == 2
 
-    sup = supercell_reduced(unitcell, supercell_matrix=hnf)
-    map_utos = get_unitcell_reps(unitcell, sup)
+    sup = supercell_reduced(fcc_primitive_cell, supercell_matrix=hnf)
+    map_utos = get_unitcell_reps(fcc_primitive_cell, sup)
     assert map_utos[(0, (0, 0, 0))] == 0
     assert map_utos[(0, (1, 0, -2))] == 1
     assert map_utos[(0, (0, 0, -1))] == 2
 
     positions = np.array([[1, 0, 0], [-1, 0, 1], [2, 2, -2], [4, 3, 2]]).T
-    sites = unitcell_reps_to_supercell_reps(positions, sup, unitcell=unitcell)
+    sites = unitcell_reps_to_supercell_reps(positions, sup, unitcell=fcc_primitive_cell)
     assert list(sites) == [0, 1, 1, 2]

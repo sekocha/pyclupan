@@ -6,24 +6,20 @@ import numpy as np
 
 from pyclupan.core.cell_utils import supercell_reduced
 from pyclupan.core.lattice import Lattice
-from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
 
 
-def test_lattice_binary_fcc():
+def test_lattice_binary_fcc(fcc_primitive_cell):
     """Test Lattice class."""
-    unitcell = Poscar(str(cwd) + "/poscar-fcc").structure
     elements = [[0, 1]]
-    lattice = Lattice(unitcell, elements=elements)
+    lattice = Lattice(fcc_primitive_cell, elements=elements)
     hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 3]])
 
-    supercell = supercell_reduced(unitcell, supercell_matrix=hnf)
+    supercell = supercell_reduced(fcc_primitive_cell, supercell_matrix=hnf)
     lattice_supercell = lattice.lattice_supercell(supercell)
 
-    axis_true = np.array(
-        [[2.6965, -0.0, -5.393], [0.0, 5.393, -2.6965], [2.6965, -0.0, 2.6965]]
-    )
+    axis_true = np.array([[2.0, -0.0, -4.0], [0.0, 4.0, -2.0], [2.0, -0.0, 2.0]])
     positions_true = np.array(
         [
             [0.0, 0.33333333, 0.66666667],
@@ -87,15 +83,13 @@ def test_lattice_binary_fcc():
     np.isclose(spin_poly[1][0], 1.0)
 
 
-def test_lattice_binary_perovskite():
+def test_lattice_binary_perovskite(perovskite_unitcell):
     """Test Lattice class."""
-    unitcell = Poscar(str(cwd) + "/poscar-perovskite").structure
-
     elements = [[0], [1], [2, 3]]
-    lattice = Lattice(unitcell, elements=elements)
+    lattice = Lattice(perovskite_unitcell, elements=elements)
     hnf = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 2]])
 
-    supercell = supercell_reduced(unitcell, supercell_matrix=hnf)
+    supercell = supercell_reduced(perovskite_unitcell, supercell_matrix=hnf)
     lattice_supercell = lattice.lattice_supercell(supercell)
 
     axis_true = np.array(

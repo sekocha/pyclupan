@@ -8,14 +8,15 @@ from pyclupan.prediction.prediction_io import (
 )
 
 cwd = Path(__file__).parent
+path_file = str(cwd) + "/../files/binary_fcc/"
 
 
 def test_load_energies():
     """Test load_energies and load_formation_energies."""
-    energies, ids, _ = load_energies_hdf5(str(cwd) + "/pyclupan_energies.hdf5")
+    energies, ids, _ = load_energies_hdf5(path_file + "/pyclupan_energies.hdf5")
     assert energies.shape[0] == 27
     energies, comps, ids = load_formation_energies_hdf5(
-        str(cwd) + "/pyclupan_formation_energies.hdf5"
+        path_file + "/pyclupan_formation_energies.hdf5"
     )
     assert energies.shape[0] == 135
     assert comps.shape == (135, 2)
