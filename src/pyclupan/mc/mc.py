@@ -84,7 +84,7 @@ class MC:
         self._model.supercell(n_expand)
         return self
 
-    def _set_init_structure_random(self, compositions: tuple, decimals: int = 5):
+    def _set_init_structure_random(self, compositions: tuple, decimals: int = 4):
         """Set initial structure randomly.
 
         Parameters
@@ -105,6 +105,7 @@ class MC:
         n_atoms = np.array([c * n_sites for ele, c in zip(elements, compositions)])
 
         if not np.allclose(n_atoms - np.rint(n_atoms), 0.0, atol=10 ** (-decimals)):
+            print(n_atoms)
             raise RuntimeError("Given supercell cannot express compositions.")
 
         n_atoms = np.rint(n_atoms).astype(int)

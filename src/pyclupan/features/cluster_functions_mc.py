@@ -29,7 +29,6 @@ class ClusterFunctionsMC:
 
         self._orbit_unitcell = cf._orbit_fracs_unitcell
         self._mask_clusters = cf._mask_clusters
-        print(self._orbit_unitcell)
 
         self._orbit_sites_supercell = None
         self._orbit_sizes = None
