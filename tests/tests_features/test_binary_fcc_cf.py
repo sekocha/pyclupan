@@ -11,9 +11,14 @@ cwd = Path(__file__).parent
 path_file = str(cwd) + "/../files/binary_fcc/"
 
 
+def _init_calc():
+    features = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    return features
+
+
 def test_eval_cluster_functions_from_derivatives():
     """Test eval_cluster_functions using files for derivative structures."""
-    features = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    features = _init_calc()
     features.load_sample_attrs_yaml(path_file + "/pyclupan_sample_attrs.yaml")
     cluster_functions = features.eval_cluster_functions()
     np.testing.assert_allclose(cluster_functions[0, 1], 0.3333333333333, atol=1e-8)
@@ -28,8 +33,8 @@ def test_eval_cluster_functions_from_derivatives():
 
 def test_eval_cluster_functions_from_poscars():
     """Test eval_cluster_functions using POSCAR files."""
+    features = _init_calc()
     element_strings = ("Ag", "Au")
-    features = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     features.load_poscars([path_file + "/derivative-1", path_file + "/derivative-2"])
     features.element_strings = element_strings
     cluster_functions = features.eval_cluster_functions()
@@ -44,8 +49,8 @@ def test_eval_cluster_functions_from_poscars():
 
 def test_eval_cluster_functions_from_structures():
     """Test eval_cluster_functions using structures setter.."""
+    features = _init_calc()
     element_strings = ("Ag", "Au")
-    features = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     st1 = Poscar(path_file + "/derivative-1").structure
     st2 = Poscar(path_file + "/derivative-2").structure
     features.structures = [st1, st2]
@@ -62,8 +67,7 @@ def test_eval_cluster_functions_from_structures():
 
 def test_eval_cluster_functions_from_labelings(fcc_primitive_cell):
     """Test eval_cluster_functions using given labelings."""
-    features = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
-
+    features = _init_calc()
     hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 4]])
     labelings = np.array(
         [

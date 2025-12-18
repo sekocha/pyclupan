@@ -9,7 +9,7 @@ from pyclupan.features.cluster_functions import ClusterFunctions
 from pyclupan.features.cluster_functions_mc import ClusterFunctionsMC
 
 cwd = Path(__file__).parent
-path_file = str(cwd) + "/../files/binary_fcc/"
+path_file = str(cwd) + "/../files/ternary_fcc/"
 clusters_yaml = path_file + "/pyclupan_clusters.yaml"
 
 
@@ -28,7 +28,7 @@ def _init(fcc_primitive_cell, supercell_size: tuple, refine: bool = True):
 def test_eval_diff_fcc1(fcc_primitive_cell):
     """Test eval_from_spin_swap."""
     cf_mc = _init(fcc_primitive_cell, supercell_size=(1, 1, 2), refine=True)
-    spins = np.array([1, 1, -1, 1, 1, -1, -1, -1])
+    spins = np.array([1, 0, -1, 1, 0, 0, -1, -1])
     cf_calc1 = cf_mc.eval_from_spins(spins)
 
     cf_diff12 = cf_mc.eval_from_spin_swap(spins, [0, 7])
@@ -52,7 +52,7 @@ def test_eval_diff_fcc1(fcc_primitive_cell):
 def test_eval_diff_fcc2(fcc_primitive_cell):
     """Test eval_from_spin_swap."""
     cf_mc = _init(fcc_primitive_cell, supercell_size=(2, 2, 2), refine=False)
-    spins = np.array([1, 1, -1, 1, 1, -1, -1, -1])
+    spins = np.array([1, 0, -1, 1, 0, 0, -1, -1])
     cf_calc1 = cf_mc.eval_from_spins(spins)
 
     cf_diff12 = cf_mc.eval_from_spin_swap(spins, [0, 7])

@@ -9,14 +9,14 @@ from pyclupan.features.cluster_functions import ClusterFunctions
 from pyclupan.features.cluster_functions_mc import ClusterFunctionsMC
 
 cwd = Path(__file__).parent
-path_file = str(cwd) + "/../files/binary_fcc/"
+path_file = str(cwd) + "/../files/binary_perovskite/"
 clusters_yaml = path_file + "/pyclupan_clusters.yaml"
 
 
-def _init(fcc_primitive_cell, supercell_size: tuple, refine: bool = True):
+def _init(perovskite_unitcell, supercell_size: tuple, refine: bool = True):
     """Initialize ClusterFunctionsMC."""
     sup = supercell_general(
-        fcc_primitive_cell, supercell_matrix=supercell_size, refine=refine
+        perovskite_unitcell, supercell_matrix=supercell_size, refine=refine
     )
     cf = ClusterFunctions(clusters_yaml=clusters_yaml)
     lattice_unitcell = cf.lattice_unitcell
@@ -25,10 +25,10 @@ def _init(fcc_primitive_cell, supercell_size: tuple, refine: bool = True):
     return cf_mc
 
 
-def test_eval_diff_fcc1(fcc_primitive_cell):
+def test_eval_diff_perovskite1(perovskite_unitcell):
     """Test eval_from_spin_swap."""
-    cf_mc = _init(fcc_primitive_cell, supercell_size=(1, 1, 2), refine=True)
-    spins = np.array([1, 1, -1, 1, 1, -1, -1, -1])
+    cf_mc = _init(perovskite_unitcell, supercell_size=(1, 1, 3), refine=False)
+    spins = np.array([1, 1, -1, 1, 1, -1, -1, -1, 1])
     cf_calc1 = cf_mc.eval_from_spins(spins)
 
     cf_diff12 = cf_mc.eval_from_spin_swap(spins, [0, 7])
@@ -49,10 +49,10 @@ def test_eval_diff_fcc1(fcc_primitive_cell):
     np.testing.assert_allclose(cf_calc4, cf_calc3 + cf_diff34_stable, atol=1e-8)
 
 
-def test_eval_diff_fcc2(fcc_primitive_cell):
+def test_eval_diff_perovskite2(perovskite_unitcell):
     """Test eval_from_spin_swap."""
-    cf_mc = _init(fcc_primitive_cell, supercell_size=(2, 2, 2), refine=False)
-    spins = np.array([1, 1, -1, 1, 1, -1, -1, -1])
+    cf_mc = _init(perovskite_unitcell, supercell_size=(2, 2, 1), refine=False)
+    spins = np.array([1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, -1])
     cf_calc1 = cf_mc.eval_from_spins(spins)
 
     cf_diff12 = cf_mc.eval_from_spin_swap(spins, [0, 7])

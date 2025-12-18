@@ -29,6 +29,7 @@ class ClusterFunctionsMC:
 
         self._orbit_unitcell = cf._orbit_fracs_unitcell
         self._mask_clusters = cf._mask_clusters
+        print(self._orbit_unitcell)
 
         self._orbit_sites_supercell = None
         self._orbit_sizes = None
@@ -101,7 +102,11 @@ class ClusterFunctionsMC:
         for cl in self._spin_basis_clusters:
             orbit = self._orbit_sites_supercell[cl.cluster_id]
             for i in range(n_sites):
-                self._independent[i, orbit[i].reshape(-1)] = False
+                if orbit[i].shape[0] != np.count_nonzero(orbit[i] == i):
+                    self._independent[i, :] = False
+                else:
+                    self._independent[i, orbit[i].reshape(-1)] = False
+
         return self._independent
 
     def _set_polynomial_coeffs(self):

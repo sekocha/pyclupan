@@ -82,46 +82,6 @@ def set_spins(element_lattice: list):
     return spins_lattice, basis_lattice, basis_set
 
 
-#
-#
-# def set_spins(element_lattice: list):
-#     """Define spin values."""
-#     active_elements = [e2 for e1 in element_lattice if len(e1) > 1 for e2 in e1]
-#     inactive_elements = [e1[0] for e1 in element_lattice if len(e1) == 1]
-#     active_spins = define_spins(len(active_elements))
-#     map_spin = dict()
-#     for e, s in zip(active_elements, active_spins):
-#         map_spin[e] = s
-#     for e in inactive_elements:
-#         map_spin[e] = -1000
-#
-#     spin_lattice = [[map_spin[e] for e in ele] for ele in element_lattice]
-#     print(spin_lattice)
-#
-#     for ele, spin in zip(element_lattice, spin_lattice):
-#         basis_set = gram_schmidt(spin)
-#         print(basis_set)
-#
-#
-#     spins_lattice, basis_set, basis_lattice = [], [], []
-#     basis_id = 0
-#     for ele in element_lattice:
-#         spins_sublattice = define_spins(len(ele))
-#         spins_lattice.append(spins_sublattice)
-#
-#         ids = []
-#         if len(ele) > 1:
-#             for basis in gram_schmidt(spins_sublattice):
-#                 if not np.allclose(basis[:-1], 0.0) or not np.isclose(basis[-1], 1.0):
-#                     basis_set.append(basis)
-#                     ids.append(basis_id)
-#                     basis_id += 1
-#         basis_lattice.append(ids)
-#
-#     return spins_lattice, basis_lattice, basis_set
-#
-
-
 def eval_cluster_functions(
     coeffs: np.ndarray,
     spins_from_orbit: np.ndarray,
@@ -147,10 +107,8 @@ def eval_cluster_functions(
         for i, c in enumerate(coeffs):
             vals[:, :, i] = np.polyval(c, spins_from_orbit[:, :, i])
         if return_array:
-            # cf = np.prod(vals, axis=2)
             cf = np.multiply.reduce(vals, axis=2)
         else:
-            # cf = np.average(np.prod(vals, axis=2), axis=1)
             cf = np.average(np.multiply.reduce(vals, axis=2), axis=1)
     elif spins_from_orbit.ndim == 2:
         for i, c in enumerate(coeffs):

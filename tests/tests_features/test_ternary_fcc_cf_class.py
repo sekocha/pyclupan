@@ -9,11 +9,12 @@ from pyclupan.features.cluster_functions import ClusterFunctions
 
 cwd = Path(__file__).parent
 path_file = str(cwd) + "/../files/ternary_fcc/"
+clusters_yaml = path_file + "/pyclupan_clusters.yaml"
 
 
 def test_eval_cluster_functions_from_structures():
     """Test ClusterFunctions class using structures setter."""
-    cf = ClusterFunctions(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    cf = ClusterFunctions(clusters_yaml=clusters_yaml)
     cf.element_strings = ("Ag", "Au", "Cu")
     cf.structures = [Poscar(path_file + "/derivative-1").structure]
     cluster_functions = cf.eval()
@@ -40,7 +41,7 @@ def test_eval_cluster_functions_from_structures():
 
 def test_eval_cluster_functions_from_labelings(fcc_primitive_cell):
     """Test ClusterFunctions class using given labelings."""
-    cf = ClusterFunctions(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    cf = ClusterFunctions(clusters_yaml=clusters_yaml)
 
     hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 3]])
     labelings = np.array([[0, 0, 1], [0, 1, 2], [1, 2, 2]])

@@ -10,11 +10,12 @@ from pyclupan.features.cluster_functions import ClusterFunctions
 
 cwd = Path(__file__).parent
 path_file = str(cwd) + "/../files/binary_perovskite"
+clusters_yaml = path_file + "/pyclupan_clusters.yaml"
 
 
 def test_cf_class_from_derivatives():
     """Test ClusterFunctions class."""
-    cf = ClusterFunctions(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    cf = ClusterFunctions(clusters_yaml=clusters_yaml)
     cf.derivatives = load_derivatives_yaml(path_file + "/pyclupan_derivatives.yaml")
     cluster_functions = cf.eval()
 
@@ -46,7 +47,7 @@ def test_cf_class_from_derivatives():
 
 def test_cf_class_from_structures():
     """Test ClusterFunctions class."""
-    cf = ClusterFunctions(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    cf = ClusterFunctions(clusters_yaml=clusters_yaml)
     cf.element_strings = ("Sr", "Ti", "O", "V")
     st1 = Poscar(path_file + "/derivative-1").structure
     st2 = Poscar(path_file + "/derivative-2").structure
@@ -90,7 +91,7 @@ def test_cf_class_from_structures():
 
 def test_cf_class_from_labelings(perovskite_unitcell):
     """Test ClusterFunctions class."""
-    cf = ClusterFunctions(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    cf = ClusterFunctions(clusters_yaml=clusters_yaml)
     hnf = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 2]])
     labelings = np.array(
         [
@@ -151,7 +152,6 @@ def test_cf_class_from_labelings(perovskite_unitcell):
             ],
         ]
     )
-    print(cluster_functions[:, :19])
     np.testing.assert_allclose(cluster_functions[:, :19], cf_true, atol=1e-8)
 
     assert isinstance(cf.clusters, list)

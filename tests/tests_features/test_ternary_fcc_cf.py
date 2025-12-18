@@ -9,14 +9,14 @@ from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
 path_file = str(cwd) + "/../files/ternary_fcc/"
+clusters_yaml = path_file + "/pyclupan_clusters.yaml"
 
 
 def test_eval_cluster_functions_from_poscars():
     """Test eval_cluster_functions using POSCAR files."""
-    element_strings = ("Ag", "Au", "Cu")
-    features = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    features = PyclupanCalc(clusters_yaml=clusters_yaml)
     features.load_poscars(path_file + "/derivative-1")
-    features.element_strings = element_strings
+    features.element_strings = ("Ag", "Au", "Cu")
     cluster_functions = features.eval_cluster_functions()
 
     cf_calc1 = cluster_functions[0, :10]
@@ -37,10 +37,9 @@ def test_eval_cluster_functions_from_poscars():
 
 def test_eval_cluster_functions_from_structures():
     """Test eval_cluster_functions using structures setter."""
-    element_strings = ("Ag", "Au", "Cu")
-    features = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    features = PyclupanCalc(clusters_yaml=clusters_yaml)
     features.structures = [Poscar(path_file + "/derivative-1").structure]
-    features.element_strings = element_strings
+    features.element_strings = ("Ag", "Au", "Cu")
     cluster_functions = features.eval_cluster_functions()
 
     cf_calc1 = cluster_functions[0, :10]
@@ -61,16 +60,9 @@ def test_eval_cluster_functions_from_structures():
 
 def test_eval_cluster_functions_from_labelings(fcc_primitive_cell):
     """Test eval_cluster_functions using given labelings."""
-    features = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
-
+    features = PyclupanCalc(clusters_yaml=clusters_yaml)
     hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 3]])
-    labelings = np.array(
-        [
-            [0, 0, 1],
-            [0, 1, 2],
-            [1, 2, 2],
-        ]
-    )
+    labelings = np.array([[0, 0, 1], [0, 1, 2], [1, 2, 2]])
     features.set_labelings(
         unitcell=fcc_primitive_cell,
         supercell_matrix=hnf,

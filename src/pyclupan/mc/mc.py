@@ -104,7 +104,7 @@ class MC:
         n_sites = len(self._lattice_supercell.active_sites)
         n_atoms = np.array([c * n_sites for ele, c in zip(elements, compositions)])
 
-        if not np.allclose(n_atoms - np.round(n_atoms, decimals=decimals), 0.0):
+        if not np.allclose(n_atoms - np.rint(n_atoms), 0.0, atol=10 ** (-decimals)):
             raise RuntimeError("Given supercell cannot express compositions.")
 
         n_atoms = np.rint(n_atoms).astype(int)
@@ -343,14 +343,15 @@ class MC:
     def structure(self):
         """Return final structure."""
         active_spins = self._mc_attr.active_spins
-        labeling = self._lattice_supercell.to_labelings(active_spins)
+        active_labeling = self._lattice_supercell.to_labelings(active_spins)
+        active_labeling = np.array([active_labeling])
+        labeling = self._lattice_supercell.complete_labelings(active_labeling)[0]
 
         st = copy.deepcopy(self.supercell)
         st.types = labeling
         if self._element_strings is None:
             self._element_strings = self._lattice_supercell.element_strings
-            # st.elements = [e + str(t) for e, t in zip(st.elements, labeling)]
-        # else:
+
         st.elements = [self._element_strings[t] for t in labeling]
         return st.reorder()
 

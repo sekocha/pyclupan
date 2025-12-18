@@ -13,11 +13,12 @@ from pyclupan.features.cluster_functions import ClusterFunctions
 
 cwd = Path(__file__).parent
 path_file = str(cwd) + "/../files/binary_fcc/"
+clusters_yaml = path_file + "/pyclupan_clusters.yaml"
 
 
 def test_cf_class_from_derivatives():
     """Test ClusterFunctions class using files for derivative structures."""
-    cf = ClusterFunctions(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    cf = ClusterFunctions(clusters_yaml=clusters_yaml)
     cf.derivatives = load_sample_attrs_yaml(path_file + "/pyclupan_sample_attrs.yaml")
     cluster_functions = cf.eval()
     np.testing.assert_allclose(cluster_functions[0, 1], 0.3333333333333, atol=1e-8)
@@ -37,7 +38,7 @@ def test_cf_class_from_derivatives():
 
 def test_eval_cluster_functions_from_structures():
     """Test eval_cluster_functions using structures setter.."""
-    cf = ClusterFunctions(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    cf = ClusterFunctions(clusters_yaml=clusters_yaml)
     cf.element_strings = ("Ag", "Au")
     st1 = Poscar(path_file + "/derivative-1").structure
     st2 = Poscar(path_file + "/derivative-2").structure
@@ -58,7 +59,7 @@ def test_eval_cluster_functions_from_structures():
 
 def test_eval_cluster_functions_from_labelings(fcc_primitive_cell):
     """Test eval_cluster_functions using given labelings."""
-    cf = ClusterFunctions(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    cf = ClusterFunctions(clusters_yaml=clusters_yaml)
     hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 4]])
     labelings = np.array(
         [
