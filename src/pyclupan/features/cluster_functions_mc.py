@@ -37,8 +37,8 @@ class ClusterFunctionsMC:
 
         self._get_orbit_supercell()
         self._binary = self._is_binary()
-        self._independent = self._check_neighbors()
         self._poly_coeffs = self._set_polynomial_coeffs()
+        self._independent, self._share_myself = self._check_neighbors()
 
     def _get_orbit_supercell(self, decimals: int = 5):
         """Return orbit for supercell."""
@@ -63,19 +63,12 @@ class ClusterFunctionsMC:
                     map_supercell_positions=map_supercell_positions,
                     return_array=False,
                 )
+                orbit_active_rep = self._lattice_supercell.to_active_site_rep(orbit)
+                self._orbit_sites_supercell[i] = orbit_active_rep
 
-                orbit_active_site_rep = dict()
-                for k, v in orbit.items():
-                    site = self._lattice_supercell.to_active_site_rep([k])[0]
-                    orbit_active_site_rep[site] = np.array(
-                        self._lattice_supercell.to_active_site_rep(v)
-                    )
-                    n_duplicate = np.sum(
-                        orbit_active_site_rep[site] == site, axis=1
-                    ).astype(float)
+                for site, orbit_site in orbit_active_rep.items():
+                    n_duplicate = np.sum(orbit_site == site, axis=1).astype(float)
                     self._duplicate_n_sites[(i, site)] = n_duplicate
-
-                self._orbit_sites_supercell[i] = orbit_active_site_rep
 
         return self
 
@@ -83,30 +76,11 @@ class ClusterFunctionsMC:
         """Check if configuration is binary."""
         self._binary = True
         for cl in self._spin_basis_clusters:
-            coeffs = self._lattice_supercell.get_spin_polynomials(cl.spin_basis)
-            if not np.allclose(coeffs[:, 0], 1.0) and not np.allclose(
-                coeffs[:, 1], 0.0
-            ):
+            coef = self._lattice_supercell.get_spin_polynomials(cl.spin_basis)
+            if not np.allclose(coef[:, 0], 1.0) and not np.allclose(coef[:, 1], 0.0):
                 self._binary = False
                 break
         return self._binary
-
-    def _check_neighbors(self):
-        """Check if every two sites are connected."""
-        if self._verbose:
-            print("Check if every two sites are connected.", flush=True)
-
-        n_sites = len(self._lattice_supercell.active_sites)
-        self._independent = np.ones((n_sites, n_sites), dtype=bool)
-        for cl in self._spin_basis_clusters:
-            orbit = self._orbit_sites_supercell[cl.cluster_id]
-            for i in range(n_sites):
-                if orbit[i].shape[0] != np.count_nonzero(orbit[i] == i):
-                    self._independent[i, :] = False
-                else:
-                    self._independent[i, orbit[i].reshape(-1)] = False
-
-        return self._independent
 
     def _set_polynomial_coeffs(self):
         """Set polynomial coefficients of clusters."""
@@ -115,6 +89,27 @@ class ClusterFunctionsMC:
             for cl in self._spin_basis_clusters
         ]
         return self._poly_coeffs
+
+    def _check_neighbors(self):
+        """Check if every two sites are connected."""
+        if self._verbose:
+            print("Check if every two sites are connected.", flush=True)
+
+        n_sites = len(self._lattice_supercell.active_sites)
+        n_clusters = len(self._spin_basis_clusters)
+        self._independent = np.ones((n_sites, n_sites), dtype=bool)
+        self._share_myself = np.ones((n_sites, n_clusters), dtype=bool)
+        for scl_id, cl in enumerate(self._spin_basis_clusters):
+            orbit = self._orbit_sites_supercell[cl.cluster_id]
+            for i in range(n_sites):
+                share_myself = orbit[i].shape[0] != np.count_nonzero(orbit[i] == i)
+                self._share_myself[i, scl_id] = share_myself
+                if share_myself:
+                    self._independent[i, :] = False
+                else:
+                    self._independent[i, orbit[i].reshape(-1)] = False
+
+        return self._independent, self._share_myself
 
     def eval_from_spins(self, active_spins: np.ndarray):
         """Evaluate cluster functions from active labelings."""
@@ -152,6 +147,18 @@ class ClusterFunctionsMC:
             )
         return prods
 
+    def _calc_sum_products_binary(
+        self,
+        active_spins: np.ndarray,
+        orbit_i: np.ndarray,
+        orbit_j: np.ndarray,
+        coeffs: np.ndarray,
+    ):
+        """Calculate products of cluster functions in binary case."""
+        cf_sum_i = np.sum(np.multiply.reduce(active_spins[orbit_i], axis=1))
+        cf_sum_j = np.sum(np.multiply.reduce(active_spins[orbit_j], axis=1))
+        return cf_sum_i + cf_sum_j
+
     def _calc_sum_products(
         self,
         active_spins: np.ndarray,
@@ -160,11 +167,6 @@ class ClusterFunctionsMC:
         coeffs: np.ndarray,
     ):
         """Calculate products of cluster functions."""
-        if self._binary:
-            cf_sum_i = np.sum(np.multiply.reduce(active_spins[orbit_i], axis=1))
-            cf_sum_j = np.sum(np.multiply.reduce(active_spins[orbit_j], axis=1))
-            return cf_sum_i + cf_sum_j
-
         cf_sum_i = np.sum(
             eval_cluster_functions(coeffs, active_spins[orbit_i], return_array=True)
         )
@@ -207,7 +209,7 @@ class ClusterFunctionsMC:
             if self._independent[i, j] or independent:
                 if self._binary:
                     active_spins[i], active_spins[j] = dspin, -dspin
-                    val = self._calc_sum_products(
+                    val = self._calc_sum_products_binary(
                         active_spins, orbit[i], orbit[j], coeffs
                     )
                 else:
@@ -237,8 +239,62 @@ class ClusterFunctionsMC:
                 cf_new = prods_i @ weight_i + prods_j @ weight_j
 
                 active_spins[i], active_spins[j] = active_spins[j], active_spins[i]
-
                 diff_cf = (cf_new - cf_old) / orbit_size
+
+            diff_cluster_functions.append(diff_cf)
+        return np.array(diff_cluster_functions)
+
+    def eval_from_spin_flip(
+        self,
+        active_spins: np.array,
+        site: int,
+        spin_new: int,
+    ):
+        """Evaluate cluster function changes from spin swap."""
+        i = site
+        spin_i = active_spins[i]
+        dspin = spin_new - spin_i
+
+        diff_cluster_functions = []
+        for spin_cl_id, cl in enumerate(self._spin_basis_clusters):
+            coeffs = self._poly_coeffs[spin_cl_id]
+            cluster_size = coeffs.shape[0]
+            orbit = self._orbit_sites_supercell[cl.cluster_id]
+            orbit_size = self._orbit_sizes[spin_cl_id]
+
+            if not self._share_myself[i, spin_cl_id]:
+                if self._binary:
+                    active_spins[i] = dspin
+                    val = np.sum(np.multiply.reduce(active_spins[orbit[i]], axis=1))
+                else:
+                    val1 = np.sum(
+                        eval_cluster_functions(
+                            coeffs, active_spins[orbit[i]], return_array=True
+                        )
+                    )
+                    active_spins[i] = spin_new
+                    val2 = np.sum(
+                        eval_cluster_functions(
+                            coeffs, active_spins[orbit[i]], return_array=True
+                        )
+                    )
+                    val = val2 - val1
+                active_spins[i] = spin_i
+                diff_cf = val * cluster_size / orbit_size
+            else:
+                duplicate_i = self._duplicate_n_sites[(cl.cluster_id, i)]
+                weight_i = cluster_size / duplicate_i
+
+                prods_i = self._calc_products(active_spins, orbit[i], coeffs)
+                cf_old = prods_i @ weight_i
+
+                active_spins[i] = spin_new
+                prods_i = self._calc_products(active_spins, orbit[i], coeffs)
+                cf_new = prods_i @ weight_i
+
+                active_spins[i] = spin_i
+                diff_cf = (cf_new - cf_old) / orbit_size
+
             diff_cluster_functions.append(diff_cf)
         return np.array(diff_cluster_functions)
 
@@ -287,42 +343,3 @@ class ClusterFunctionsMC:
             diff_cluster_functions.append(diff_cf)
         diff_cluster_functions = np.array(diff_cluster_functions)
         return diff_cluster_functions
-
-    def eval_from_spin_flip(
-        self,
-        active_spins: np.array,
-        site: int,
-        spin_new: int,
-    ):
-        """Evaluate cluster function changes from spin swap."""
-        i = site
-        spin_i = active_spins[i]
-        dspin = spin_new - spin_i
-
-        diff_cluster_functions = []
-        for spin_cl_id, cl in enumerate(self._spin_basis_clusters):
-            coeffs = self._poly_coeffs[spin_cl_id]
-            cluster_size = coeffs.shape[0]
-            orbit = self._orbit_sites_supercell[cl.cluster_id]
-            orbit_size = self._orbit_sizes[spin_cl_id]
-
-            if self._binary:
-                active_spins[i] = dspin
-                val = np.sum(np.multiply.reduce(active_spins[orbit[i]], axis=1))
-            else:
-                val1 = np.sum(
-                    eval_cluster_functions(
-                        coeffs, active_spins[orbit[i]], return_array=True
-                    )
-                )
-                active_spins[i] = spin_new
-                val2 = np.sum(
-                    eval_cluster_functions(
-                        coeffs, active_spins[orbit[i]], return_array=True
-                    )
-                )
-                val = val2 - val1
-            active_spins[i] = spin_i
-            diff_cf = val * cluster_size / orbit_size
-            diff_cluster_functions.append(diff_cf)
-        return np.array(diff_cluster_functions)

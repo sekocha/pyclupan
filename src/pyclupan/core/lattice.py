@@ -2,7 +2,7 @@
 
 import copy
 import io
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 
@@ -152,8 +152,21 @@ class Lattice:
             self._map_full_to_active_rep[s] = i
         return self._map_full_to_active_rep
 
-    def to_active_site_rep(self, sites: np.ndarray):
-        """Convert full sites to active site representation."""
+    def to_active_site_rep(self, sites: Union[np.ndarray, dict]):
+        """Convert full sites to active site representation.
+
+        Parameter
+        ---------
+        sites: Site indices in full site representation.
+            np.ndarray or dict: (full_site, orbit in full_site rep.)
+        """
+        if isinstance(sites, dict):
+            active_site_rep = dict()
+            for s, val in sites.items():
+                key = self.map_full_to_active_rep[s]
+                active_site_rep[key] = self.map_full_to_active_rep[val].astype(int)
+            return active_site_rep
+
         return self.map_full_to_active_rep[sites].astype(int)
 
     def is_active_size(self, active_labelings: np.ndarray):

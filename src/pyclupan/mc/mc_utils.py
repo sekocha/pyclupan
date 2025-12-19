@@ -153,11 +153,3 @@ def save_mc_yaml(
             for cluster_id, cf in zip(model.cluster_ids, cfs):
                 print("  - id:   ", cluster_id, file=f)
                 print("    value:", np.round(cf, 7), file=f)
-
-
-def set_temperatures_sa(
-    temperature_init: float,
-    temperature_final: float,
-    temperature_step: float,
-):
-    """Set temperatures for simulated annealing."""
