@@ -13,7 +13,7 @@ def test_mc_attr():
     """Test MCAttr."""
     active_spins = np.array([1, -1, 1, -1, 1, -1])
     mc_attr = MCAttr(active_spins=active_spins)
-    assert mc_attr.n_sites == 6
+    assert mc_attr.n_total_sites == 6
 
 
 def test_mc_params():

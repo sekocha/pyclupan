@@ -65,7 +65,7 @@ def test_set_element_strings(fcc_primitive_cell):
         elements_lattice,
         n_elements=2,
     )
-    np.testing.assert_equal(element_strings, ["Bi0", "Bi1"])
+    np.testing.assert_equal(element_strings, ["Ag0", "Ag1"])
 
     elements_lattice = [[0, 1, 2]]
     element_strings = set_element_strings(
@@ -73,7 +73,7 @@ def test_set_element_strings(fcc_primitive_cell):
         elements_lattice,
         n_elements=3,
     )
-    np.testing.assert_equal(element_strings, ["Bi0", "Bi1", "Bi2"])
+    np.testing.assert_equal(element_strings, ["Ag0", "Ag1", "Ag2"])
 
 
 def test_set_element_strings2(perovskite_unitcell):
