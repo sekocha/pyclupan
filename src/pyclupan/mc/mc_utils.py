@@ -32,18 +32,17 @@ class MCAttr:
 
     active_element_species: Optional[np.ndarray] = None
     spin_species: Optional[np.ndarray] = None
+    n_active_sites: Optional[np.ndarray] = None
 
     average_energy: Optional[float] = None
     average_cluster_functions: Optional[np.ndarray] = None
-
-    n_active_sites: Optional[np.ndarray] = None
 
     def __post_init__(self):
         """Post init method."""
         self._weight = None
 
     @property
-    def n_sites(self):
+    def n_total_sites(self):
         """Return number of active sites."""
         if self.active_spins is None:
             return None
@@ -53,7 +52,7 @@ class MCAttr:
         """Print attributes."""
         print("----------------------------------------------", flush=True)
         print("Lattices:", flush=True)
-        print("  Number of sites:", self.n_sites, flush=True)
+        print("  Number of sites:", self.n_total_sites, flush=True)
         print("  Elements:       ", list(self.active_element_species), flush=True)
         print("  Spins:          ", [list(s) for s in self.spin_species], flush=True)
         print("----------------------------------------------", flush=True)
@@ -162,13 +161,13 @@ def save_mc_yaml(
     np.set_printoptions(suppress=True)
     with open(filename, "w") as f:
         print("mc_parameters:", file=f)
-        n_sites = mc_attr.n_sites
+        n_total_sites = mc_attr.n_total_sites
         supercell_matrix = supercell.supercell_matrix.astype(int)
         print("  supercell_matrix:", file=f)
         print("  -", list(supercell_matrix[0]), file=f)
         print("  -", list(supercell_matrix[1]), file=f)
         print("  -", list(supercell_matrix[2]), file=f)
-        print("  n_sites:        ", n_sites, file=f)
+        print("  n_sites:        ", n_total_sites, file=f)
 
         print("  elements:       ", list(mc_attr.active_element_species), file=f)
         print("  spins:          ", list(mc_attr.spin_species), file=f)
@@ -178,8 +177,8 @@ def save_mc_yaml(
         elif mc_params.ensemble == "semi_grand_canonical":
             print("  mu:             ", mc_params.mu, file=f)
 
-        print("  n_steps_init:   ", mc_params.n_steps_init * n_sites, file=f)
-        print("  n_steps_average:", mc_params.n_steps_eq * n_sites, file=f)
+        print("  n_steps_init:   ", mc_params.n_steps_init * n_total_sites, file=f)
+        print("  n_steps_average:", mc_params.n_steps_eq * n_total_sites, file=f)
         print(file=f)
 
         print("mc_results:", file=f)

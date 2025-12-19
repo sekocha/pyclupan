@@ -84,6 +84,27 @@ class MC:
         self._model.supercell(n_expand)
         return self
 
+    def _set_random_labeling(self, n_atoms: np.ndarray):
+        """Set random labling."""
+        n_total_sites = len(self._lattice_supercell.active_sites)
+        active_labelings = np.ones(n_total_sites, dtype=int) * -1
+
+        n_active_sites = self._lattice_supercell.n_active_sites
+        elements = self._mc_attr.active_element_species
+
+        begin, element_id = 0, 0
+        for ele, n_sites_sub in zip(elements, n_active_sites):
+            perm = np.random.permutation(n_sites_sub) + begin
+            begin2 = 0
+            for e in ele:
+                perm_slice = perm[begin2 : begin2 + n_atoms[element_id]]
+                active_labelings[perm_slice] = e
+                begin2 += n_atoms[element_id]
+                element_id += 1
+            begin += begin2
+        assert np.all(active_labelings != -1)
+        return active_labelings
+
     def _set_init_structure_random(self, compositions: tuple, decimals: int = 4):
         """Set initial structure randomly.
 
@@ -101,28 +122,23 @@ class MC:
         if len(elements) != len(compositions):
             raise RuntimeError("Size of given compositions is not consistent.")
 
-        n_sites = len(self._lattice_supercell.active_sites)
-        n_atoms = np.array([c * n_sites for ele, c in zip(elements, compositions)])
-
+        n_total_sites = len(self._lattice_supercell.active_sites)
+        n_atoms = np.array(
+            [c * n_total_sites for ele, c in zip(elements, compositions)]
+        )
         if not np.allclose(n_atoms - np.rint(n_atoms), 0.0, atol=10 ** (-decimals)):
             raise RuntimeError("Given supercell cannot express compositions.")
 
         n_atoms = np.rint(n_atoms).astype(int)
+        active_labelings = self._set_random_labeling(n_atoms)
+        active_spins = self._lattice_supercell.to_spins(active_labelings)
+
         if self._verbose:
             print("Initial structure:", flush=True)
-            print("- Number of active sites:", n_sites, flush=True)
+            print("- Number of active sites:", n_total_sites, flush=True)
             for e, n in zip(elements, n_atoms):
                 print("- Active element", e, ":", n, flush=True)
 
-        perm = np.random.permutation(n_sites)
-        active_labelings = np.ones(n_sites, dtype=int) * -1
-        begin = 0
-        for ele, n in zip(elements, n_atoms):
-            active_labelings[perm[begin : begin + n]] = ele
-            begin += n
-        assert np.all(active_labelings != -1)
-
-        active_spins = self._lattice_supercell.to_spins(active_labelings)
         return active_spins
 
     def _set_init_structure_file(
@@ -347,8 +363,6 @@ class MC:
         active_labeling = self._lattice_supercell.to_labelings(active_spins)
         active_labeling = np.array([active_labeling])
         labeling = self._lattice_supercell.complete_labelings(active_labeling)[0]
-        print(self._mc_attr.active_spins)
-        print(labeling)
 
         st = copy.deepcopy(self.supercell)
         st.types = labeling

@@ -36,13 +36,12 @@ def cmc(
     if verbose:
         np.set_printoptions(suppress=True)
 
-    n_sites = mc_attr.n_sites
+    n_sites = mc_attr.n_total_sites
     spins = mc_attr.active_spins.astype(np.int32)
     energy = mc_attr.energy
     cfs = mc_attr.cluster_functions
     beta = 1.0 / (KbEV * temp)
 
-    print(spins)
     for n_steps in [mc_params.n_steps_init * n_sites, mc_params.n_steps_eq * n_sites]:
         average_energy = 0.0
         average_cfs = np.zeros(len(cfs))
@@ -107,7 +106,7 @@ def sgcmc(
     if verbose:
         np.set_printoptions(suppress=True)
 
-    n_sites = mc_attr.n_sites
+    n_sites = mc_attr.n_total_sites
     spins = mc_attr.active_spins.astype(np.int32)
     energy = mc_attr.energy
     cfs = mc_attr.cluster_functions

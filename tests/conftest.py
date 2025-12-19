@@ -49,6 +49,12 @@ def perovskite_unitcell() -> PolymlpStructure:
 
 
 @pytest.fixture(scope="session")
+def wurtzite_primitive_cell() -> PolymlpStructure:
+    """Return primitive cell of wurtzite."""
+    return Poscar(path_file + "/poscar-wurtzite-primitive").structure
+
+
+@pytest.fixture(scope="session")
 def sc_primitive_cell() -> PolymlpStructure:
     """Return unitcell of simple cubic."""
     return Poscar(path_file + "/poscar-sc-primitive").structure
