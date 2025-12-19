@@ -36,6 +36,12 @@ class MCAttr:
     average_energy: Optional[float] = None
     average_cluster_functions: Optional[np.ndarray] = None
 
+    n_active_sites: Optional[np.ndarray] = None
+
+    def __post_init__(self):
+        """Post init method."""
+        self._weight = None
+
     @property
     def n_sites(self):
         """Return number of active sites."""
@@ -49,13 +55,46 @@ class MCAttr:
         print("Lattices:", flush=True)
         print("  Number of sites:", self.n_sites, flush=True)
         print("  Elements:       ", list(self.active_element_species), flush=True)
-        print("  Spins:          ", list(self.spin_species), flush=True)
+        print("  Spins:          ", [list(s) for s in self.spin_species], flush=True)
         print("----------------------------------------------", flush=True)
         print("Properties:", flush=True)
         print("  Cluster functions:", flush=True)
         print(self.cluster_functions, flush=True)
         print("  Energy:", self.energy, flush=True)
         print("----------------------------------------------", flush=True)
+
+    def select_sublattice(self):
+        """Select a sublattice randomly."""
+        if len(self.n_active_sites) > 1:
+            if self._weight is None:
+                self._weight = self.n_active_sites / np.sum(self.n_active_sites)
+            return np.random.choice(len(self.n_active_sites), p=self._weight)
+        return 0
+
+    def select_two_sites(self, spins: np.ndarray):
+        """Select two sites with different spins."""
+        sub = self.select_sublattice()
+        spin_species = self.spin_species[sub]
+        spin_vals = np.random.choice(spin_species, size=2, replace=False)
+
+        if len(self.n_active_sites) > 1:
+            begin = np.sum(self.n_active_sites[:sub])
+            end = begin + self.n_active_sites[sub]
+            target = spins[begin:end]
+            return [
+                np.random.choice(np.where(target == v)[0]) + begin for v in spin_vals
+            ]
+        return [np.random.choice(np.where(spins == v)[0]) for v in spin_vals]
+
+    def select_one_site(self, spins: np.ndarray):
+        """Select two sites with different spins."""
+        sub = self.select_sublattice()
+        spin_species = self.spin_species[sub]
+
+        i = np.random.choice(len(spins))
+        spin_candidates = spin_species[spin_species != spins[i]]
+        spin_new = np.random.choice(spin_candidates)
+        return i, spin_new
 
 
 @dataclass

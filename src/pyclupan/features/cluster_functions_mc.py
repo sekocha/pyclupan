@@ -100,14 +100,13 @@ class ClusterFunctionsMC:
         self._independent = np.ones((n_sites, n_sites), dtype=bool)
         self._share_myself = np.ones((n_sites, n_clusters), dtype=bool)
         for scl_id, cl in enumerate(self._spin_basis_clusters):
-            orbit = self._orbit_sites_supercell[cl.cluster_id]
-            for i in range(n_sites):
-                share_myself = orbit[i].shape[0] != np.count_nonzero(orbit[i] == i)
+            for i, orbit in self._orbit_sites_supercell[cl.cluster_id].items():
+                share_myself = orbit.shape[0] != np.count_nonzero(orbit == i)
                 self._share_myself[i, scl_id] = share_myself
                 if share_myself:
                     self._independent[i, :] = False
                 else:
-                    self._independent[i, orbit[i].reshape(-1)] = False
+                    self._independent[i, orbit.reshape(-1)] = False
 
         return self._independent, self._share_myself
 
@@ -195,6 +194,10 @@ class ClusterFunctionsMC:
             cluster_size = coeffs.shape[0]
             orbit = self._orbit_sites_supercell[cl.cluster_id]
             orbit_size = self._orbit_sizes[spin_cl_id]
+
+            if i not in orbit:
+                diff_cluster_functions.append(0.0)
+                continue
 
             if not self._independent[i, j]:
                 duplicate_i = np.sum(orbit[i] == j, axis=1).astype(float)

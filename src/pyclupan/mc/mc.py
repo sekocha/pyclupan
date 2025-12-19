@@ -97,7 +97,7 @@ class MC:
         if not np.isclose(np.sum(compositions), 1.0):
             raise RuntimeError("Sum of given compositions is not one.")
 
-        elements = self._mc_attr.active_element_species
+        elements = [e2 for ele in self._mc_attr.active_element_species for e2 in ele]
         if len(elements) != len(compositions):
             raise RuntimeError("Size of given compositions is not consistent.")
 
@@ -105,7 +105,6 @@ class MC:
         n_atoms = np.array([c * n_sites for ele, c in zip(elements, compositions)])
 
         if not np.allclose(n_atoms - np.rint(n_atoms), 0.0, atol=10 ** (-decimals)):
-            print(n_atoms)
             raise RuntimeError("Given supercell cannot express compositions.")
 
         n_atoms = np.rint(n_atoms).astype(int)
@@ -167,6 +166,7 @@ class MC:
         elif compositions is not None:
             active_spins = self._set_init_structure_random(compositions)
         self._mc_attr.active_spins = active_spins
+        self._mc_attr.n_active_sites = self._lattice_supercell.n_active_sites
         return self
 
     def _set_init_properties(self):
@@ -219,7 +219,7 @@ class MC:
         mu: Optional[tuple] = None,
     ):
         """Set parameters."""
-        elements = self._mc_attr.active_element_species
+        elements = [e2 for ele in self._mc_attr.active_element_species for e2 in ele]
         if mu is not None and len(mu) != len(elements) - 1:
             raise RuntimeError("Size of chemical potentials is not consistent.")
 
@@ -347,6 +347,8 @@ class MC:
         active_labeling = self._lattice_supercell.to_labelings(active_spins)
         active_labeling = np.array([active_labeling])
         labeling = self._lattice_supercell.complete_labelings(active_labeling)[0]
+        print(self._mc_attr.active_spins)
+        print(labeling)
 
         st = copy.deepcopy(self.supercell)
         st.types = labeling

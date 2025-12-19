@@ -10,20 +10,6 @@ from pyclupan.features.cluster_functions_mc import ClusterFunctionsMC
 from pyclupan.mc.mc_utils import MCAttr, MCParams
 
 
-def _select_one_site(spins: np.ndarray, spin_species: np.ndarray):
-    """Select two sites with different spins."""
-    i = np.random.choice(len(spins))
-    spin_candidates = spin_species[spin_species != spins[i]]
-    spin_new = np.random.choice(spin_candidates)
-    return i, spin_new
-
-
-def _select_two_sites(spins: np.ndarray, spin_species: np.ndarray):
-    """Select two sites with different spins."""
-    spin_vals = np.random.choice(spin_species, size=2, replace=False)
-    return [np.random.choice(np.where(spins == v)[0]) for v in spin_vals]
-
-
 def _print_iteration(
     mc_iter: int, energy: float, average_energy: float, average_cfs: np.ndarray
 ):
@@ -56,12 +42,13 @@ def cmc(
     cfs = mc_attr.cluster_functions
     beta = 1.0 / (KbEV * temp)
 
+    print(spins)
     for n_steps in [mc_params.n_steps_init * n_sites, mc_params.n_steps_eq * n_sites]:
         average_energy = 0.0
         average_cfs = np.zeros(len(cfs))
         for mc_iter in range(n_steps):
             # t1 = time.time()
-            i, j = _select_two_sites(spins, mc_attr.spin_species)
+            i, j = mc_attr.select_two_sites(spins)
             # t2 = time.time()
 
             cfs_new = cfs + cf.eval_from_spin_swap(spins, [i, j])
@@ -87,7 +74,7 @@ def cmc(
                 cfs = cfs_new
                 spins[i], spins[j] = spins[j], spins[i]
             # t4 = time.time()
-            # print(t3 - t2)
+            # print(t2 - t1, t3 - t2)
 
             average_energy += energy
             average_cfs += cfs
@@ -111,8 +98,8 @@ def sgcmc(
     mc_params: MCParams,
     cf: ClusterFunctionsMC,
     model: CEmodel,
-    # assert_direct: bool = False,
-    assert_direct: bool = True,
+    assert_direct: bool = False,
+    # assert_direct: bool = True,
     verbose_interval: int = 10000,
     verbose: bool = False,
 ):
@@ -128,6 +115,9 @@ def sgcmc(
 
     mu = np.array([0.0] + list(mc_params.mu))
     spin_species = np.array(mc_attr.spin_species)
+    if len(spin_species) > 1:
+        raise RuntimeError("SGCMC is not available for multiple sublattice systems")
+    spin_species = spin_species[0]
 
     delta_mu_dict = dict()
     for spin1 in spin_species:
@@ -140,7 +130,7 @@ def sgcmc(
         average_energy = 0.0
         average_cfs = np.zeros(len(cfs))
         for mc_iter in range(n_steps):
-            i, spin_new = _select_one_site(spins, spin_species)
+            i, spin_new = mc_attr.select_one_site(spins)
             spin_old = spins[i]
             cfs_new = cfs + cf.eval_from_spin_flip(spins, i, spin_new)
             energy_new = model.eval(cfs_new)

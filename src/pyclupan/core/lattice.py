@@ -59,9 +59,10 @@ class Lattice:
         self._n_elements = max([e2 for e in elements for e2 in e]) + 1
         self._active_lattice = [i for i, e in enumerate(elements) if len(e) > 1]
         self._inactive_lattice = [i for i, e in enumerate(elements) if len(e) == 1]
-        self._active_elements = [e2 for e in elements if len(e) > 1 for e2 in e]
-        self._inactive_elements = [e2 for e in elements if len(e) == 1 for e2 in e]
-        self._active_spins = np.array([s2 for s in spins if len(s) > 1 for s2 in s])
+
+        self._active_elements = [e for e in elements if len(e) > 1]
+        self._inactive_elements = [e for e in elements if len(e) == 1]
+        self._active_spins = [np.array(s) for s in spins if len(s) > 1]
 
     def _set_spins(self):
         """Set spin values and point cluster functions."""
@@ -122,6 +123,13 @@ class Lattice:
         return self._inactive_sites
 
     @property
+    def n_active_sites(self):
+        """Return number of active sites on sublattices."""
+        n_sites = self._cell.n_atoms
+        elements = self._elements_on_lattice
+        return np.array([n for ele, n in zip(elements, n_sites) if len(ele) > 1])
+
+    @property
     def inactive_labeling(self):
         """Return inactive labeling."""
         if self._inactive_labeling is not None:
@@ -175,7 +183,8 @@ class Lattice:
 
     def is_active_element(self, labelings: np.ndarray):
         """Check if labelings are composed of active elements."""
-        return np.all(np.isin(labelings, self._active_elements))
+        elements = [e2 for ele in self._active_elements for e2 in ele]
+        return np.all(np.isin(labelings, elements))
 
     def lattice_supercell(self, supercell: PolymlpStructure):
         """Return Lattice instance for supercell representation."""
