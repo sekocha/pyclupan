@@ -67,7 +67,7 @@ def test_cmc_fcc_binary_from_poscar():
     )
     size = (2, 2, 2)
     pyclupan.set_supercell(supercell_matrix=size, refine=True)
-    st = Poscar(str(cwd) + "/POSCAR_init").structure
+    st = Poscar(str(cwd) + "/POSCAR_init_fcc").structure
     pyclupan.set_init(structure=st, element_strings=("Ag", "Au"))
 
     pyclupan.set_parameters(
