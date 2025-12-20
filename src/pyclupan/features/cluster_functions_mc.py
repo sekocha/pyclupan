@@ -265,6 +265,10 @@ class ClusterFunctionsMC:
             orbit = self._orbit_sites_supercell[cl.cluster_id]
             orbit_size = self._orbit_sizes[spin_cl_id]
 
+            if i not in orbit:
+                diff_cluster_functions.append(0.0)
+                continue
+
             if not self._share_myself[i, spin_cl_id]:
                 if self._binary:
                     active_spins[i] = dspin

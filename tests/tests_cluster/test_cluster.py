@@ -19,6 +19,28 @@ def _calc_num_ele_combs(clusters: dict):
     return n_combs_all
 
 
+def test_wurtzite():
+    """Test cluster search in 2x2 wurtzite."""
+    clupan = Pyclupan(verbose=False)
+    clupan.load_poscar(str(cwd) + "/../files/poscar-wurtzite-primitive")
+    elements = [[0, 1], [2, 3]]
+
+    clupan.run_cluster(
+        elements=elements,
+        max_order=4,
+        cutoffs=(6.0, 4.0, 4.0),
+        filename=None,
+    )
+    clusters = clupan.clusters
+    assert len(clusters[1]) == 2
+    assert len(clusters[2]) == 26
+    assert len(clusters[3]) == 26
+    assert len(clusters[4]) == 39
+
+    n_combs_all = _calc_num_ele_combs(clusters)
+    assert n_combs_all == [4, 102, 172, 500]
+
+
 def test_perovskite():
     """Test cluster search in perovskite."""
     clupan = Pyclupan(verbose=False)
