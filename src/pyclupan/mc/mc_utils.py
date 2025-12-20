@@ -90,7 +90,14 @@ class MCAttr:
         sub = self.select_sublattice()
         spin_species = self.spin_species[sub]
 
-        i = np.random.choice(len(spins))
+        if len(self.n_active_sites) > 1:
+            begin = np.sum(self.n_active_sites[:sub])
+            end = begin + self.n_active_sites[sub]
+            target = spins[begin:end]
+            i = np.random.choice(len(target)) + begin
+        else:
+            i = np.random.choice(len(spins))
+
         spin_candidates = spin_species[spin_species != spins[i]]
         spin_new = np.random.choice(spin_candidates)
         return i, spin_new
