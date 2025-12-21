@@ -16,6 +16,34 @@ from pyclupan.features.features_utils import (
 from pyclupan.features.orbit import get_orbit_supercell, get_orbit_unitcell
 
 
+def calc_cluster_functions_from_orbit_supercell(
+    spins: np.ndarray,
+    lattice_supercell: Lattice,
+    orbit_sites_supercell: list,
+    spin_basis_clusters: list,
+):
+    cluster_functions = []
+    for cl in spin_basis_clusters:
+        coeffs = lattice_supercell.get_spin_polynomials(cl.spin_basis)
+        orbit = orbit_sites_supercell[cl.cluster_id]
+        if isinstance(orbit, dict):
+            orbit_array = []
+            for v in orbit.values():
+                orbit_array.extend(v)
+            orbit = np.array(orbit_array)
+        if spins.ndim == 2:
+            cf = eval_cluster_functions(coeffs, spins[:, orbit])
+        elif spins.ndim == 1:
+            cf = eval_cluster_functions(coeffs, spins[orbit])
+        cluster_functions.append(cf)
+
+    if spins.ndim == 2:
+        cluster_functions = np.array(cluster_functions).T
+    elif spins.ndim == 1:
+        cluster_functions = np.array(cluster_functions)
+    return cluster_functions
+
+
 def calc_correlation(
     lattice_unitcell: Lattice,
     lattice_supercell: Lattice,
@@ -40,15 +68,21 @@ def calc_correlation(
         return_array=True,
         verbose=verbose,
     )
-
     spins = lattice_supercell.to_spins(labelings)
-    cluster_functions = []
-    for cl in spin_basis_clusters:
-        orbit = orbit_all[cl.cluster_id]
-        coeffs = lattice_supercell.get_spin_polynomials(cl.spin_basis)
-        cf = eval_cluster_functions(coeffs, spins[:, orbit])
-        cluster_functions.append(cf)
-    cluster_functions = np.array(cluster_functions).T
+    cluster_functions = calc_cluster_functions_from_orbit_supercell(
+        spins,
+        lattice_supercell,
+        orbit_all,
+        spin_basis_clusters,
+    )
+
+    # cluster_functions = []
+    # for cl in spin_basis_clusters:
+    #     orbit = orbit_all[cl.cluster_id]
+    #     coeffs = lattice_supercell.get_spin_polynomials(cl.spin_basis)
+    #     cf = eval_cluster_functions(coeffs, spins[:, orbit])
+    #     cluster_functions.append(cf)
+    # cluster_functions = np.array(cluster_functions).T
     return cluster_functions
 
 

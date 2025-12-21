@@ -2,13 +2,13 @@
 
 import numpy as np
 
-# from pyclupan.core.cell_utils import get_unitcell_reps
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.spin import eval_cluster_functions
-from pyclupan.features.cluster_functions import ClusterFunctions
+from pyclupan.features.cluster_functions import (
+    ClusterFunctions,
+    calc_cluster_functions_from_orbit_supercell,
+)
 from pyclupan.features.orbit import get_orbit_supercell
-
-# from pyclupan.features.orbit_utils import find_orbit_supercell, get_map_positions
 
 
 class ClusterFunctionsMC:
@@ -52,40 +52,13 @@ class ClusterFunctionsMC:
             return_array=False,
             verbose=self._verbose,
         )
+
         self._duplicate_n_sites = dict()
         for i, orbit in enumerate(self._orbit_sites_supercell):
             if orbit is not None:
                 for site, orbit_site in orbit.items():
                     n_duplicate = np.sum(orbit_site == site, axis=1).astype(float)
                     self._duplicate_n_sites[(i, site)] = n_duplicate
-
-        # unitcell = self._lattice_unitcell.cell
-        # supercell = self._lattice_supercell.cell
-        # map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
-        # map_supercell_positions = get_map_positions(supercell, decimals=decimals)
-
-        # orbit_unitcell = self._orbit_unitcell
-        # self._orbit_sites_supercell = [None for _ in orbit_unitcell]
-        # self._duplicate_n_sites = dict()
-        # for i, (orbit_f, mask) in enumerate(zip(orbit_unitcell, self._mask_clusters)):
-        #     if mask:
-        #         if self._verbose:
-        #             print("Calculating orbits for cluster", i, flush=True)
-
-        #         orbit = find_orbit_supercell(
-        #             unitcell,
-        #             supercell,
-        #             orbit_f,
-        #             map_unit_to_sup,
-        #             map_supercell_positions=map_supercell_positions,
-        #             return_array=False,
-        #         )
-        #         orbit_active_rep = self._lattice_supercell.to_active_site_rep(orbit)
-        #         self._orbit_sites_supercell[i] = orbit_active_rep
-
-        #         for site, orbit_site in orbit_active_rep.items():
-        #             n_duplicate = np.sum(orbit_site == site, axis=1).astype(float)
-        #             self._duplicate_n_sites[(i, site)] = n_duplicate
 
         return self
 
@@ -129,21 +102,21 @@ class ClusterFunctionsMC:
 
     def eval_from_spins(self, active_spins: np.ndarray):
         """Evaluate cluster functions from active labelings."""
-        self._cluster_functions = []
+        self._cluster_functions = calc_cluster_functions_from_orbit_supercell(
+            active_spins,
+            self._lattice_supercell,
+            self._orbit_sites_supercell,
+            self._spin_basis_clusters,
+        )
+
         self._orbit_sizes = []
         for cl in self._spin_basis_clusters:
-            coeffs = self._lattice_supercell.get_spin_polynomials(cl.spin_basis)
             orbit = self._orbit_sites_supercell[cl.cluster_id]
-            if isinstance(orbit, dict):
-                orbit_array = []
-                for v in orbit.values():
-                    orbit_array.extend(v)
-                orbit = np.array(orbit_array)
-            self._orbit_sizes.append(orbit.shape[0])
+            size = 0
+            for v in orbit.values():
+                size += v.shape[0]
+            self._orbit_sizes.append(size)
 
-            cf = eval_cluster_functions(coeffs, active_spins[orbit])
-            self._cluster_functions.append(cf)
-        self._cluster_functions = np.array(self._cluster_functions)
         return self._cluster_functions
 
     def _calc_products(

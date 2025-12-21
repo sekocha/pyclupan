@@ -27,8 +27,8 @@ def cmc(
     mc_params: MCParams,
     cf: ClusterFunctionsMC,
     model: CEmodel,
-    assert_direct: bool = False,
-    # assert_direct: bool = True,
+    # assert_direct: bool = False,
+    assert_direct: bool = True,
     verbose_interval: int = 10000,
     verbose: bool = False,
 ):
