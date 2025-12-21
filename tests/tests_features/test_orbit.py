@@ -112,4 +112,15 @@ def test_fcc(fcc_binary_clusters):
     assert list(positions[7][2]) == [0, 1, 0, 0]
 
 
+def test_perovskite_orbit_unitcell(perovskite_binary_clusters):
+    """Test orbits in perovskite."""
+    unitcell, clusters, _, _ = perovskite_binary_clusters
+    rotations, translations = get_symmetry(unitcell)
+
+    n_orbits = []
+    for cl in clusters:
+        orbit_sites, _ = find_orbit_unitcell(cl, unitcell, rotations, translations)
+        n_orbits.append(len(orbit_sites[0]))
+
+
 # TODO: orbit in supercell

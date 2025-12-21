@@ -72,3 +72,11 @@ def fcc_binary_clusters():
     filename = path_file + "/binary_fcc/pyclupan_clusters.yaml"
     unitcell, clusters, ele_clusters, spin_clusters = load_clusters_yaml(filename)
     return (unitcell, clusters, ele_clusters, spin_clusters)
+
+
+@pytest.fixture(scope="session")
+def perovskite_binary_clusters():
+    """Return cluster attributes of perovskite binary system."""
+    filename = path_file + "/binary_perovskite/pyclupan_clusters.yaml"
+    unitcell, clusters, ele_clusters, spin_clusters = load_clusters_yaml(filename)
+    return (unitcell, clusters, ele_clusters, spin_clusters)
