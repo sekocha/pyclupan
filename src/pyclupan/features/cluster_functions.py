@@ -3,15 +3,9 @@
 import numpy as np
 
 from pyclupan.cluster.cluster_io import load_clusters_yaml
-from pyclupan.core.cell_utils import (
-    get_unitcell_reps,
-    is_cell_equal,
-    reduced,
-    supercell_reduced,
-)
+from pyclupan.core.cell_utils import is_cell_equal, reduced, supercell_reduced
 from pyclupan.core.lattice import Lattice
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
-from pyclupan.core.spglib_utils import get_symmetry
 from pyclupan.core.spin import eval_cluster_functions
 from pyclupan.derivative.derivative_utils import DerivativesSet
 from pyclupan.features.features_utils import (
@@ -19,11 +13,7 @@ from pyclupan.features.features_utils import (
     get_chemical_compositions,
     structure_to_lattice,
 )
-from pyclupan.features.orbit_utils import (
-    find_orbit_supercell,
-    find_orbit_unitcell,
-    get_map_positions,
-)
+from pyclupan.features.orbit import get_orbit_supercell, get_orbit_unitcell
 
 
 def calc_correlation(
@@ -43,23 +33,13 @@ def calc_correlation(
     if not lattice_supercell.is_active_element(labelings):
         raise RuntimeError("Some of given labelings are not on active lattices.")
 
-    unitcell = lattice_unitcell.cell
-    supercell = lattice_supercell.cell
-    map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
-    map_supercell_positions = get_map_positions(supercell, decimals=5)
-
-    orbit_all = []
-    for orbit_f in orbit_fracs_unitcell:
-        orbit = find_orbit_supercell(
-            unitcell,
-            supercell,
-            orbit_f,
-            map_unit_to_sup,
-            map_supercell_positions=map_supercell_positions,
-            return_array=True,
-        )
-        orbit = lattice_supercell.to_active_site_rep(orbit)
-        orbit_all.append(orbit)
+    orbit_all = get_orbit_supercell(
+        lattice_unitcell,
+        lattice_supercell,
+        orbit_fracs_unitcell,
+        return_array=True,
+        verbose=verbose,
+    )
 
     spins = lattice_supercell.to_spins(labelings)
     cluster_functions = []
@@ -113,11 +93,7 @@ class ClusterFunctions:
     def _eval_unitcell_attrs(self):
         """Evaluate required attributes for unitcell.."""
         unitcell = self._lattice_unitcell.cell
-        rotations, translations = get_symmetry(unitcell)
-        self._orbit_fracs_unitcell = []
-        for cl in self._clusters:
-            _, orbit_fracs = find_orbit_unitcell(cl, unitcell, rotations, translations)
-            self._orbit_fracs_unitcell.append(orbit_fracs)
+        self._orbit_fracs_unitcell = get_orbit_unitcell(self._clusters, unitcell)
         return self
 
     def clear_structures(self):

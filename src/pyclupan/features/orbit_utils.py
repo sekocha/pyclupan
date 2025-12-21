@@ -194,6 +194,7 @@ def find_orbit(
     return orbit_sites
 
 
+# deprecated
 def find_orbit_supercell_working(
     unitcell: PolymlpStructure,
     supercell: PolymlpStructure,
