@@ -56,8 +56,8 @@ class ClusterFunctionsMC:
                     print("Calculating orbits for cluster", i, flush=True)
 
                 orbit = find_orbit_supercell(
-                    self._lattice_unitcell,
-                    self._lattice_supercell,
+                    unitcell,
+                    supercell,
                     orbit_f,
                     map_unit_to_sup,
                     map_supercell_positions=map_supercell_positions,
