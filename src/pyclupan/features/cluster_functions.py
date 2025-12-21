@@ -75,14 +75,6 @@ def calc_correlation(
         orbit_all,
         spin_basis_clusters,
     )
-
-    # cluster_functions = []
-    # for cl in spin_basis_clusters:
-    #     orbit = orbit_all[cl.cluster_id]
-    #     coeffs = lattice_supercell.get_spin_polynomials(cl.spin_basis)
-    #     cf = eval_cluster_functions(coeffs, spins[:, orbit])
-    #     cluster_functions.append(cf)
-    # cluster_functions = np.array(cluster_functions).T
     return cluster_functions
 
 

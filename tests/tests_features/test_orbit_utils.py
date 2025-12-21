@@ -4,8 +4,13 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.core.cell_utils import supercell_general
-from pyclupan.features.orbit import get_orbit_supercell, get_orbit_unitcell
+from pyclupan.core.cell_utils import get_unitcell_reps, supercell_general
+from pyclupan.core.spglib_utils import get_symmetry
+from pyclupan.features.orbit_utils import (
+    find_orbit_supercell,
+    find_orbit_unitcell,
+    get_map_positions,
+)
 
 cwd = Path(__file__).parent
 
@@ -14,9 +19,12 @@ def test_fcc(fcc_binary_clusters):
     """Test cluster orbit search in fcc."""
     lattice_unitcell, clusters, _, _ = fcc_binary_clusters
     unitcell = lattice_unitcell.cell
+    rotations, translations = get_symmetry(unitcell)
 
-    orbit_fracs_unitcell = get_orbit_unitcell(clusters, unitcell)
-    n_orbits = [len(orbit[0]) for orbit in orbit_fracs_unitcell]
+    n_orbits = []
+    for cl in clusters:
+        orbit_sites, _ = find_orbit_unitcell(cl, unitcell, rotations, translations)
+        n_orbits.append(len(orbit_sites[0]))
 
     assert n_orbits == [
         1,
@@ -73,7 +81,12 @@ def test_fcc(fcc_binary_clusters):
         24,
     ]
 
-    orbit_positions = orbit_fracs_unitcell[31]
+    orbit_sites, orbit_positions = find_orbit_unitcell(
+        clusters[31], unitcell, rotations, translations
+    )
+    for orbit in orbit_sites[0]:
+        assert list(orbit) == [0, 0, 0, 0]
+
     positions = orbit_positions[0]
     assert list(positions[0][0]) == [-1, 0, 0, 0]
     assert list(positions[0][1]) == [1, 0, 1, 1]
@@ -113,8 +126,13 @@ def test_perovskite_orbit_unitcell(perovskite_binary_clusters):
 
     lattice_unitcell, clusters, _, _ = perovskite_binary_clusters
     unitcell = lattice_unitcell.cell
-    orbit_fracs_unitcell = get_orbit_unitcell(clusters, unitcell)
-    n_orbits = [len(orbit[2]) for orbit in orbit_fracs_unitcell]
+    rotations, translations = get_symmetry(unitcell)
+
+    n_orbits = []
+    for cl in clusters:
+        orbit_sites, _ = find_orbit_unitcell(cl, unitcell, rotations, translations)
+        n_orbits.append(len(orbit_sites[2]))
+
     n_orbits_true = [
         1,
         4,
@@ -186,19 +204,26 @@ def test_perovskite_orbit_supercell(perovskite_binary_clusters):
     """Test orbits in perovskite."""
     lattice_unitcell, clusters, _, _ = perovskite_binary_clusters
     unitcell = lattice_unitcell.cell
+    rotations, translations = get_symmetry(unitcell)
 
     hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 2]])
     supercell = supercell_general(unitcell, hnf)
     lattice_supercell = lattice_unitcell.lattice_supercell(supercell)
-    orbit_fracs_unitcell = get_orbit_unitcell(clusters, unitcell)
-    orbit = get_orbit_supercell(
-        lattice_unitcell,
-        lattice_supercell,
-        orbit_fracs_unitcell,
+
+    map_unit_to_sup = get_unitcell_reps(unitcell, supercell)
+    map_supercell_positions = get_map_positions(supercell, decimals=5)
+
+    cl = clusters[20]
+    _, orbit_fracs = find_orbit_unitcell(cl, unitcell, rotations, translations)
+    orbit = find_orbit_supercell(
+        unitcell,
+        supercell,
+        orbit_fracs,
+        map_unit_to_sup,
+        map_supercell_positions=map_supercell_positions,
         return_array=False,
     )
-    orbit_test = orbit[20]
-
+    assert list(orbit.keys()) == [4, 5, 6, 7, 8, 9]
     orbit_true = np.array(
         [
             [4, 7, 8],
@@ -227,5 +252,8 @@ def test_perovskite_orbit_supercell(perovskite_binary_clusters):
             [4, 6, 9],
         ]
     )
-    assert list(orbit_test.keys()) == [0, 1, 2, 3, 4, 5]
-    np.testing.assert_equal(np.array(orbit_test[0]), orbit_true - 4)
+    np.testing.assert_equal(np.array(orbit[4]), orbit_true)
+
+    orbit_active_rep = lattice_supercell.to_active_site_rep(orbit)
+    assert list(orbit_active_rep.keys()) == [0, 1, 2, 3, 4, 5]
+    np.testing.assert_equal(np.array(orbit_active_rep[0]), orbit_true - 4)
