@@ -44,7 +44,7 @@ def calc_cluster_functions_from_orbit_supercell(
     return cluster_functions
 
 
-def calc_correlation(
+def calc_cluster_functions(
     lattice_unitcell: Lattice,
     lattice_supercell: Lattice,
     labelings: np.ndarray,
@@ -189,7 +189,7 @@ class ClusterFunctions:
             complete_labelings = np.array([labeling])[:, labelings_order]
             active_labelings = complete_labelings[:, lattice_supercell.active_sites]
 
-            cf = calc_correlation(
+            cf = calc_cluster_functions(
                 self._lattice_unitcell,
                 lattice_supercell,
                 active_labelings,
@@ -209,7 +209,7 @@ class ClusterFunctions:
 
     def _eval_from_labelings(self):
         """Evaluate cluster functions from labelings."""
-        self._cluster_functions = calc_correlation(
+        self._cluster_functions = calc_cluster_functions(
             self._lattice_unitcell,
             self._lattice_supercell,
             self._active_labelings,
@@ -242,7 +242,7 @@ class ClusterFunctions:
             )
             lattice_supercell = self._lattice_unitcell.lattice_supercell(supercell)
 
-            cf = calc_correlation(
+            cf = calc_cluster_functions(
                 self._lattice_unitcell,
                 lattice_supercell,
                 d.active_labelings,

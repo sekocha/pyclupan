@@ -62,31 +62,3 @@ def get_orbit_supercell(
         )
         orbit_sites_supercell[i] = lattice_supercell.to_active_site_rep(orbit)
     return orbit_sites_supercell
-
-
-# def find_orbit_supercell(
-#     unitcell: PolymlpStructure,
-#     supercell: PolymlpStructure,
-#     orbit_positions_unitcell: dict,
-#     map_unit_to_sup: dict,
-#     map_supercell_positions: Optional[dict] = None,
-#     return_array: bool = False,
-# ):
-#     """Extend orbit for unitcell to orbit for supercell."""
-#     if map_supercell_positions is None or len(supercell.types) < 100:
-#         return find_orbit_supercell_nomap(
-#             unitcell,
-#             supercell,
-#             orbit_positions_unitcell,
-#             map_unit_to_sup,
-#             return_array=return_array,
-#         )
-#     else:
-#         return find_orbit_supercell_usemap(
-#             unitcell,
-#             supercell,
-#             orbit_positions_unitcell,
-#             map_unit_to_sup,
-#             map_supercell_positions=map_supercell_positions,
-#             return_array=return_array,
-#         )
