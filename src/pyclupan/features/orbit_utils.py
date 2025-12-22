@@ -51,7 +51,7 @@ def find_orbit_unitcell(
 def _get_matching_positions(
     multiple_positions: np.ndarray,
     positions_ref: np.ndarray,
-    tol: float = 1e-8,
+    tol: float = 1e-6,
 ):
     """Return matching of two sets of positions."""
     size = multiple_positions.shape[2]

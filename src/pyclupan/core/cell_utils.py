@@ -77,6 +77,7 @@ def supercell_general(
         sup = supercell_diagonal(unitcell_rev, size=supercell_matrix)
 
     sup.supercell_matrix = np.linalg.inv(unitcell.axis) @ sup.axis
+    _, sup.positions = decompose_fraction(sup.positions)
     return sup
 
 
