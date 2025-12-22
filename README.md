@@ -15,14 +15,14 @@ The code also enables the enumeration of nonequivalent substitutional derivative
 - pyyaml
 - setuptools
 
+- scikit-learn
 - pypolymlp >= 0.16.0
 - spglib
 - phonopy
-- openmp (recommended)
+- graphillion < 2.0
 
 [Optional]
-- graphillion
-- scikit-learn
+- openmp (recommended)
 
 
 ## How to Install Pyclupan
@@ -31,7 +31,7 @@ The code also enables the enumeration of nonequivalent substitutional derivative
 ```
 conda create -n pyclupan-env
 conda activate pyclupan-env
-conda install -c conda-forge numpy scipy spglib
+conda install -c conda-forge pypolymlp spglib phonopy
 pip install pyclupan
 ```
 
@@ -41,7 +41,7 @@ git clone https://github.com/sekocha/pyclupan.git
 cd pyclupan
 conda create -n pyclupan-env
 conda activate pyclupan-env
-conda install -c conda-forge numpy scipy spglib
+conda install -c conda-forge pypolymlp spglib phonopy
 pip install . -vvv
 ```
 

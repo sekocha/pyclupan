@@ -11,9 +11,9 @@ When the `--ecis` option is given, the energies and formation energies for the s
 structures and labelings are calculated as follows.
 
 ```shell
-> pyclupan-calc --ecis pyclupan_ecis.yaml --clusters pyclupan_cluster.yaml --derivatives pyclupan_derivatives_*
-> pyclupan-calc --ecis pyclupan_ecis.yaml --clusters pyclupan_cluster.yaml --samples pyclupan_sample_attrs.yaml
-> pyclupan-calc --ecis pyclupan_ecis.yaml --clusters pyclupan_cluster.yaml --poscars POSCAR1 POSCAR2 --element_strings Ag Au
+> pyclupan-calc --ecis pyclupan_ecis.yaml --clusters pyclupan_clusters.yaml --derivatives pyclupan_derivatives_*
+> pyclupan-calc --ecis pyclupan_ecis.yaml --clusters pyclupan_clusters.yaml --samples pyclupan_sample_attrs.yaml
+> pyclupan-calc --ecis pyclupan_ecis.yaml --clusters pyclupan_clusters.yaml --poscars POSCAR1 POSCAR2 --element_strings Ag Au
 ```
 
 After executing these commands, three files are generated:
