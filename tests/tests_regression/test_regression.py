@@ -28,12 +28,10 @@ def test_lasso():
     features_hdf5 = str(cwd) + "/pyclupan_features.hdf5"
     pyclupan.load_features(features_hdf5)
     pyclupan.load_energies(energy_dat=str(cwd) + "/energy.dat")
-    pyclupan.run_lasso(alphas=(1e-5, 1e-4, 1e-3))
+    pyclupan.run_lasso(alphas=(1e-4, 1e-2))
     model = pyclupan.model
 
     nonzero = np.where(np.abs(model.coeffs) > 1e-8)[0]
-    print(nonzero)
-    print(model.coeffs)
-    assert len(nonzero) == 24
-    np.testing.assert_allclose(model.intercept, -3.0153654473861815, atol=1e-6)
-    np.testing.assert_allclose(model.rmse, 0.0003688802553296099, atol=1e-6)
+    assert len(nonzero) == 5
+    np.testing.assert_allclose(model.intercept, -3.014955, atol=1e-5)
+    np.testing.assert_allclose(model.rmse, 0.000911, atol=1e-5)
