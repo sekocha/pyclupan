@@ -29,7 +29,7 @@ def test_lasso():
     pyclupan.load_features(features_hdf5)
     pyclupan.load_energies(energy_dat=str(cwd) + "/energy.dat")
     pyclupan.run_lasso(alphas=(1e-4, 1e-2))
-    model = pyclupan.model
+    model = pyclupan.models[0]
 
     nonzero = np.where(np.abs(model.coeffs) > 1e-8)[0]
     assert len(nonzero) == 5

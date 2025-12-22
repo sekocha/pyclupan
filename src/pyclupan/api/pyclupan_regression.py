@@ -172,6 +172,11 @@ class PyclupanRegression:
         return self._model
 
     @property
+    def models(self):
+        """Return CE models."""
+        return self._models
+
+    @property
     def coeffs(self):
         """Return coefficents."""
         return self._model.coeffs
