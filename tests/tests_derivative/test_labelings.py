@@ -30,7 +30,8 @@ def test_get_nonequivalent_labelings():
     perms = [[0, 1, 2], [1, 2, 0], [2, 0, 1]]
 
     labelings_perm = get_nonequivalent_labelings(labelings, perms)
-    labelings_perm_true = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 1], [1, 1, 1]])
+    # labelings_perm_true = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 1], [1, 1, 1]])
+    labelings_perm_true = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [1, 1, 1]])
 
     np.testing.assert_allclose(labelings_perm, labelings_perm_true, atol=1e-6)
 

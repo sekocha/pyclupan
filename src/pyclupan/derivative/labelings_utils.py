@@ -5,7 +5,10 @@ import numpy as np
 
 def get_nonequivalent_labelings(labelings: np.array, perms: np.array):
     """Calculate non-equivalent labelings."""
-    reps = np.array([np.unique(l, axis=0)[0] for l in labelings[:, perms]])
+    # reps = np.array([np.unique(l, axis=0)[0] for l in labelings[:, perms]])
+    labelings_perm = labelings[:, perms]
+    idx = np.lexsort(labelings_perm.transpose(2, 0, 1))[:, 0]
+    reps = labelings_perm[np.arange(labelings_perm.shape[0]), idx]
     nonequivs = np.unique(reps, axis=0)
     return nonequivs
 

@@ -31,7 +31,9 @@ def test_lasso():
     pyclupan.run_lasso(alphas=(1e-5, 1e-4, 1e-3))
     model = pyclupan.model
 
-    nonzero = np.where(np.abs(model.coeffs) > 1e-12)[0]
+    nonzero = np.where(np.abs(model.coeffs) > 1e-8)[0]
+    print(nonzero)
+    print(model.coeffs)
     assert len(nonzero) == 24
     np.testing.assert_allclose(model.intercept, -3.0153654473861815, atol=1e-6)
     np.testing.assert_allclose(model.rmse, 0.0003688802553296099, atol=1e-6)

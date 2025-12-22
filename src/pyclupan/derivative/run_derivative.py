@@ -216,7 +216,7 @@ def enum_derivatives(
     # Apply symmetry operations
     try:
         if verbose:
-            print("Using graphillion for enumerating nonequiv. structures", flush=True)
+            print("Using Graphillion for enumerating nonequiv. structures", flush=True)
         t1 = time.time()
         gs = zdd.nonequivalent_permutations(gs=gs)
         t2 = time.time()
@@ -226,10 +226,19 @@ def enum_derivatives(
         labelings, inactive_labeling = zdd.to_labelings(gs)
     except:
         if verbose:
+            print("nonequivalent_permutations not found in Graphillion.", flush=True)
             print("Using labelings for enumerating nonequiv. structures", flush=True)
         t1 = time.time()
         labelings, inactive_labeling = zdd.to_labelings(gs)
-        labelings = get_nonequivalent_labelings(labelings, zdd.site_permutations)
+
+        active_sites = zdd.zdd_lattice.site_attrs_set.active_sites
+        perms = np.unique(zdd.site_permutations[:, active_sites], axis=0)
+        perms_replace = np.ones(perms.shape, dtype=int) * -1
+        for i, site in enumerate(active_sites):
+            perms_replace[perms == site] = i
+        perms = perms_replace
+
+        labelings = get_nonequivalent_labelings(labelings, perms)
         t2 = time.time()
 
     if verbose:
