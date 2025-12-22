@@ -27,6 +27,7 @@ class PyclupanRegression:
         self._y = None
 
         self._model = None
+        self._models = None
         np.set_printoptions(legacy="1.21")
 
     def load_features(self, features_hdf5: str = "pyclupan_features.hdf5"):
@@ -91,7 +92,7 @@ class PyclupanRegression:
             raise RuntimeError("Observation data not found.")
         return self
 
-    def run_ridge(self, alphas: tuple = (1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1)):
+    def run_ridge(self, alphas: tuple = np.logspace(-7, -3, 20)):
         """Run Ridge solver.
 
         Parameter
@@ -110,7 +111,7 @@ class PyclupanRegression:
         )
         return self
 
-    def run_lasso(self, alphas: tuple = (1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1)):
+    def run_lasso(self, alphas: tuple = np.logspace(-7, -3, 20)):
         """Run Lasso solver.
 
         Parameter
@@ -121,7 +122,7 @@ class PyclupanRegression:
             print("Use Lasso solver.", flush=True)
 
         self._check_regression_data()
-        self._model = solver_lasso(
+        self._models = solver_lasso(
             x=self._x,
             y=self._y,
             alphas=alphas,
@@ -131,10 +132,15 @@ class PyclupanRegression:
 
     def save_predictions(self, filename: str = "pyclupan_prediction.dat"):
         """Save predicted values for dataset."""
-        if self._model is None:
+        if self._model is None and self._models is None:
             raise RuntimeError("CE model not found.")
 
-        pred = self._model.eval(self._x)
+        if self._model is not None:
+            model = self._model
+        else:
+            model = min(self._models, key=lambda s: s.cv_score)
+
+        pred = model.eval(self._x)
         with open(filename, "w") as f:
             print("# DFT (eV/cell), CE (eV/cell), Error (meV/cell)", file=f)
             for y1, y2, idx in zip(self._y, pred, self._structure_ids):
@@ -148,7 +154,16 @@ class PyclupanRegression:
         ---------
         filename: Filename to save ECIs.
         """
-        save_ecis(self.coeffs, self.intercept, filename=filename)
+        if self._model is None and self._models is None:
+            raise RuntimeError("CE model not found.")
+
+        if self._model is not None:
+            save_ecis(self._model, filename=filename)
+        elif self._models is not None:
+            for i, model in enumerate(self._models):
+                idx = str(i + 1).zfill(3)
+                name = filename.replace(".yaml", "") + "_" + idx + ".yaml"
+                save_ecis(model, filename=name)
         return self
 
     @property

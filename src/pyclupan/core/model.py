@@ -14,6 +14,8 @@ class CEmodel:
     intercept: float
     cluster_ids: Optional[np.ndarray] = None
     rmse: Optional[float] = None
+    cv_score: Optional[float] = None
+    alpha: Optional[float] = None
 
     def __post_init__(self):
         """Post init method."""

@@ -41,16 +41,22 @@ def load_energy_dat(energy_dat: str):
 
 
 def save_ecis(
-    coeffs: np.array,
-    intercept: float,
+    model: CEmodel,
     filename: str = "pyclupan_eci.yaml",
     tol: float = 1e-12,
 ):
     """Save interactions to file."""
     with open(filename, "w") as f:
-        print("intercept:", intercept, file=f)
+        if model.alpha is not None:
+            print("alpha:    ", model.alpha, file=f)
+        if model.rmse is not None:
+            print("rmse:     ", model.rmse, file=f)
+        if model.cv_score is not None:
+            print("cv_score: ", model.cv_score, file=f)
+
+        print("intercept:", model.intercept, file=f)
         print("eci:", file=f)
-        for i, c in enumerate(coeffs):
+        for i, c in enumerate(model.coeffs):
             if np.abs(c) > tol:
                 print("- id   :", i, file=f)
                 print("  coeff:", c, file=f)
