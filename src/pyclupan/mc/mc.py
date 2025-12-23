@@ -8,7 +8,7 @@ import numpy as np
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.features.cluster_functions import ClusterFunctions
 from pyclupan.mc.mc_runs import cmc, sgcmc
-from pyclupan.mc.mc_structure import spins_from_structure_file, spins_random
+from pyclupan.mc.mc_structure import spins_from_structure, spins_random
 from pyclupan.mc.mc_utils import MCAttr, MCParams, save_mc_yaml, set_supercell
 from pyclupan.regression.regression_utils import load_ecis
 
@@ -88,7 +88,7 @@ class MC:
         if structure is not None:
             if element_strings is None:
                 raise RuntimeError("Element strings required.")
-            active_spins = spins_from_structure_file(
+            active_spins = spins_from_structure(
                 self._lattice_supercell,
                 structure,
                 element_strings,

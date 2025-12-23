@@ -17,13 +17,10 @@ def reordered_labeling(
     labeling = element_strings_to_labeling(structure.elements, element_strings)
     order = get_matching_positions(structure_ref.positions, structure.positions)
     labeling = labeling[order]
-    # labeling = element_strings_to_labeling(st_sup.elements, element_strings)
-    # order = get_matching_positions(supercell.positions, st_sup.positions)
-    # labeling = labeling[order]
     return labeling
 
 
-def spins_from_structure_file(
+def spins_from_structure(
     lattice_supercell: Lattice,
     structure: PolymlpStructure,
     element_strings: tuple,
