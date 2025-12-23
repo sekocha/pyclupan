@@ -5,8 +5,10 @@ from typing import Literal, Optional
 
 import numpy as np
 
+from pyclupan.core.cell_utils import supercell_general
 from pyclupan.core.model import CEmodel
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
+from pyclupan.features.cluster_functions_mc import ClusterFunctions, ClusterFunctionsMC
 
 
 @dataclass
@@ -198,3 +200,33 @@ def save_mc_yaml(
             for cluster_id, cf in zip(model.cluster_ids, cfs):
                 print("  - id:   ", cluster_id, file=f)
                 print("    value:", np.round(cf, 7), file=f)
+
+
+def set_supercell(
+    cf: ClusterFunctions,
+    supercell_matrix: np.ndarray,
+    refine: bool = False,
+    verbose: bool = False,
+):
+    """Set supercell.
+
+    Parameters
+    ----------
+    lattice_unitcell: Lattice instance for unitcell.
+    supercell_matrix: Supercell matrix.
+        If three elements are given, a diagonal supercell matrix of these
+        elements will be used.
+    refine: Refine unitcell before applying supercell matrix. Default: False.
+        If True, a supercell is constructed by the expansion of given supercell
+        matrix for the refined cell.
+    """
+    lattice_unitcell = cf.lattice_unitcell
+    sup = supercell_general(
+        lattice_unitcell.cell,
+        supercell_matrix,
+        refine=refine,
+        verbose=verbose,
+    )
+    lattice_supercell = lattice_unitcell.lattice_supercell(sup)
+    cf_mc = ClusterFunctionsMC(cf, lattice_supercell, verbose=verbose)
+    return (cf_mc, lattice_supercell)

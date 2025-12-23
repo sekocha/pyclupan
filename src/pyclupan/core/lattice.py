@@ -106,6 +106,16 @@ class Lattice:
         return self._n_elements
 
     @property
+    def active_elements(self):
+        """Return active elements."""
+        return self._active_elements
+
+    @property
+    def active_spins(self):
+        """Return active spins."""
+        return self._active_spins
+
+    @property
     def active_sites(self):
         """Return active sites."""
         if self._active_sites is not None:
