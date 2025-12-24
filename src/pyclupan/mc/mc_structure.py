@@ -1,5 +1,6 @@
 """Utility for initial structures in MC simulation."""
 
+import copy
 from typing import Optional
 
 import numpy as np
@@ -139,3 +140,20 @@ def spins_initial(
     elif compositions is not None:
         active_spins = spins_random(lattice_supercell, compositions, verbose=verbose)
     return active_spins
+
+
+def structure_from_spins(
+    lattice_supercell: Lattice, active_spins: np.ndarray, element_strings: tuple
+):
+    """Return structure corresponding to spins."""
+    active_labeling = lattice_supercell.to_labelings(active_spins)
+    active_labeling = np.array([active_labeling])
+    labeling = lattice_supercell.complete_labelings(active_labeling)[0]
+
+    st = copy.deepcopy(lattice_supercell.cell)
+    st.types = labeling
+    if element_strings is None:
+        element_strings = lattice_supercell.element_strings
+
+    st.elements = [element_strings[t] for t in labeling]
+    return st.reorder()

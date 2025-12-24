@@ -50,6 +50,7 @@ pip install . -vvv
 - [CE Model Estimation for Alloy Systems (Binary Ag-Au and Ternary Cu-Ag-Au)](docs/tutorial-alloy.md)
 - [CE Model Estimation for Ionic Substitutional Systems (SrCuO3-x)](docs/tutorial-subs.md)
 - [CE Model Estimation for Substitutional Systems on Multiple Sublattices (SiC-AlN)](docs/tutorial-2x2.md)
+- [Special Quasirandom Structure (SQS) Calculation Using Simulated Annealing](docs/tutorial-sqs.md)
 
 ### Command-Line Interface
 - [Enumeration of Derivative Structures](docs/calc_derivative.md)

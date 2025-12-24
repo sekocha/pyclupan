@@ -1,13 +1,12 @@
 """Class for performing simulated annealing to search SQS."""
 
-import copy
 from typing import Optional
 
 import numpy as np
 
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.features.cluster_functions import ClusterFunctions
-from pyclupan.mc.mc_structure import spins_initial
+from pyclupan.mc.mc_structure import spins_initial, structure_from_spins
 from pyclupan.mc.mc_utils import MCAttr, MCParams, set_supercell
 from pyclupan.mc.sqs_mc_runs import cmc
 from pyclupan.mc.sqs_utils import calc_ideal_cluster_functions
@@ -110,6 +109,9 @@ class SqsMC:
             self._cf,
             active_spins,
         )
+        if self._verbose:
+            print("Ideal cluster functions.", flush=True)
+            print(self._ideal_cluster_functions)
         return self
 
     def set_parameters(
@@ -168,7 +170,7 @@ class SqsMC:
             if self._verbose:
                 print("--- Temperature:", temp, "---", flush=True)
 
-            self._mc_attr = cmc(
+            self._mc_attr, score = cmc(
                 temp,
                 self._mc_attr,
                 self._mc_params,
@@ -176,6 +178,8 @@ class SqsMC:
                 self._cf_mc,
                 verbose=self._verbose,
             )
+            if np.isclose(score, 0.0):
+                break
         return self
 
     @property
@@ -211,15 +215,9 @@ class SqsMC:
     @property
     def structure(self):
         """Return final structure."""
-        active_spins = self._mc_attr.active_spins
-        active_labeling = self._lattice_supercell.to_labelings(active_spins)
-        active_labeling = np.array([active_labeling])
-        labeling = self._lattice_supercell.complete_labelings(active_labeling)[0]
-
-        st = copy.deepcopy(self.supercell)
-        st.types = labeling
-        if self._element_strings is None:
-            self._element_strings = self._lattice_supercell.element_strings
-
-        st.elements = [self._element_strings[t] for t in labeling]
-        return st.reorder()
+        st = structure_from_spins(
+            self._lattice_supercell,
+            self._mc_attr.active_spins,
+            self._element_strings,
+        )
+        return st

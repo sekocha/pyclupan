@@ -1,7 +1,5 @@
 """Functions for running single MC simulation."""
 
-# import time
-
 import numpy as np
 
 from pyclupan.core.pypolymlp_utils import KbEV
@@ -9,11 +7,12 @@ from pyclupan.features.cluster_functions_mc import ClusterFunctionsMC
 from pyclupan.mc.mc_utils import MCAttr, MCParams
 
 
-def _print_iteration(mc_iter: int, cfs: np.ndarray, ideal_cfs: np.ndarray):
+def _print_iteration(mc_iter: int, score: float, cfs: np.ndarray):
     """Print properties at an iteration."""
     print("Iteration:", mc_iter + 1, flush=True)
-    print(cfs)
-    print(ideal_cfs)
+    print("- Score:", score, flush=True)
+    print("- Cluster functions:", flush=True)
+    print(cfs, flush=True)
 
 
 def _score(cfs: np.ndarray, ideal_cfs: np.ndarray):
@@ -40,6 +39,7 @@ def cmc(
     beta = 1.0 / (KbEV * temp)
 
     score = _score(cfs, ideal_cfs)
+    found = False
     for n_steps in [mc_params.n_steps_init * n_sites, mc_params.n_steps_eq * n_sites]:
         for mc_iter in range(n_steps):
             i, j = mc_attr.select_two_sites(spins)
@@ -53,8 +53,18 @@ def cmc(
                 spins[i], spins[j] = spins[j], spins[i]
 
             if verbose and (mc_iter + 1) % verbose_interval == 0:
-                _print_iteration(mc_iter, cfs, ideal_cfs)
+                _print_iteration(mc_iter, score, cfs)
+
+            if np.isclose(score, 0.0):
+                found = True
+                break
+        if found:
+            if verbose:
+                print("SQS with zero error is found.", flush=True)
+                print("Cluster functions:", flush=True)
+                print(cfs)
+            break
 
     mc_attr.active_spins = spins
     mc_attr.cluster_functions = cfs
-    return mc_attr
+    return (mc_attr, score)
