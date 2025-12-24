@@ -1,25 +1,25 @@
-"""Class for performing Monte Carlo simulations."""
+"""Class for performing simulated annealing to search SQS."""
 
 import copy
-from typing import Literal, Optional
+from typing import Optional
 
 import numpy as np
 
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.features.cluster_functions import ClusterFunctions
-from pyclupan.mc.mc_runs import cmc, sgcmc
 from pyclupan.mc.mc_structure import spins_initial
-from pyclupan.mc.mc_utils import MCAttr, MCParams, save_mc_yaml, set_supercell
-from pyclupan.regression.regression_utils import load_ecis
+from pyclupan.mc.mc_utils import MCAttr, MCParams, set_supercell
+from pyclupan.mc.sqs_mc_runs import cmc
+from pyclupan.mc.sqs_utils import calc_ideal_cluster_functions
 
 
-class MC:
-    """Class for performing Monte Carlo simulations."""
+class SqsMC:
+    """Class for performing simulated annealing to search SQS."""
 
     def __init__(
         self,
         clusters_yaml: str = "pyclupan_clusters.yaml",
-        ecis_yaml: str = "pyclupan_ecis.yaml",
+        cluster_ids: Optional[np.ndarray] = None,
         verbose: bool = False,
     ):
         """Init method.
@@ -27,14 +27,13 @@ class MC:
         Parameters
         ----------
         clusters_yaml: File of cluster attributes from cluster search.
-        ecis_yaml: File of ECIs from regression.
         """
         self._verbose = verbose
         self._cf = ClusterFunctions(clusters_yaml=clusters_yaml, verbose=verbose)
-        self._model = load_ecis(ecis_yaml)
-        self._cf.spin_basis_clusters = self._model.nonzero_spin_basis(
-            self._cf.spin_basis_clusters
-        )
+        if cluster_ids is not None:
+            self._cf.spin_basis_clusters = [
+                self._cf.spin_basis_clusters[i] for i in cluster_ids
+            ]
         self._cf_mc = None
 
         self._lattice_unitcell = self._cf.lattice_unitcell
@@ -46,9 +45,8 @@ class MC:
             active_element_species=self._lattice_unitcell._active_elements,
             spin_species=self._lattice_unitcell._active_spins,
         )
+        self._ideal_cluster_functions = None
 
-        self._average_energies = None
-        self._average_cfs = None
         np.set_printoptions(legacy="1.21")
 
     def set_supercell(self, supercell_matrix: np.ndarray, refine: bool = False):
@@ -69,8 +67,6 @@ class MC:
         self._cf_mc, self._lattice_supercell = set_supercell(
             self._cf, supercell_matrix, refine=refine, verbose=self._verbose
         )
-        n_expand = np.linalg.det(self._lattice_supercell.cell.supercell_matrix)
-        self._model.supercell(n_expand)
         return self
 
     def set_init(
@@ -106,43 +102,45 @@ class MC:
 
         self._mc_attr.active_spins = active_spins
         self._mc_attr.n_active_sites = self._lattice_supercell.n_active_sites
-        self._mc_attr.energy = self._model.eval(cluster_functions)
         self._mc_attr.cluster_functions = cluster_functions
+
+        self._ideal_cluster_functions = calc_ideal_cluster_functions(
+            self._lattice_unitcell,
+            self._lattice_supercell,
+            self._cf,
+            active_spins,
+        )
         return self
 
     def set_parameters(
         self,
         n_steps_init: int = 100,
         n_steps_eq: int = 1000,
-        temperature: float = 1000,
-        temperatures: Optional[np.ndarray] = None,
-        temperature_init: Optional[float] = None,
-        temperature_final: Optional[float] = None,
-        temperature_step: Optional[float] = None,
-        ensemble: Literal["canonical", "semi_grand_canonical"] = "canonical",
-        mu: Optional[tuple] = None,
+        temperature_init: float = 1000.0,
+        temperature_final: float = 0.1,
+        n_temperatures: int = 20,
     ):
-        """Set parameters."""
-        elements = [e2 for ele in self._mc_attr.active_element_species for e2 in ele]
-        if mu is not None and len(mu) != len(elements) - 1:
-            raise RuntimeError("Size of chemical potentials is not consistent.")
+        """Set parameters.
 
+        Parameters
+        ----------
+        n_steps_init: Number of steps for initialization.
+        n_steps_eq: Number of steps for taking avarages.
+        temperature_init: Initial temperature to set temperatures automatically.
+        temperature_final: Final temperature to set temperatures automatically.
+        n_temperatures: Number of temperatures.
+        """
+        if temperature_init < temperature_final:
+            raise RuntimeError(
+                "Final temperature must be smaller than initial temperature."
+            )
+        init, final = np.log10(temperature_init), np.log10(temperature_final)
+        temperatures = np.logspace(init, final, num=n_temperatures)
         self._mc_params = MCParams(
             n_steps_init=n_steps_init,
             n_steps_eq=n_steps_eq,
-            temperature=temperature,
             temperatures=temperatures,
-            ensemble=ensemble,
-            mu=mu,
         )
-        if temperature_init is not None:
-            if temperature_final is None:
-                raise RuntimeError("Final temperature not found.")
-            if temperature_step is None:
-                raise RuntimeError("Temperature step not found.")
-            self._mc_params.set_temperature_range(
-                temperature_init, temperature_final, temperature_step
-            )
         return self
 
     def run(self):
@@ -153,22 +151,19 @@ class MC:
             raise RuntimeError("Initial configuration not found.")
         if self._mc_params is None:
             raise RuntimeError("Parameters not found.")
+        if self._ideal_cluster_functions is None:
+            raise RuntimeError("Ideal cluster functions not found.")
 
         if self._verbose:
             print("Run MC simulation.", flush=True)
             self._mc_params.print_parameters()
             self._mc_attr.print_attrs()
 
-        if self._mc_params.ensemble == "canonical":
-            self._run_cmc()
-        elif self._mc_params.ensemble == "semi_grand_canonical":
-            self._run_sgcmc()
-
+        self._run_cmc()
         return self
 
     def _run_cmc(self):
         """Run canoncial MC simulation."""
-        self._average_energies, self._average_cfs = [], []
         for temp in self._mc_params.temperatures:
             if self._verbose:
                 print("--- Temperature:", temp, "---", flush=True)
@@ -177,31 +172,10 @@ class MC:
                 temp,
                 self._mc_attr,
                 self._mc_params,
+                self._ideal_cluster_functions,
                 self._cf_mc,
-                self._model,
                 verbose=self._verbose,
             )
-            self._average_energies.append(self._mc_attr.average_energy)
-            self._average_cfs.append(self._mc_attr.average_cluster_functions)
-        return self
-
-    def _run_sgcmc(self):
-        """Run semi-grand canoncial MC simulation."""
-        self._average_energies, self._average_cfs = [], []
-        for temp in self._mc_params.temperatures:
-            if self._verbose:
-                print("--- Temperature:", temp, "---", flush=True)
-
-            self._mc_attr = sgcmc(
-                temp,
-                self._mc_attr,
-                self._mc_params,
-                self._cf_mc,
-                self._model,
-                verbose=self._verbose,
-            )
-            self._average_energies.append(self._mc_attr.average_energy)
-            self._average_cfs.append(self._mc_attr.average_cluster_functions)
         return self
 
     @property
@@ -235,16 +209,6 @@ class MC:
         self._mc_params.temperatures = temperatures
 
     @property
-    def average_energies(self):
-        """Return average energies."""
-        return np.array(self._average_energies)
-
-    @property
-    def average_cluster_functions(self):
-        """Return average cluster functions."""
-        return np.array(self._average_cfs)
-
-    @property
     def structure(self):
         """Return final structure."""
         active_spins = self._mc_attr.active_spins
@@ -259,15 +223,3 @@ class MC:
 
         st.elements = [self._element_strings[t] for t in labeling]
         return st.reorder()
-
-    def save_mc_yaml(self, filename: str = "pyclupan_mc.yaml"):
-        """Save properties from MC."""
-        save_mc_yaml(
-            self._model,
-            self._mc_attr,
-            self._mc_params,
-            self._average_energies,
-            self._average_cfs,
-            self.supercell,
-            filename=filename,
-        )

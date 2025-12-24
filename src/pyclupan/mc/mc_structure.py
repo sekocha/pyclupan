@@ -1,5 +1,7 @@
 """Utility for initial structures in MC simulation."""
 
+from typing import Optional
+
 import numpy as np
 
 from pyclupan.core.cell_utils import get_matching_positions, supercell_general
@@ -111,4 +113,29 @@ def spins_random(
     n_atoms = n_atoms_from_compositions(lattice_supercell, compositions, decimals)
     active_labelings = _random_labeling(lattice_supercell, n_atoms)
     active_spins = lattice_supercell.to_spins(active_labelings)
+    return active_spins
+
+
+def spins_initial(
+    lattice_supercell: Lattice,
+    structure: Optional[PolymlpStructure] = None,
+    element_strings: Optional[tuple] = None,
+    compositions: Optional[tuple] = None,
+    verbose: bool = False,
+):
+    """Return initial active spins."""
+    if structure is None and compositions is None:
+        raise RuntimeError("Structure or compositions required.")
+
+    if structure is not None:
+        if element_strings is None:
+            raise RuntimeError("Element strings required.")
+        active_spins = spins_from_structure(
+            lattice_supercell,
+            structure,
+            element_strings,
+            verbose=verbose,
+        )
+    elif compositions is not None:
+        active_spins = spins_random(lattice_supercell, compositions, verbose=verbose)
     return active_spins

@@ -53,6 +53,7 @@ class Lattice:
         self._n_active_sites = None
         self._inactive_labeling = None
         self._map_full_to_active_rep = None
+        self._sublattice_id = None
 
         elements = self._elements_on_lattice
         spins = self._spins_on_lattice
@@ -256,6 +257,7 @@ class Lattice:
         lattice_supercell._inactive_sites = None
         lattice_supercell._inactive_labeling = None
         lattice_supercell._map_full_to_active_rep = None
+        lattice_supercell._sublattice_id = None
 
         if len(self._cell.n_atoms) != len(supercell.n_atoms):
             raise RuntimeError("Number of sublattices in supercell is not consistent.")
@@ -304,3 +306,12 @@ class Lattice:
         return set_element_strings(
             self._cell, self._elements_on_lattice, self._n_elements
         )
+
+    @property
+    def sublattice_id(self):
+        """Return sublattice IDs for each site."""
+        if self._sublattice_id is None:
+            self._sublattice_id = np.array(
+                [i for i, n in enumerate(self.cell.n_atoms) for _ in range(n)]
+            )
+        return self._sublattice_id
