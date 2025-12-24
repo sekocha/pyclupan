@@ -34,6 +34,7 @@ conda activate pyclupan-env
 conda install -c conda-forge pypolymlp spglib phonopy
 pip install pyclupan
 ```
+[Installation Notes for macOS](docs/notes-macos.md)
 
 - Install from GitHub
 ```
