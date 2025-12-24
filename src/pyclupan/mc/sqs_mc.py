@@ -94,6 +94,7 @@ class SqsMC:
             compositions=compositions,
             verbose=self._verbose,
         )
+        print(active_spins)
 
         if self._verbose:
             print("Calculating cluster functions of initial structure.", flush=True)
@@ -116,8 +117,7 @@ class SqsMC:
 
     def set_parameters(
         self,
-        n_steps_init: int = 100,
-        n_steps_eq: int = 1000,
+        n_steps: int = 100,
         temperature_init: float = 1000.0,
         temperature_final: float = 0.1,
         n_temperatures: int = 20,
@@ -126,8 +126,7 @@ class SqsMC:
 
         Parameters
         ----------
-        n_steps_init: Number of steps for initialization.
-        n_steps_eq: Number of steps for taking avarages.
+        n_steps: Number of steps for simulated annealing at each temperature.
         temperature_init: Initial temperature to set temperatures automatically.
         temperature_final: Final temperature to set temperatures automatically.
         n_temperatures: Number of temperatures.
@@ -138,11 +137,7 @@ class SqsMC:
             )
         init, final = np.log10(temperature_init), np.log10(temperature_final)
         temperatures = np.logspace(init, final, num=n_temperatures)
-        self._mc_params = MCParams(
-            n_steps_init=n_steps_init,
-            n_steps_eq=n_steps_eq,
-            temperatures=temperatures,
-        )
+        self._mc_params = MCParams(n_steps_eq=n_steps, temperatures=temperatures)
         return self
 
     def run(self):
@@ -161,11 +156,6 @@ class SqsMC:
             self._mc_params.print_parameters()
             self._mc_attr.print_attrs()
 
-        self._run_cmc()
-        return self
-
-    def _run_cmc(self):
-        """Run canoncial MC simulation."""
         for temp in self._mc_params.temperatures:
             if self._verbose:
                 print("--- Temperature:", temp, "---", flush=True)
@@ -180,6 +170,7 @@ class SqsMC:
             )
             if np.isclose(score, 0.0):
                 break
+
         return self
 
     @property

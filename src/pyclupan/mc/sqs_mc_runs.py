@@ -39,26 +39,22 @@ def cmc(
     beta = 1.0 / (KbEV * temp)
 
     score = _score(cfs, ideal_cfs)
-    found = False
-    for n_steps in [mc_params.n_steps_init * n_sites, mc_params.n_steps_eq * n_sites]:
-        for mc_iter in range(n_steps):
-            i, j = mc_attr.select_two_sites(spins)
-            cfs_new = cfs + cf.eval_from_spin_swap(spins, [i, j])
-            score_new = _score(cfs_new, ideal_cfs)
-            delta = score_new - score
-            threshold = np.exp(-beta * delta)
-            if np.random.rand() < threshold:
-                cfs = cfs_new
-                score = score_new
-                spins[i], spins[j] = spins[j], spins[i]
+    n_steps = mc_params.n_steps_eq * n_sites
+    for mc_iter in range(n_steps):
+        i, j = mc_attr.select_two_sites(spins)
+        cfs_new = cfs + cf.eval_from_spin_swap(spins, [i, j])
+        score_new = _score(cfs_new, ideal_cfs)
+        delta = score_new - score
+        threshold = np.exp(-beta * delta)
+        if np.random.rand() < threshold:
+            cfs = cfs_new
+            score = score_new
+            spins[i], spins[j] = spins[j], spins[i]
 
-            if verbose and (mc_iter + 1) % verbose_interval == 0:
-                _print_iteration(mc_iter, score, cfs)
+        if verbose and (mc_iter + 1) % verbose_interval == 0:
+            _print_iteration(mc_iter, score, cfs)
 
-            if np.isclose(score, 0.0):
-                found = True
-                break
-        if found:
+        if np.isclose(score, 0.0):
             if verbose:
                 print("SQS with zero error is found.", flush=True)
                 print("Cluster functions:", flush=True)

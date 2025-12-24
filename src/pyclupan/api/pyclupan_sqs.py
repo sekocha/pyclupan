@@ -46,8 +46,7 @@ class PyclupanSQS:
 
     def set_parameters(
         self,
-        n_steps_init: int = 100,
-        n_steps_eq: int = 1000,
+        n_steps: int = 100,
         temperature_init: float = 1000.0,
         temperature_final: float = 0.1,
         n_temperatures: int = 20,
@@ -56,15 +55,13 @@ class PyclupanSQS:
 
         Parameters
         ----------
-        n_steps_init: Number of steps for initialization.
-        n_steps_eq: Number of steps for taking avarages.
+        n_steps: Number of steps for simulated annealing at each temperature.
         temperature_init: Initial temperature to set temperatures automatically.
         temperature_final: Final temperature to set temperatures automatically.
         n_temperatures: Number of temperatures.
         """
         self._mc.set_parameters(
-            n_steps_init=n_steps_init,
-            n_steps_eq=n_steps_eq,
+            n_steps=n_steps,
             temperature_init=temperature_init,
             temperature_final=temperature_final,
             n_temperatures=n_temperatures,

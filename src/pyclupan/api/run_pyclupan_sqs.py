@@ -50,10 +50,9 @@ def run():
     )
     parser.add_argument(
         "--n_steps",
-        nargs=2,
         type=int,
-        default=(100, 1000),
-        help="Numbers of steps for (initialization, average).",
+        default=100,
+        help="Numbers of steps per site at each temperature.",
     )
     parser.add_argument(
         "--temp_init",
@@ -88,8 +87,7 @@ def run():
     )
 
     pyclupan.set_parameters(
-        n_steps_init=args.n_steps[0],
-        n_steps_eq=args.n_steps[1],
+        n_steps=args.n_steps,
         temperature_init=args.temp_init,
         temperature_final=args.temp_final,
         n_temperatures=args.n_temps,

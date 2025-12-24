@@ -1,6 +1,5 @@
 """Class for performing Monte Carlo simulations."""
 
-import copy
 from typing import Literal, Optional
 
 import numpy as np
@@ -8,7 +7,7 @@ import numpy as np
 from pyclupan.core.pypolymlp_utils import PolymlpStructure
 from pyclupan.features.cluster_functions import ClusterFunctions
 from pyclupan.mc.mc_runs import cmc, sgcmc
-from pyclupan.mc.mc_structure import spins_initial
+from pyclupan.mc.mc_structure import spins_initial, structure_from_spins
 from pyclupan.mc.mc_utils import MCAttr, MCParams, save_mc_yaml, set_supercell
 from pyclupan.regression.regression_utils import load_ecis
 
@@ -247,18 +246,12 @@ class MC:
     @property
     def structure(self):
         """Return final structure."""
-        active_spins = self._mc_attr.active_spins
-        active_labeling = self._lattice_supercell.to_labelings(active_spins)
-        active_labeling = np.array([active_labeling])
-        labeling = self._lattice_supercell.complete_labelings(active_labeling)[0]
-
-        st = copy.deepcopy(self.supercell)
-        st.types = labeling
-        if self._element_strings is None:
-            self._element_strings = self._lattice_supercell.element_strings
-
-        st.elements = [self._element_strings[t] for t in labeling]
-        return st.reorder()
+        st = structure_from_spins(
+            self._lattice_supercell,
+            self._mc_attr.active_spins,
+            self._element_strings,
+        )
+        return st
 
     def save_mc_yaml(self, filename: str = "pyclupan_mc.yaml"):
         """Save properties from MC."""
