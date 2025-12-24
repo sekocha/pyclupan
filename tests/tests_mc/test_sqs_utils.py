@@ -57,3 +57,23 @@ def test_calc_ideal_cluster_functions_ternary_fcc(fcc_primitive_cell):
         [-0.02870496, 0.01657282, 0.01657282, -0.00956832, -0.00956832, 0.00552427],
         atol=1e-6,
     )
+
+
+def test_calc_ideal_cluster_functions_2x2_wurtzite(wurtzite_primitive_cell):
+    """Test calc_ideal_cluster_functions."""
+    lattice_unitcell = Lattice(wurtzite_primitive_cell, elements=[[0, 1], [2, 3]])
+    supercell = supercell_diagonal(wurtzite_primitive_cell, (1, 1, 2))
+    lattice_supercell = lattice_unitcell.lattice_supercell(supercell)
+
+    path_file = str(cwd) + "/../files/2x2_wurtzite/"
+    clusters_yaml = path_file + "/pyclupan_clusters.yaml"
+    cf = ClusterFunctions(clusters_yaml=clusters_yaml)
+
+    active_spins = np.array([1, 1, -1, 1, 1, -1, 1, 1])
+    ideals = calc_ideal_cluster_functions(
+        lattice_unitcell, lattice_supercell, cf, active_spins
+    )
+    np.testing.assert_allclose(ideals[0:2], 0.5, atol=1e-6)
+    np.testing.assert_allclose(ideals[2:28], 0.25, atol=1e-6)
+    np.testing.assert_allclose(ideals[28:280], 0.125, atol=1e-6)
+    np.testing.assert_allclose(ideals[280:], 0.0625, atol=1e-6)
