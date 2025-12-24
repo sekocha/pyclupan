@@ -14,6 +14,7 @@ class PyclupanSQS:
     def __init__(
         self,
         clusters_yaml: str = "pyclupan_clusters.yaml",
+        cluster_ids: Optional[np.ndarray] = None,
         verbose: bool = False,
     ):
         """Init method.
@@ -25,6 +26,7 @@ class PyclupanSQS:
         self._verbose = verbose
         self._mc = SqsMC(
             clusters_yaml=clusters_yaml,
+            cluster_ids=cluster_ids,
             verbose=verbose,
         )
         np.set_printoptions(legacy="1.21")

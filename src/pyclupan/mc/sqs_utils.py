@@ -3,7 +3,7 @@
 import numpy as np
 
 from pyclupan.core.lattice import Lattice
-from pyclupan.features.cluster_functions_mc import ClusterFunctions
+from pyclupan.features.cluster_functions import ClusterFunctions
 
 
 def calc_ideal_cluster_functions(

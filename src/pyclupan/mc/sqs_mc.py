@@ -94,7 +94,6 @@ class SqsMC:
             compositions=compositions,
             verbose=self._verbose,
         )
-        print(active_spins)
 
         if self._verbose:
             print("Calculating cluster functions of initial structure.", flush=True)
