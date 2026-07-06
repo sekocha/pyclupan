@@ -1,1 +1,1 @@
-#!/usr/bin/env python
+# from pyclupan._version import __version__

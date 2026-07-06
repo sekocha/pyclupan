@@ -175,6 +175,23 @@ class Derivatives:
             print(file=f)
         return self
 
+    def get_sampled_structures(self, element_strings: tuple):
+        """Return derivative structures sampled."""
+        if self._sample is None:
+            return None
+        if len(self._sample) == 0:
+            return None
+
+        structures = []
+        for ids, labeling in zip(self.sample_ids, self.sampled_complete_labelings):
+            sup = copy.deepcopy(self.supercell)
+            sup.types = labeling
+            sup.elements = list(np.array(element_strings)[sup.types])
+            sup = sup.reorder()
+            structures.append(sup)
+
+        return structures
+
 
 @dataclass
 class DerivativesSet:
@@ -315,6 +332,15 @@ class DerivativesSet:
                 d.write_attrs(file=f)
                 d.save(element_strings, path=path)
         return self
+
+    def get_sampled_structures(self, element_strings: tuple):
+        """Return derivative structures sampled."""
+        if element_strings is None:
+            element_strings = self[0].lattice_unitcell.element_strings
+        structures = []
+        for d in self:
+            structures.extend(d.get_sampled_structures(element_strings))
+        return structures
 
 
 def _write_list_no_space(a: list, file):
