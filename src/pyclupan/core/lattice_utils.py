@@ -104,6 +104,7 @@ def get_complete_labelings(
 def extract_sites(cell: PolymlpStructure, lattice_ids: np.ndarray):
     """Extract sites from the entire sites."""
     n_sites = cell.n_atoms
+    print(n_sites)
     extsites = []
     for lattice_id in lattice_ids:
         begin = sum(n_sites[:lattice_id])
