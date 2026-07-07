@@ -36,7 +36,6 @@ class Pyclupan:
         structure: Structure in PolymlpStructure format.
         """
         self._unitcell = Poscar(poscar).structure
-        print(self._unitcell.n_atoms)
         return self._unitcell
 
     def run_cluster(
