@@ -52,6 +52,7 @@ def find_supercell(unitcell: PolymlpStructure, max_cut: float):
     """Find supercell expansion used for searching clusters."""
     norm = np.linalg.norm(unitcell.axis, axis=0)
     supercell_matrix = np.diag(np.ceil(np.ones(3) * max_cut * 2 / norm))
+    supercell_matrix = supercell_matrix.astype(int)
     return supercell(unitcell, supercell_matrix=supercell_matrix)
 
 

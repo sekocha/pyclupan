@@ -156,6 +156,8 @@ def run_derivatives(
     if verbose:
         print("Number of derivative structures:", n_derivs, flush=True)
 
+    for ds in derivs_all:
+        ds.structure_ids = ds.all_ids
     return DerivativesSet(derivs_all), zdd
 
 

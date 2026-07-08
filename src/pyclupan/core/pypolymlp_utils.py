@@ -1,5 +1,6 @@
 """Functions from pypolymlp."""
 
+import pypolymlp.calculator.utils.properties_base as properties_base
 import pypolymlp.core.data_format as data_format
 import pypolymlp.core.interface_vasp as interface_vasp
 import pypolymlp.core.units as units
@@ -33,3 +34,5 @@ try:
     ReducedCell = spglib_utils.ReducedCell
 except:
     pass
+
+PropertiesBase = properties_base.PropertiesBase

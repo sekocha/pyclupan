@@ -184,6 +184,7 @@ class Pyclupan:
         n_samples: int = 100,
         path: str = "poscars",
         elements: tuple = ("Al", "Cu"),
+        save_poscars: bool = True,
     ):
         """Parse derivatives.yaml.
 
@@ -204,7 +205,7 @@ class Pyclupan:
             method=method,
             path_poscars=path,
             element_strings=elements,
-            save_poscars=True,
+            save_poscars=save_poscars,
         )
 
     @property

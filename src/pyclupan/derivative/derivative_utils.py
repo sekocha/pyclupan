@@ -109,8 +109,14 @@ class Derivatives:
         self._sample = np.array(s)
 
     @property
+    def all_ids(self):
+        """Return structure IDs for all structures."""
+        all_ids = np.arange(self.n_labelings, dtype=int)
+        return [(self.supercell_size, self.supercell_id, i) for i in all_ids]
+
+    @property
     def sample_ids(self):
-        """Return complete labelings from both active and inactive labelings."""
+        """Return structure IDs for sampled structures."""
         if self._sample is None:
             raise RuntimeError("Sampled labelings not found.")
         return [(self.supercell_size, self.supercell_id, i) for i in self._sample]
@@ -341,6 +347,8 @@ class DerivativesSet:
         for d in self:
             structures.extend(d.get_sampled_structures(element_strings))
         return structures
+
+    # TODO: ID -> structure, poscar
 
 
 def _write_list_no_space(a: list, file):
