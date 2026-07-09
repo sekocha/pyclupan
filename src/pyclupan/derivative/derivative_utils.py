@@ -345,7 +345,9 @@ class DerivativesSet:
             element_strings = self[0].lattice_unitcell.element_strings
         structures = []
         for d in self:
-            structures.extend(d.get_sampled_structures(element_strings))
+            sampled_structures = d.get_sampled_structures(element_strings)
+            if sampled_structures is not None:
+                structures.extend(sampled_structures)
         return structures
 
     # TODO: ID -> structure, poscar

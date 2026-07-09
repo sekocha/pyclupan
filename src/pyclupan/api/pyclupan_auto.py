@@ -7,7 +7,7 @@ import numpy as np
 from pyclupan.api.pyclupan import Pyclupan
 
 # from pyclupan.api.pyclupan_calc import PyclupanCalc
-# from pyclupan.core.pypolymlp_utils import PropertiesBase
+from pyclupan.core.pypolymlp_utils import Polymlp
 from pyclupan.derivative.derivative_utils import DerivativesSet
 
 
@@ -20,7 +20,6 @@ class PyclupanCE:
 
         self._pyclupan = Pyclupan(verbose=verbose)
         self._pyclupan_calc = None
-        self._prop = None
 
         self._unitcell = None
         self._elements = None
@@ -29,6 +28,8 @@ class PyclupanCE:
 
         self._sampled_structures = []
         self._ds_set = DerivativesSet([])
+
+        self._energies = None
 
     def set_lattice_and_elements(
         self,
@@ -73,13 +74,38 @@ class PyclupanCE:
             #     ds.structure_ids = ds.all_ids
 
             method = "all" if n_samples is None else "uniform"
-            # pyclupan.sample_derivatives(method=method, elements=self._element_strings)
-            self._pyclupan.sample_derivatives(method=method, save_poscars=False)
+            self._pyclupan.sample_derivatives(
+                method=method,
+                n_samples=n_samples,
+                save_poscars=False,
+            )
             ds_set = self._pyclupan.derivative_structures
             structures = ds_set.get_sampled_structures(
                 element_strings=self._element_strings
             )
             self._sampled_structures.extend(structures)
+        return self
+
+    def eval_energies(self, pot: Optional[str] = "polymlp.yaml"):
+        """Evaluate energies using polymp."""
+        if self._sampled_structures is None:
+            raise RuntimeError("Sampled structures not found.")
+
+        polymlp = Polymlp(pot=pot)
+        success = np.ones(len(self._sampled_structures), dtype=bool)
+        n_atom_unitcell = len(self._unitcell.elements)
+        energies = []
+        for i, st in enumerate(self._sampled_structures):
+            suc = polymlp.run_geometry_optimization(st, gtol=1e-4)
+            if not suc:
+                success[i] = False
+                continue
+
+            n_atom = len(polymlp.structure.elements)
+            n_unitcell = n_atom / n_atom_unitcell
+            energies.append(polymlp.energy / n_unitcell)
+        self._energies = np.array(energies)
+        return self._energies
 
 
 #     def run_cluster(
