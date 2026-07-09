@@ -167,6 +167,36 @@ class PyclupanRegression:
         return self
 
     @property
+    def x(self):
+        """Return x."""
+        return self._x
+
+    @x.setter
+    def x(self, x: np.ndarray):
+        """Setter of x."""
+        self._x = x
+
+    @property
+    def y(self):
+        """Return y."""
+        return self._y
+
+    @y.setter
+    def y(self, y: np.ndarray):
+        """Setter of y."""
+        self._y = y
+
+    @property
+    def structure_ids(self):
+        """Return structure_ids."""
+        return self._structure_ids
+
+    @structure_ids.setter
+    def structure_ids(self, structure_ids: np.ndarray):
+        """Setter of structure_ids."""
+        self._structure_ids = structure_ids
+
+    @property
     def model(self):
         """Return CE model."""
         return self._model

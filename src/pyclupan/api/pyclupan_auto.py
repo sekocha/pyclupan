@@ -5,8 +5,8 @@ from typing import Optional
 import numpy as np
 
 from pyclupan.api.pyclupan import Pyclupan
-
-# from pyclupan.api.pyclupan_calc import PyclupanCalc
+from pyclupan.api.pyclupan_calc import PyclupanCalc
+from pyclupan.api.pyclupan_regression import PyclupanRegression
 from pyclupan.core.pypolymlp_utils import Polymlp
 from pyclupan.derivative.derivative_utils import DerivativesSet
 
@@ -20,6 +20,7 @@ class PyclupanCE:
 
         self._pyclupan = Pyclupan(verbose=verbose)
         self._pyclupan_calc = None
+        self._pyclupan_reg = None
 
         self._unitcell = None
         self._elements = None
@@ -28,8 +29,12 @@ class PyclupanCE:
 
         self._sampled_structures = []
         self._ds_set = DerivativesSet([])
+        self._ds_set_sample = DerivativesSet([])
 
-        self._energies = None
+        self._X = None
+        self._y = None
+        self._structure_ids = None
+        self._success_go = None
 
     def set_lattice_and_elements(
         self,
@@ -42,7 +47,8 @@ class PyclupanCE:
         Parameter
         ---------
         poscar: Name of POSCAR file.
-        elements: Element integers on sublattice.
+        elements: Element IDs on lattices.
+                  Example: [[0], [1], [2, 3]].
         element_strings: Element strings corresponding to element integers.
         """
         self._elements = elements
@@ -83,6 +89,7 @@ class PyclupanCE:
             structures = ds_set.get_sampled_structures(
                 element_strings=self._element_strings
             )
+            self._ds_set_sample.append(ds_set)
             self._sampled_structures.extend(structures)
         return self
 
@@ -91,60 +98,87 @@ class PyclupanCE:
         if self._sampled_structures is None:
             raise RuntimeError("Sampled structures not found.")
 
-        polymlp = Polymlp(pot=pot)
-        success = np.ones(len(self._sampled_structures), dtype=bool)
+        self._success_go = np.ones(len(self._sampled_structures), dtype=bool)
         n_atom_unitcell = len(self._unitcell.elements)
+
+        polymlp = Polymlp(pot=pot)
         energies = []
         for i, st in enumerate(self._sampled_structures):
             suc = polymlp.run_geometry_optimization(st, gtol=1e-4)
             if not suc:
-                success[i] = False
+                self._success_go[i] = False
                 continue
 
             n_atom = len(polymlp.structure.elements)
             n_unitcell = n_atom / n_atom_unitcell
             energies.append(polymlp.energy / n_unitcell)
-        self._energies = np.array(energies)
-        return self._energies
+
+        self._y = np.array(energies)
+        return self._y
+
+    def enum_cluster(
+        self,
+        max_order: int = 4,
+        cutoffs: tuple[float] = (6.0, 6.0, 6.0),
+        filename: str = "pyclupan_cluster.yaml",
+    ):
+        """Enumerate nonequivalent clusters.
+        Parameters
+        ----------
+        max_order: Maximum order of clusters.
+        cutoffs: Cutoff distances for orders >= 2.
+                (two-body, three-body, four-body, ...)
+                Size of cutoffs must be equal to max_order - 1.
+                Cutoffs must be smaller or equal to those for smaller orders.
+        filename: Name of output file for cluster search results.
+        """
+        if self._elements is None:
+            raise RuntimeError("Elements not given.")
+
+        self._pyclupan.run_cluster(
+            elements=self._elements,
+            max_order=max_order,
+            cutoffs=cutoffs,
+            filename=filename,
+        )
+        return self
+
+    def eval_cluster_functions(self, cluster_yaml: str = "pyclupan_cluster.yaml"):
+        """Evaluate cluster functions for enumerated derivative structures."""
+        self._pyclupan_calc = PyclupanCalc(
+            # clusters_yaml=cluster_yaml, verbose=self._verbose
+            clusters_yaml=cluster_yaml,
+            verbose=False,
+        )
+        self._pyclupan_calc._set_attrs_from_derivatives(self._ds_set_sample)
+        cluster_functions = self._pyclupan_calc.eval_cluster_functions()
+        self._X = cluster_functions[self._success_go]
+        self._structure_ids = [
+            "-".join([str(i) for i in ids])
+            for ds in self._ds_set_sample
+            for ids in ds.all_ids
+        ]
+        self._structure_ids = np.array(self._structure_ids)[self._success_go]
+        return cluster_functions
+
+    def eval_ecis(self):
+        """Evaluate effective cluster interactions."""
+        if self._X is None:
+            raise RuntimeError("Matrix X not calculated.")
+        if self._y is None:
+            raise RuntimeError("Vector y not calculated.")
+
+        self._pyclupan_reg = PyclupanRegression(verbose=self._verbose)
+        self._pyclupan_reg.x = self._X
+        self._pyclupan_reg.y = self._y
+        self._pyclupan_reg.structure_ids = self._structure_ids
+
+        self._pyclupan_reg.run_lasso()
+        self._pyclupan_reg.save_predictions()
+        self._pyclupan_reg.save()
+        return self
 
 
-#     def run_cluster(
-#         self,
-#         occupation: Optional[list] = None,
-#         elements: Optional[list] = None,
-#         max_order: int = 4,
-#         cutoffs: tuple[float] = (6.0, 6.0, 6.0),
-#         filename: str = "pyclupan_cluster.yaml",
-#     ):
-#         """Search nonequivalent clusters.
-#         Parameters
-#         ----------
-#         occupation: Lattice IDs occupied by elements.
-#                     Example: [[0], [1], [2], [2]].
-#         elements: Element IDs on lattices.
-#                   Example: [[0], [1], [2, 3]].
-#         max_order: Maximum order of clusters.
-#         cutoffs: Cutoff distances for orders >= 2.
-#                 (two-body, three-body, four-body, ...)
-#                 Size of cutoffs must be equal to max_order - 1.
-#                 Cutoffs must be smaller or equal to those for smaller orders.
-#         filename: Name of output file for cluster search results.
-#                   If None, no file will be generated.
-#         """
-#         if self._unitcell is None:
-#             raise RuntimeError("Unitcell not found.")
-#
-#         self._clusters = run_cluster(
-#             unitcell=self._unitcell,
-#             occupation=occupation,
-#             elements=elements,
-#             max_order=max_order,
-#             cutoffs=cutoffs,
-#             filename=filename,
-#             verbose=self._verbose,
-#         )
-#         return self
-#
 #     def run_derivative(
 #         self,
 #         occupation: Optional[list] = None,
@@ -203,79 +237,6 @@ class PyclupanCE:
 #             verbose=self._verbose,
 #         )
 #         return self
-#
-#     def save_derivatives(self, filename: str = "pyclupan_derivatives.yaml"):
-#         """Save derivative structures.
-#
-#         Parameter
-#         ---------
-#         filename: YAML file for saving derivative structures.
-#         """
-#         from pyclupan.derivative.derivative_utils import write_derivatives_yaml
-#
-#         if self._derivs_set is None:
-#             raise RuntimeError("Derivative structures not found.")
-#
-#         fname_output = write_derivatives_yaml(
-#             self._derivs_set,
-#             self._zdd,
-#             filename=filename,
-#         )
-#         if self._verbose:
-#             if fname_output is None:
-#                 print("No result file is not generated.", flush=True)
-#             else:
-#                 print(fname_output, "is generated.", flush=True)
-#
-#         return self
-#
-#     def load_derivatives(self, filename: str = "pyclupan_derivatives.yaml"):
-#         """Load derivatives.yaml.
-#
-#         Parameter
-#         ---------
-#         filename: Single YAML file or multiple YAML files for derivative structures.
-#         """
-#         from pyclupan.derivative.derivative_utils import load_derivatives_yaml
-#
-#         if isinstance(filename, str):
-#             self._derivs_set = load_derivatives_yaml(filename)
-#         elif isinstance(filename, (list, tuple, np.ndarray)):
-#             self._derivs_set = DerivativesSet([])
-#             for f in filename:
-#                 ds = load_derivatives_yaml(f)
-#                 self._derivs_set.append(ds)
-#
-#         return self
-#
-#     def sample_derivatives(
-#         self,
-#         method: Literal["all", "uniform", "random"] = "uniform",
-#         n_samples: int = 100,
-#         path: str = "poscars",
-#         elements: tuple = ("Al", "Cu"),
-#     ):
-#         """Parse derivatives.yaml.
-#
-#         Parameters
-#         ----------
-#         method: Sampling method.
-#                 Methods of "all", "uniform", and "random" are available.
-#         n_samples: Number of sample structures.
-#         path: Directory path for saving structure files.
-#         elements: Element strings used to save structure files.
-#         """
-#         if self._derivs_set is None:
-#             raise RuntimeError("Derivative structures not found.")
-#
-#         run_sampling_derivatives(
-#             ds_set=self._derivs_set,
-#             n_samples=n_samples,
-#             method=method,
-#             path_poscars=path,
-#             element_strings=elements,
-#             save_poscars=True,
-#         )
 #
 #     @property
 #     def derivative_structures(self):
