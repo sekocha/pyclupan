@@ -37,7 +37,7 @@ def solver_lasso(
 ):
     """Solver Lasso."""
     ce_models = []
-    for alp in alphas:
+    for i, alp in enumerate(alphas, start=1):
         reg = linear_model.Lasso(alpha=alp, fit_intercept=True, max_iter=10000)
         reg.fit(x, y)
         scores = cross_val_score(
@@ -50,7 +50,8 @@ def solver_lasso(
         model = CEmodel(coef, intercept, cv_score=cv_score, rmse=error, alpha=alp)
         ce_models.append(model)
         if verbose:
-            print("- alpha:     ", alp, flush=True)
+            print("- model:     ", str(i).zfill(3), flush=True)
+            print("  alpha:     ", alp, flush=True)
             print("  n_nonzero: ", np.count_nonzero(np.abs(coef) > 1e-12), flush=True)
             print("  10-fold CV:", np.round(cv_score * 1000, 5), "meV/cell", flush=True)
             print("  RMSE:      ", np.round(error * 1000, 5), "meV/cell", flush=True)
