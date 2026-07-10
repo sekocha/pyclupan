@@ -4,10 +4,10 @@ from typing import Optional
 
 import numpy as np
 
-from pyclupan.api.pyclupan_calc_cf import PyclupanCalcFeatures
 from pyclupan.api.pyclupan_calc_model import PyclupanCalcModel
 from pyclupan.api.pyclupan_cluster import PyclupanCluster
 from pyclupan.api.pyclupan_derivatives import PyclupanDerivatives
+from pyclupan.api.pyclupan_features import PyclupanCalcFeatures
 from pyclupan.api.pyclupan_regression import PyclupanRegression
 from pyclupan.core.pypolymlp_utils import Polymlp
 from pyclupan.derivative.derivative_utils import DerivativesSet

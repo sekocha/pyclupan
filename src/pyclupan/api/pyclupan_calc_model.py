@@ -4,7 +4,7 @@ from typing import Optional
 
 import numpy as np
 
-from pyclupan.api.pyclupan_calc_cf import PyclupanCalcFeatures
+from pyclupan.api.pyclupan_features import PyclupanCalcFeatures
 from pyclupan.core.model import CEmodel
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
 from pyclupan.prediction.formation_energy_utils import (
