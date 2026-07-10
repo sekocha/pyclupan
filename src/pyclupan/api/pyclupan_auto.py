@@ -29,7 +29,6 @@ class PyclupanCE:
         self._unitcell = None
         self._elements = None
         self._element_strings = None
-        np.set_printoptions(legacy="1.21")
 
         self._sampled_structures = []
         self._ds_set = DerivativesSet([])
@@ -41,6 +40,13 @@ class PyclupanCE:
 
         self._model = None
         self._models = None
+
+        self._energies = None
+        self._formation_energies = None
+        self._compositions = None
+        self._convex = None
+
+        np.set_printoptions(legacy="1.21")
 
     def set_lattice_and_elements(
         self,
@@ -182,11 +188,6 @@ class PyclupanCE:
         self._pyclupan_features.derivatives = self._ds_set
         cluster_functions = self._pyclupan_features.eval_cluster_functions()
         self._structure_ids = self._pyclupan_features.structure_indices
-        # self._structure_ids = [
-        #     "-".join([str(i) for i in ids])
-        #     for ds in self._ds_set_sample
-        #     for ids in ds.all_ids
-        # ]
         return cluster_functions
 
     def eval_predictor_matrix(self):
@@ -242,8 +243,11 @@ class PyclupanCE:
 
         self._pyclupan_model.derivatives = self._ds_set
         self._pyclupan_model.eval_cluster_functions()
-        self._formation_energies = self._pyclupan_model.eval_formation_energies()
+        res = self._pyclupan_model.eval_formation_energies()
+        (self._formation_energies, self._compositions, self._convex) = res
         self._structure_ids = self._pyclupan_model.structure_indices
+        self._pyclupan_model.save_convex_hull_yaml()
+        return self
 
 
 #     @property

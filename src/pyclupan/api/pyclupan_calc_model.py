@@ -123,8 +123,10 @@ class PyclupanCalcModel(PyclupanCalcFeatures):
     ):
         """Evaluate formation energies.
 
-        Structures or labelings are needed to specity endmembers.
+        (structures, element_strings), (poscars_endmembers, element_strings)
+        or labelings are used to specity endmembers.
         Their formation energies are calculated using CE model.
+        If they are not specified, the end members are automatically determined.
 
         Parameters
         ----------
@@ -136,7 +138,8 @@ class PyclupanCalcModel(PyclupanCalcFeatures):
             labels 0 and 1 indicate elements Ag and Au, respectively.
         labelings_endmembers: Labelings of endmembers.
         supercell_matrices_endmembers:
-            Supercell matrice corresponding to each labeling.
+            Supercell matrix corresponding to each labeling.
+            If None, the unit matrix will be given.
         """
         if self._energies is None:
             raise RuntimeError("Energies not found.")
@@ -158,8 +161,6 @@ class PyclupanCalcModel(PyclupanCalcFeatures):
             supercell_matrices_endmembers=supercell_matrices_endmembers,
             verbose=self._verbose,
         )
-        print(self._formation_energies)
-        print(self._compositions)
         res = append_formation_energies_endmembers(
             self._compositions,
             self._formation_energies,
@@ -216,46 +217,49 @@ class PyclupanCalcModel(PyclupanCalcFeatures):
         save_convex_yaml(self._convex, filename=filename)
         return self
 
+    #     def save_convex_hull_poscars_from_derivatives(self, element_strings: tuple):
+    #         """Save derivative structures on convex hull.
+    #
+    #         Parameter
+    #         ---------
+    #         element_strings: Element strings.
+    #             The location index corresponds to label integer.
+    #             For example, element_strings are ("Ag", "Au"),
+    #             labels 0 and 1 indicate elements Ag and Au, respectively.
+    #         """
+    #         if self._convex is None:
+    #             raise RuntimeError("Convex hull not found.")
+    #         if self._derivatives is None:
+    #             raise RuntimeError("Derivative structures not found.")
+    #
+    #         ids = [i for i in self._convex[:, -1] if "End" not in i]
+    #         keys = [i.split("-") for i in ids]
+    #         keys = [tuple([int(k2) for k2 in k]) for k in keys]
+    #         run_sampling_derivatives(
+    #             ds_set=self._derivatives,
+    #             element_strings=element_strings,
+    #             keys=keys,
+    #             save_poscars=True,
+    #         )
+    #         return self
+    #
 
-#     def save_convex_hull_poscars_from_derivatives(self, element_strings: tuple):
-#         """Save derivative structures on convex hull.
-#
-#         Parameter
-#         ---------
-#         element_strings: Element strings.
-#             The location index corresponds to label integer.
-#             For example, element_strings are ("Ag", "Au"),
-#             labels 0 and 1 indicate elements Ag and Au, respectively.
-#         """
-#         if self._convex is None:
-#             raise RuntimeError("Convex hull not found.")
-#         if self._derivatives is None:
-#             raise RuntimeError("Derivative structures not found.")
-#
-#         ids = [i for i in self._convex[:, -1] if "End" not in i]
-#         keys = [i.split("-") for i in ids]
-#         keys = [tuple([int(k2) for k2 in k]) for k in keys]
-#         run_sampling_derivatives(
-#             ds_set=self._derivatives,
-#             element_strings=element_strings,
-#             keys=keys,
-#             save_poscars=True,
-#         )
-#         return self
-#
-#     @property
-#     def energies(self):
-#         """Return energies (per unitcell)."""
-#         return self._energies
-#
-#     @property
-#     def formation_energies(self):
-#         """Return formation energies (per unitcell)."""
-#         return self._formation_energies
-#
-#     @property
-#     def convexhull(self):
-#         """Return convex hull of formation energies."""
-#         return self._convex
-#
-#
+    @property
+    def energies(self):
+        """Return energies (per unitcell)."""
+        return self._energies
+
+    @property
+    def formation_energies(self):
+        """Return formation energies (per unitcell)."""
+        return self._formation_energies
+
+    @property
+    def compositions(self):
+        """Return compositions."""
+        return self._formation_energies
+
+    @property
+    def convexhull(self):
+        """Return convex hull of formation energies."""
+        return self._convex
