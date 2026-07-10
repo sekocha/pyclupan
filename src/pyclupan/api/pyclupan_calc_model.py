@@ -39,7 +39,6 @@ class PyclupanCalcModel(PyclupanCalcFeatures):
         super().__init__(clusters_yaml=clusters_yaml, verbose=verbose)
 
         self._model = None
-
         self._energies = None
         self._formation_energies = None
         self._compositions = None
@@ -77,8 +76,9 @@ class PyclupanCalcModel(PyclupanCalcFeatures):
         """Evaluate energies."""
         if self._model is None:
             raise RuntimeError("CE model not found.")
+
         if self._cluster_functions is None:
-            raise RuntimeError("Cluster functions not found.")
+            self.eval_cluster_functions()
 
         self._energies = self._model.eval(self._cluster_functions)
         return self._energies
@@ -217,6 +217,7 @@ class PyclupanCalcModel(PyclupanCalcFeatures):
         save_convex_yaml(self._convex, filename=filename)
         return self
 
+    # TODO
     #     def save_convex_hull_poscars_from_derivatives(self, element_strings: tuple):
     #         """Save derivative structures on convex hull.
     #

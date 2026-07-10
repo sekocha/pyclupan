@@ -13,6 +13,7 @@ from pyclupan.core.pypolymlp_utils import Polymlp
 from pyclupan.derivative.derivative_utils import DerivativesSet
 
 
+# TODO: Derivative structure enumeration using uniform and random.
 class PyclupanCE:
     """API Class for generating CE model using polymlp."""
 
@@ -235,6 +236,8 @@ class PyclupanCE:
         self._pyclupan_model.eval_cluster_functions()
         self._energies = self._pyclupan_model.eval_energies()
         self._structure_ids = self._pyclupan_model.structure_indices
+
+        self._pyclupan_model.save_energies()
         return self._energies
 
     def eval_ce_formation_energies(self):
@@ -249,27 +252,7 @@ class PyclupanCE:
         res = self._pyclupan_model.eval_formation_energies()
         (self._formation_energies, self._compositions, self._convex) = res
         self._structure_ids = self._pyclupan_model.structure_indices
+
+        self._pyclupan_model.save_formation_energies()
         self._pyclupan_model.save_convex_hull_yaml()
         return self
-
-
-#     @property
-#     def derivative_structures(self):
-#         """Return derivative structures.
-#
-#         Return
-#         ------
-#         deriv_set: Instance of DerivativeSet class.
-#         """
-#         return self._derivs_set
-#
-#     @property
-#     def clusters(self):
-#         """Return nonequivalent clusters.
-#
-#         Return
-#         ------
-#         clusters: Nonequivalent clusters, dict[list[ClusterAttr]].
-#                   Dictionary keys are cluster orders.
-#         """
-#         return self._clusters

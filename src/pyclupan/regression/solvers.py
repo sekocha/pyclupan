@@ -60,7 +60,7 @@ def solver_lasso(
         idx, min_model = min(enumerate(ce_models), key=lambda s: s[1].cv_score)
         print("--------------------------------", flush=True)
         print("CE model with CV minimum:", flush=True)
-        print("  model:     ", str(idx + 1).zfill(2), flush=True)
+        print("  model:     ", str(idx + 1).zfill(3), flush=True)
         print("  alpha:     ", min_model.alpha, flush=True)
         coef = min_model.coeffs
         cv_score, error = min_model.cv_score, min_model.rmse
