@@ -4,12 +4,10 @@ from typing import Optional
 
 import numpy as np
 
-from pyclupan.api.pyclupan import Pyclupan
 from pyclupan.api.pyclupan_calc_cf import PyclupanCalcFeatures
 from pyclupan.api.pyclupan_calc_model import PyclupanCalcModel
 from pyclupan.api.pyclupan_cluster import PyclupanCluster
-
-# from pyclupan.api.pyclupan_calc import PyclupanCalc
+from pyclupan.api.pyclupan_derivatives import PyclupanDerivatives
 from pyclupan.api.pyclupan_regression import PyclupanRegression
 from pyclupan.core.pypolymlp_utils import Polymlp
 from pyclupan.derivative.derivative_utils import DerivativesSet
@@ -22,7 +20,7 @@ class PyclupanCE:
         """Init method."""
         self._verbose = verbose
 
-        self._pyclupan = Pyclupan(verbose=verbose)
+        self._pyclupan_deriv = PyclupanDerivatives(verbose=verbose)
         self._pyclupan_cluster = PyclupanCluster(verbose=verbose)
         self._pyclupan_features = None
         self._pyclupan_model = None
@@ -67,7 +65,7 @@ class PyclupanCE:
         """
         self._elements = elements
         self._element_strings = element_strings
-        self._unitcell = self._pyclupan.load_poscar(poscar)
+        self._unitcell = self._pyclupan_deriv.load_poscar(poscar)
         self._pyclupan_cluster.unitcell = self._unitcell
         return self
 
@@ -96,8 +94,11 @@ class PyclupanCE:
         end_members: Include structures of end members.
         superperiodic: Include superperiodic derivative structures.
         """
+        if self._elements is None:
+            raise RuntimeError("Elements not given.")
+
         for size in range(min_supercell_size, max_supercell_size + 1):
-            self._pyclupan.run_derivative(
+            self._pyclupan_deriv.run_derivative(
                 elements=self._elements,
                 supercell_size=size,
                 end_members=end_members,
@@ -107,16 +108,16 @@ class PyclupanCE:
                 comp_ub=comp_ub,
             )
             filename = "pyclupan_derivative_" + str(size) + ".yaml"
-            self._pyclupan.save_derivatives(filename=filename)
-            self._ds_set.append(self._pyclupan.derivative_structures)
+            self._pyclupan_deriv.save_derivatives(filename=filename)
+            self._ds_set.append(self._pyclupan_deriv.derivative_structures)
 
             method = "all" if n_samples is None else "uniform"
-            self._pyclupan.sample_derivatives(
+            self._pyclupan_deriv.sample_derivatives(
                 method=method,
                 n_samples=n_samples,
                 save_poscars=False,
             )
-            ds_set = self._pyclupan.derivative_structures
+            ds_set = self._pyclupan_deriv.derivative_structures
             structures = ds_set.get_sampled_structures(
                 element_strings=self._element_strings
             )
