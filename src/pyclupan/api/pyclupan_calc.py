@@ -425,3 +425,13 @@ class PyclupanCalc:
     def convexhull(self):
         """Return convex hull of formation energies."""
         return self._convex
+
+    @property
+    def model(self):
+        """Return CE model."""
+        return self._model
+
+    @model.setter
+    def model(self, model):
+        """Setter of CE model."""
+        self._model = model

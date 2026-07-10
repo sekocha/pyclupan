@@ -130,16 +130,19 @@ class PyclupanRegression:
         )
         return self
 
+    @property
+    def best_model(self):
+        """Return best CE model."""
+        if self._model is not None:
+            return self._model
+        return min(self._models, key=lambda s: s.cv_score)
+
     def save_predictions(self, filename: str = "pyclupan_prediction.dat"):
         """Save predicted values for dataset."""
         if self._model is None and self._models is None:
             raise RuntimeError("CE model not found.")
 
-        if self._model is not None:
-            model = self._model
-        else:
-            model = min(self._models, key=lambda s: s.cv_score)
-
+        model = self.best_model
         pred = model.eval(self._x)
         with open(filename, "w") as f:
             print("# DFT (eV/cell), CE (eV/cell), Error (meV/cell)", file=f)

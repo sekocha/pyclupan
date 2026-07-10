@@ -34,6 +34,15 @@ class CEmodel:
         energies += self.intercept
         return energies
 
+    def eliminate_zeros(self, spin_basis: list, tol: float = 1e-15):
+        """Eliminate zero coefficients."""
+        if self.cluster_ids is not None:
+            raise RuntimeError("Cluster indices are already assigned.")
+
+        self.cluster_ids = np.where(np.abs(self.coeffs) > tol)[0]
+        self.coeffs = self.coeffs[self.cluster_ids]
+        return self.nonzero_spin_basis(spin_basis)
+
     def nonzero_spin_basis(self, spin_basis: list):
         """Extract spin basis clusters with nonzero ECIs."""
         return [spin_basis[i] for i in self.cluster_ids]

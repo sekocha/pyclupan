@@ -5,7 +5,10 @@ from typing import Optional
 import numpy as np
 
 from pyclupan.api.pyclupan import Pyclupan
-from pyclupan.api.pyclupan_calc import PyclupanCalc
+from pyclupan.api.pyclupan_calc_cf import PyclupanCalcFeatures
+from pyclupan.api.pyclupan_calc_model import PyclupanCalcModel
+
+# from pyclupan.api.pyclupan_calc import PyclupanCalc
 from pyclupan.api.pyclupan_regression import PyclupanRegression
 from pyclupan.core.pypolymlp_utils import Polymlp
 from pyclupan.derivative.derivative_utils import DerivativesSet
@@ -19,7 +22,8 @@ class PyclupanCE:
         self._verbose = verbose
 
         self._pyclupan = Pyclupan(verbose=verbose)
-        self._pyclupan_calc = None
+        self._pyclupan_features = None
+        self._pyclupan_model = None
         self._pyclupan_reg = None
 
         self._unitcell = None
@@ -29,12 +33,14 @@ class PyclupanCE:
 
         self._sampled_structures = []
         self._ds_set = DerivativesSet([])
-        self._ds_set_sample = DerivativesSet([])
 
         self._X = None
         self._y = None
         self._structure_ids = None
         self._success_go = None
+
+        self._model = None
+        self._models = None
 
     def set_lattice_and_elements(
         self,
@@ -61,23 +67,39 @@ class PyclupanCE:
         min_supercell_size: int = 1,
         max_supercell_size: int = 8,
         n_samples: Optional[int] = None,
+        comp: Optional[list] = None,
+        comp_lb: Optional[list] = None,
+        comp_ub: Optional[list] = None,
         end_members: bool = True,
         superperiodic: bool = False,
     ):
-        """Enumerate derivative structures."""
+        """Enumerate derivative structures.
+
+        Parameters
+        ----------
+        comp: Compositions for sublattices (n_elements / n_sites).
+              Compositions are not needed to be normalized.
+              Format: [(element ID, composition), (element ID, composition),...]
+        comp_lb: Lower bounds of compositions for sublattices.
+              Format: [(element ID, composition), (element ID, composition),...]
+        comp_ub: Upper bounds of compositions for sublattices.
+              Format: [(element ID, composition), (element ID, composition),...]
+        end_members: Include structures of end members.
+        superperiodic: Include superperiodic derivative structures.
+        """
         for size in range(min_supercell_size, max_supercell_size + 1):
             self._pyclupan.run_derivative(
                 elements=self._elements,
                 supercell_size=size,
                 end_members=end_members,
                 superperiodic=superperiodic,
+                comp=comp,
+                comp_lb=comp_lb,
+                comp_ub=comp_ub,
             )
             filename = "pyclupan_derivative_" + str(size) + ".yaml"
             self._pyclupan.save_derivatives(filename=filename)
             self._ds_set.append(self._pyclupan.derivative_structures)
-
-            # for ds in ds_set:
-            #     ds.structure_ids = ds.all_ids
 
             method = "all" if n_samples is None else "uniform"
             self._pyclupan.sample_derivatives(
@@ -89,12 +111,12 @@ class PyclupanCE:
             structures = ds_set.get_sampled_structures(
                 element_strings=self._element_strings
             )
-            self._ds_set_sample.append(ds_set)
+            # self._ds_set_sample.append(ds_set)
             self._sampled_structures.extend(structures)
         return self
 
     def eval_energies(self, pot: Optional[str] = "polymlp.yaml"):
-        """Evaluate energies using polymp."""
+        """Evaluate energies using polymlp."""
         if self._sampled_structures is None:
             raise RuntimeError("Sampled structures not found.")
 
@@ -141,25 +163,41 @@ class PyclupanCE:
             cutoffs=cutoffs,
             filename=filename,
         )
-        return self
 
-    def eval_cluster_functions(self, cluster_yaml: str = "pyclupan_cluster.yaml"):
-        """Evaluate cluster functions for enumerated derivative structures."""
-        self._pyclupan_calc = PyclupanCalc(
-            # clusters_yaml=cluster_yaml, verbose=self._verbose
-            clusters_yaml=cluster_yaml,
+        self._pyclupan_features = PyclupanCalcFeatures(
+            clusters_yaml=filename,
             verbose=False,
         )
-        self._pyclupan_calc._set_attrs_from_derivatives(self._ds_set_sample)
-        cluster_functions = self._pyclupan_calc.eval_cluster_functions()
-        self._X = cluster_functions[self._success_go]
-        self._structure_ids = [
-            "-".join([str(i) for i in ids])
-            for ds in self._ds_set_sample
-            for ids in ds.all_ids
-        ]
-        self._structure_ids = np.array(self._structure_ids)[self._success_go]
+        self._pyclupan_model = PyclupanCalcModel(
+            clusters_yaml=filename,
+            verbose=False,
+        )
+        return self
+
+    def eval_cluster_functions(self):
+        """Evaluate cluster functions for enumerated derivative structures."""
+        if self._pyclupan_features is None:
+            raise RuntimeError("Feature class not found.")
+
+        self._pyclupan_features.derivatives = self._ds_set
+        cluster_functions = self._pyclupan_features.eval_cluster_functions()
+        self._structure_ids = self._pyclupan_features.structure_indices
+        # self._structure_ids = [
+        #     "-".join([str(i) for i in ids])
+        #     for ds in self._ds_set_sample
+        #     for ids in ds.all_ids
+        # ]
         return cluster_functions
+
+    def eval_predictor_matrix(self):
+        """Evaluate predictor matrix for enumerated derivative structures."""
+        if self._success_go is None:
+            raise RuntimeError("Results from geometry optimization not found.")
+
+        cluster_functions = self.eval_cluster_functions()
+        self._X = cluster_functions[self._success_go]
+        self._structure_ids = np.array(self._structure_ids)[self._success_go]
+        return self
 
     def eval_ecis(self):
         """Evaluate effective cluster interactions."""
@@ -176,68 +214,38 @@ class PyclupanCE:
         self._pyclupan_reg.run_lasso()
         self._pyclupan_reg.save_predictions()
         self._pyclupan_reg.save()
+
+        self._model = self._pyclupan_reg.best_model
+        self._models = self._pyclupan_reg.models
+        self._pyclupan_model.model = self._model
         return self
 
+    def eval_ce_energies(self):
+        """Evaluate energies of CE model."""
+        if self._pyclupan_model is None:
+            raise RuntimeError("CE calculation model class not provided.")
+        if self._model is None:
+            raise RuntimeError("CE calculation model not provided.")
 
-#     def run_derivative(
-#         self,
-#         occupation: Optional[list] = None,
-#         elements: Optional[list] = None,
-#         comp: Optional[list] = None,
-#         comp_lb: Optional[list] = None,
-#         comp_ub: Optional[list] = None,
-#         supercell_size: Optional[int] = None,
-#         hnf: Optional[np.ndarray] = None,
-#         one_of_k_rep: bool = False,
-#         superperiodic: bool = False,
-#         end_members: bool = False,
-#         charges: Optional[list] = None,
-#     ):
-#         """Enumerate derivative structures.
-#
-#         Parameters
-#         ----------
-#         occupation: Lattice IDs occupied by elements.
-#                     Example: [[0], [1], [2], [2]].
-#         elements: Element IDs on lattices.
-#                   Example: [[0], [1], [2, 3]].
-#         comp: Compositions for sublattices (n_elements / n_sites).
-#               Compositions are not needed to be normalized.
-#               Format: [(element ID, composition), (element ID, composition),...]
-#         comp_lb: Lower bounds of compositions for sublattices.
-#               Format: [(element ID, composition), (element ID, composition),...]
-#         comp_ub: Upper bounds of compositions for sublattices.
-#               Format: [(element ID, composition), (element ID, composition),...]
-#         supercell_size: Determinant of supercell matrices.
-#                     Derivative structures for all nonequivalent HNFs are enumerated.
-#         hnf: Supercell matrix in Hermite normal form.
-#         superperiodic: Include superperiodic derivative structures.
-#         end_members: Include structures of end members.
-#         charges: Charges of elements.
-#               Format: [(element ID, charge), (element ID, charge),...]
-#         """
-#         from pyclupan.derivative.run_derivative import run_derivatives
-#
-#         if self._unitcell is None:
-#             raise RuntimeError("Unitcell not found.")
-#
-#         self._derivs_set, self._zdd = run_derivatives(
-#             self._unitcell,
-#             occupation=occupation,
-#             elements=elements,
-#             comp=comp,
-#             comp_lb=comp_lb,
-#             comp_ub=comp_ub,
-#             supercell_size=supercell_size,
-#             hnf=hnf,
-#             one_of_k_rep=one_of_k_rep,
-#             superperiodic=superperiodic,
-#             end_members=end_members,
-#             charges=charges,
-#             verbose=self._verbose,
-#         )
-#         return self
-#
+        self._pyclupan_model.derivatives = self._ds_set
+        self._pyclupan_model.eval_cluster_functions()
+        self._energies = self._pyclupan_model.eval_energies()
+        self._structure_ids = self._pyclupan_model.structure_indices
+        return self._energies
+
+    def eval_ce_formation_energies(self):
+        """Evaluate formation energies of CE model."""
+        if self._pyclupan_model is None:
+            raise RuntimeError("CE calculation model class not provided.")
+        if self._model is None:
+            raise RuntimeError("CE calculation model not provided.")
+
+        self._pyclupan_model.derivatives = self._ds_set
+        self._pyclupan_model.eval_cluster_functions()
+        self._formation_energies = self._pyclupan_model.eval_formation_energies()
+        self._structure_ids = self._pyclupan_model.structure_indices
+
+
 #     @property
 #     def derivative_structures(self):
 #         """Return derivative structures.
