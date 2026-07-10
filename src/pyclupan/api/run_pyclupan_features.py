@@ -6,7 +6,7 @@ import signal
 import numpy as np
 
 from pyclupan.api.api_utils import print_credit
-from pyclupan.api.pyclupan_calc_model import PyclupanCalcModel
+from pyclupan.api.pyclupan_features import PyclupanCalcFeatures
 
 
 def run():
@@ -20,13 +20,6 @@ def run():
         required=True,
         default="pyclupan_clusters.yaml",
         help="Cluster search result file.",
-    )
-    parser.add_argument(
-        "-e",
-        "--ecis",
-        type=str,
-        default=None,
-        help="ECIs obtained from regression.",
     )
 
     parser.add_argument(
@@ -57,13 +50,6 @@ def run():
         default=None,
         help="Yaml file for derivative structures sampled.",
     )
-    parser.add_argument(
-        "--end_poscars",
-        nargs="*",
-        type=str,
-        default=None,
-        help="POSCAR files for end members.",
-    )
 
     args = parser.parse_args()
 
@@ -72,7 +58,7 @@ def run():
 
     print_credit()
     np.set_printoptions(legacy="1.21")
-    clupan = PyclupanCalcModel(args.clusters, verbose=True)
+    clupan = PyclupanCalcFeatures(args.clusters, verbose=True)
     if args.derivatives:
         for d in args.derivatives:
             print("Loading", d, flush=True)
@@ -87,19 +73,5 @@ def run():
             print("Loading", p, flush=True)
         clupan.load_poscars(args.poscars, element_strings=args.element_strings)
 
-    clupan.load_ecis(args.ecis)
     clupan.eval_cluster_functions()
-
-    clupan.eval_energies()
-    clupan.save_energies()
-
-    clupan.eval_formation_energies(
-        poscars_endmembers=args.end_poscars,
-        element_strings=args.element_strings,
-    )
-    clupan.save_formation_energies()
-    clupan.save_convex_hull_yaml()
-    clupan.load_formation_energies()
-    clupan.save_convex_hull_poscars_from_derivatives(
-        element_strings=args.element_strings
-    )
+    clupan.save_features()

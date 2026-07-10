@@ -6,18 +6,18 @@ The calculated cluster functions will be saved to an HDF5 file `pyclupan_feature
 When cluster functions are computed for enumerated derivative structures, the `--derivatives` option can be used to specify the files containing the enumerated labelings of those derivative structures.
 
 ```shell
-> pyclupan-calc --clusters pyclupan_clusters.yaml --derivatives pyclupan_derivatives_*.yaml
+> pyclupan-features --clusters pyclupan_clusters.yaml --derivatives pyclupan_derivatives_*.yaml
 ```
 
 When cluster functions are calculated for sampled structures taken from a set of derivative structures, use the `--sample` option to specify the sampled structures.
 
 ```shell
-> pyclupan-calc --clusters pyclupan_clusters.yaml --samples pyclupan_sample_attrs.yaml
+> pyclupan-features --clusters pyclupan_clusters.yaml --samples pyclupan_sample_attrs.yaml
 ```
 
 If structures in POSCAR format are provided, cluster functions can be calculated as follows.
 ```shell
-> pyclupan-calc --clusters pyclupan_clusters.yaml --poscars POSCAR1 POSCAR2 --element_strings Ag Au
+> pyclupan-features --clusters pyclupan_clusters.yaml --poscars POSCAR1 POSCAR2 --element_strings Ag Au
 ```
 In this case, the element strings must be specified to define their corresponding element indices.
 The order of the element strings is important, as it determines the element indices.

@@ -6,5 +6,4 @@ from pyclupan._version import __version__
 def print_credit():
     """Print credit of pyclupan."""
     print("Pyclupan", "version", __version__, flush=True)
-    # print("  polynomial machine learning potential:", flush=True)
-    # print("  A. Seko, J. Appl. Phys. 133, 011101 (2023)", flush=True)
+    print("  A. Seko et al., Phys. Rev. B 80, 165122 (2009)", flush=True)
