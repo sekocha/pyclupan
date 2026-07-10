@@ -21,7 +21,7 @@ The command line for performing this operation is as follows.
 # Direct
 #   0.000000000 0.000000000 0.000000000
 
-> pyclupan -p poscar-fcc-primitive --supercell_size 3
+> pyclupan-derivatives -p poscar-fcc-primitive --supercell_size 3
 ```
 The expansion degree can be given using the `--supercell_size` option.
 
@@ -29,18 +29,18 @@ If the composition of the derivative structures is constrained, the `--comp` opt
 In the `--comp` option, the element IDs (starting from zero) and their corresponding compositions must be specified for all elements.
 ```shell
 # --comp element_id chemical_composition
-> pyclupan -p fcc-primitive --supercell_size 3 --comp 0 0.3333333333 --comp 1 0.66666666666
+> pyclupan-derivatives -p fcc-primitive --supercell_size 3 --comp 0 0.3333333333 --comp 1 0.66666666666
 ```
 
 The compositions do not need to be normalized; equivalently, they can be specified as follows.
 ```shell
-> pyclupan -p fcc-primitive --supercell_size 3 --comp 0 1.0 --comp 1 2.0
+> pyclupan-derivatives -p fcc-primitive --supercell_size 3 --comp 0 1.0 --comp 1 2.0
 ```
 
 The composition ranges can also be specified as input parameters.
 The lower and upper bounds of the composition for each element can be defined.
 ```shell
-> pyclupan -p fcc-primitive --supercell_size 6 --comp_lb 0 0.5 --comp_ub 0 0.67
+> pyclupan-derivatives -p fcc-primitive --supercell_size 6 --comp_lb 0 0.5 --comp_ub 0 0.67
 ```
 In this example, only structures in which the composition of element 0 ranges from 0.5 to 0.67 are enumerated.
 Note that structures with a composition exactly equal to 0.5 are included.
@@ -52,7 +52,7 @@ A given one-dimensional sequence containing nine elements is reshaped into a 3x3
 #              [0, 2, 0]
 #              [1, 0, 3]]
 
-> pyclupan -p fcc-primitive --hnf 1 0 0 0 2 0 1 0 3
+> pyclupan-derivatives -p fcc-primitive --hnf 1 0 0 0 2 0 1 0 3
 ```
 
 After running the derivative structure search, a result file named `derivative.yaml`, containing all possible labelings corresponding to the derivative structures, is generated.
@@ -75,10 +75,10 @@ In the example below, `-e 0 1 2` indicates that three different elements occupy 
 #   0.000000000 0.000000000 0.000000000
 
 (For Ternary)
-> pyclupan -p poscar-fcc-primitive --supercell_size 3 -e 0 1 2
+> pyclupan-derivatives -p poscar-fcc-primitive --supercell_size 3 -e 0 1 2
 
 (For Quaternary)
-> pyclupan -p poscar-fcc-primitive --supercell_size 4 -e 0 1 2 3
+> pyclupan-derivatives -p poscar-fcc-primitive --supercell_size 4 -e 0 1 2 3
 ```
 
 ## Enumeration of Derivative Structures for Multiple Lattices
@@ -105,13 +105,13 @@ The order of the `-e` options is important for controlling the sublattices on wh
 #   0.000000000 0.5000000000 0.5000000000
 #   0.5000000000 0.000000000 0.5000000000
 
-> pyclupan -p POSCAR --supercell_size 4 -e 0 -e 1 -e 2 3
+> pyclupan-derivatives -p POSCAR --supercell_size 4 -e 0 -e 1 -e 2 3
 ```
 
 The other options `--comp`, `--comp_lb`, `--comp_ub`, and `--hnf` are also available.
 To restrict the composition, `--comp_lb` and `--comp_ub` options can be used as follows:
 ```shell
-> pyclupan -p POSCAR --supercell_size 4 -e 0 -e 1 -e 2 3 --comp_lb 2 0.66 --comp_ub 2 0.9
+> pyclupan-derivatives -p POSCAR --supercell_size 4 -e 0 -e 1 -e 2 3 --comp_lb 2 0.66 --comp_ub 2 0.9
 ```
 
 ### Configurations on Multiple Lattices
@@ -135,7 +135,7 @@ Configurations involving three elements (indices 0, 1, and 2) on the first and s
 #   0.000000000 0.5000000000 0.5000000000
 #   0.5000000000 0.000000000 0.5000000000
 
-> pyclupan -p POSCAR --supercell_size 4 -e 0 1 2 -e 0 1 2 -e 3 4
+> pyclupan-derivatives -p POSCAR --supercell_size 4 -e 0 1 2 -e 0 1 2 -e 3 4
 ```
 
 ### More Complex Constraints
@@ -160,7 +160,7 @@ Anions X occupy the third sublattice, with one-sixth of this sublattice remainin
 #   0.000000000 0.5000000000 0.5000000000
 #   0.5000000000 0.000000000 0.5000000000
 
-> pyclupan -p POSCAR --supercell_size 4 -e 0 1 -e 0 1 2 -e 3 4 --comp 0 2.0 --comp 1 1.0 --comp 2 1.0 --comp 3 5.0 --comp 4 1.0
+> pyclupan-derivatives -p POSCAR --supercell_size 4 -e 0 1 -e 0 1 2 -e 3 4 --comp 0 2.0 --comp 1 1.0 --comp 2 1.0 --comp 3 5.0 --comp 4 1.0
 ```
 Elements 0, 1, and 2 correspond to cations A, B, and C, respectively.
 Element 3 corresponds to the anion X, and element 4 represents vacant anion sites.
@@ -190,6 +190,6 @@ Only derivative structures satisfying charge neutrality are enumerated.
 # element 2: C (4+), element 3: D (3+) on sublattice 2
 # element 4: X (2-) on sublattice 3
 
-> pyclupan -p POSCAR --supercell_size 4 -e 0 1 -e 2 3 -e 4 --charge 0 2.0 --charge 1 3.0 --charge 2 4.0 --charge 3 3.0 --charge 4 -2.0
+> pyclupan-derivatives -p POSCAR --supercell_size 4 -e 0 1 -e 2 3 -e 4 --charge 0 2.0 --charge 1 3.0 --charge 2 4.0 --charge 3 3.0 --charge 4 -2.0
 ```
 When enumerating structures that satisfy charge neutrality, the charges of all elements are required.

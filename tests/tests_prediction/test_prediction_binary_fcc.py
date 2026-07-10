@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.api.pyclupan_calc import PyclupanCalc
+from pyclupan.api.pyclupan_calc_model import PyclupanCalcModel
 from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
@@ -13,7 +13,7 @@ path_file = str(cwd) + "/../files/binary_fcc/"
 
 def test_prediction_from_poscars():
     """Test energy prediction using poscars."""
-    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan = PyclupanCalcModel(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
 
     poscars = [path_file + "/derivative-1", path_file + "/derivative-2"]
@@ -42,7 +42,7 @@ def test_prediction_from_poscars():
 
 def test_prediction_from_structures():
     """Test energy prediction using structures."""
-    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan = PyclupanCalcModel(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
 
     st1 = Poscar(path_file + "/derivative-1").structure
@@ -71,7 +71,7 @@ def test_prediction_from_structures():
 
 def test_prediction_from_labelings(fcc_primitive_cell):
     """Test energy prediction using structures."""
-    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan = PyclupanCalcModel(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
 
     hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 4]])
@@ -116,11 +116,11 @@ def test_prediction_from_labelings(fcc_primitive_cell):
 
 def test_prediction_from_derivatives():
     """Test energy prediction using derivatives."""
-    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan = PyclupanCalcModel(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
-    pyclupan.load_derivatives_yaml(path_file + "/pyclupan_derivatives_2.yaml")
-    pyclupan.load_derivatives_yaml(path_file + "/pyclupan_derivatives_3.yaml")
-    pyclupan.load_derivatives_yaml(path_file + "/pyclupan_derivatives_4.yaml")
+    pyclupan.append_derivatives_yaml(path_file + "/pyclupan_derivatives_2.yaml")
+    pyclupan.append_derivatives_yaml(path_file + "/pyclupan_derivatives_3.yaml")
+    pyclupan.append_derivatives_yaml(path_file + "/pyclupan_derivatives_4.yaml")
 
     energies_true = np.array(
         [
@@ -216,7 +216,7 @@ def test_prediction_from_derivatives():
 
 def test_prediction_from_cluster_functions():
     """Test energy prediction using cluster_functions."""
-    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan = PyclupanCalcModel(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
     pyclupan.load_features(path_file + "/pyclupan_features.hdf5")
 
@@ -272,7 +272,7 @@ def test_prediction_from_cluster_functions():
 
 def test_prediction_from_energies():
     """Test energy prediction using energies."""
-    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan = PyclupanCalcModel(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
     pyclupan.load_energies(path_file + "/pyclupan_energies.hdf5")
 

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.api.pyclupan_calc import PyclupanCalc
+from pyclupan.api.pyclupan_features import PyclupanCalcFeatures
 from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
@@ -14,7 +14,7 @@ clusters_yaml = path_file + "/pyclupan_clusters.yaml"
 
 def test_eval_cluster_functions_from_poscars():
     """Test eval_cluster_functions using POSCAR files."""
-    features = PyclupanCalc(clusters_yaml=clusters_yaml)
+    features = PyclupanCalcFeatures(clusters_yaml=clusters_yaml)
     features.load_poscars(path_file + "/derivative-1")
     features.element_strings = ("Ag", "Au", "Cu")
     cluster_functions = features.eval_cluster_functions()
@@ -37,7 +37,7 @@ def test_eval_cluster_functions_from_poscars():
 
 def test_eval_cluster_functions_from_structures():
     """Test eval_cluster_functions using structures setter."""
-    features = PyclupanCalc(clusters_yaml=clusters_yaml)
+    features = PyclupanCalcFeatures(clusters_yaml=clusters_yaml)
     features.structures = [Poscar(path_file + "/derivative-1").structure]
     features.element_strings = ("Ag", "Au", "Cu")
     cluster_functions = features.eval_cluster_functions()
@@ -60,7 +60,7 @@ def test_eval_cluster_functions_from_structures():
 
 def test_eval_cluster_functions_from_labelings(fcc_primitive_cell):
     """Test eval_cluster_functions using given labelings."""
-    features = PyclupanCalc(clusters_yaml=clusters_yaml)
+    features = PyclupanCalcFeatures(clusters_yaml=clusters_yaml)
     hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 3]])
     labelings = np.array([[0, 0, 1], [0, 1, 2], [1, 2, 2]])
     features.set_labelings(

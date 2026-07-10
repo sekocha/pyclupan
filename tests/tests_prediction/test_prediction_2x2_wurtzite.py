@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.api.pyclupan_calc import PyclupanCalc
+from pyclupan.api.pyclupan_calc_model import PyclupanCalcModel
 
 cwd = Path(__file__).parent
 path_file = str(cwd) + "/../files/2x2_wurtzite/"
@@ -12,7 +12,7 @@ path_file = str(cwd) + "/../files/2x2_wurtzite/"
 
 def test_prediction_from_labelings(wurtzite_primitive_cell):
     """Test energy prediction using structures."""
-    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan = PyclupanCalcModel(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
 
     hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 2]])

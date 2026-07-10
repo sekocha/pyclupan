@@ -6,7 +6,7 @@ import signal
 import numpy as np
 
 from pyclupan.api.api_utils import print_credit
-from pyclupan.api.pyclupan import Pyclupan
+from pyclupan.api.pyclupan_cluster import PyclupanCluster
 
 
 def run():
@@ -56,7 +56,7 @@ def run():
 
     print_credit()
     np.set_printoptions(legacy="1.21")
-    clupan = Pyclupan(verbose=True)
+    clupan = PyclupanCluster(verbose=True)
 
     clupan.load_poscar(args.poscar)
     clupan.run_cluster(

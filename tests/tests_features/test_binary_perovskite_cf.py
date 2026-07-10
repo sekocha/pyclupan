@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.api.pyclupan_calc import PyclupanCalc
+from pyclupan.api.pyclupan_features import PyclupanCalcFeatures
 from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
@@ -14,8 +14,8 @@ clusters_yaml = path_file + "/pyclupan_clusters.yaml"
 
 def test_eval_cluster_functions_from_derivatives():
     """Test eval_cluster_functions."""
-    pyclupan = PyclupanCalc(clusters_yaml=clusters_yaml)
-    pyclupan.load_derivatives_yaml(path_file + "/pyclupan_derivatives.yaml")
+    pyclupan = PyclupanCalcFeatures(clusters_yaml=clusters_yaml)
+    pyclupan.append_derivatives_yaml(path_file + "/pyclupan_derivatives.yaml")
     cluster_functions = pyclupan.eval_cluster_functions()
 
     cf_true = np.array(
@@ -39,7 +39,7 @@ def test_eval_cluster_functions_from_derivatives():
 def test_eval_cluster_functions_from_poscars():
     """Test eval_cluster_functions."""
     element_strings = ("Sr", "Ti", "O", "V")
-    features = PyclupanCalc(clusters_yaml=clusters_yaml)
+    features = PyclupanCalcFeatures(clusters_yaml=clusters_yaml)
     features.load_poscars(
         [path_file + "/derivative-1", path_file + "/derivative-2"],
         element_strings=element_strings,
@@ -74,7 +74,7 @@ def test_eval_cluster_functions_from_poscars():
 
 def test_eval_cluster_functions_from_structures():
     """Test eval_cluster_functions."""
-    features = PyclupanCalc(clusters_yaml=clusters_yaml)
+    features = PyclupanCalcFeatures(clusters_yaml=clusters_yaml)
     st1 = Poscar(path_file + "/derivative-1").structure
     st2 = Poscar(path_file + "/derivative-2").structure
     features.structures = [st1, st2]
@@ -109,7 +109,7 @@ def test_eval_cluster_functions_from_structures():
 
 def test_eval_cluster_functions_from_labelings(perovskite_unitcell):
     """Test eval_cluster_functions"""
-    features = PyclupanCalc(clusters_yaml=clusters_yaml)
+    features = PyclupanCalcFeatures(clusters_yaml=clusters_yaml)
     hnf = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 2]])
     labelings = np.array([[2, 2, 2, 3, 2, 2], [2, 3, 3, 3, 2, 3]])
     features.set_labelings(

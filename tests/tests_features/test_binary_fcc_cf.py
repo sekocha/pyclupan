@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.api.pyclupan_calc import PyclupanCalc
+from pyclupan.api.pyclupan_features import PyclupanCalcFeatures
 from pyclupan.core.pypolymlp_utils import Poscar
 
 cwd = Path(__file__).parent
@@ -12,20 +12,20 @@ path_file = str(cwd) + "/../files/binary_fcc/"
 
 
 def _init_calc():
-    features = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    features = PyclupanCalcFeatures(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     return features
 
 
 def test_eval_cluster_functions_from_derivatives():
     """Test eval_cluster_functions using files for derivative structures."""
     features = _init_calc()
-    features.load_sample_attrs_yaml(path_file + "/pyclupan_sample_attrs.yaml")
+    features.append_sample_attrs_yaml(path_file + "/pyclupan_sample_attrs.yaml")
     cluster_functions = features.eval_cluster_functions()
     np.testing.assert_allclose(cluster_functions[0, 1], 0.3333333333333, atol=1e-8)
     np.testing.assert_allclose(cluster_functions[1, 1], -0.111111111111, atol=1e-8)
 
     features.clear_structures()
-    features.load_derivatives_yaml(path_file + "/pyclupan_derivatives_3.yaml")
+    features.append_derivatives_yaml(path_file + "/pyclupan_derivatives_3.yaml")
     cluster_functions = features.eval_cluster_functions()
     np.testing.assert_allclose(cluster_functions[0, 1], 0.3333333333333, atol=1e-8)
     np.testing.assert_allclose(cluster_functions[1, 1], 0.3333333333333, atol=1e-8)

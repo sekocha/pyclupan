@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pyclupan.api.pyclupan import Pyclupan
+from pyclupan.api.pyclupan_derivatives import PyclupanDerivatives
 
 cwd = Path(__file__).parent
 path_file = str(cwd) + "/../files/"
@@ -10,7 +10,7 @@ path_file = str(cwd) + "/../files/"
 
 def test_deriv_binary_fcc():
     """Test enumerating binary derivative structures for FCC."""
-    clupan = Pyclupan(verbose=False)
+    clupan = PyclupanDerivatives(verbose=False)
     clupan.load_poscar(path_file + "/poscar-fcc-primitive")
     elements = [[0, 1]]
 
@@ -37,7 +37,7 @@ def test_deriv_binary_fcc():
 
 def test_deriv_ternary_fcc():
     """Test enumerating ternary derivative structures for FCC."""
-    clupan = Pyclupan(verbose=False)
+    clupan = PyclupanDerivatives(verbose=False)
     clupan.load_poscar(path_file + "/poscar-fcc-primitive")
     elements = [[0, 1, 2]]
 
@@ -64,7 +64,7 @@ def test_deriv_ternary_fcc():
 
 def test_deriv_ternary_tetra():
     """Test enumerating ternary derivative structures for a tetragonal structure."""
-    clupan = Pyclupan(verbose=False)
+    clupan = PyclupanDerivatives(verbose=False)
     clupan.load_poscar(path_file + "/poscar-tetra-primitive")
     elements = [[0, 1, 2]]
 

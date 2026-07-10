@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.api.pyclupan import Pyclupan
+from pyclupan.api.pyclupan_cluster import PyclupanCluster
 from pyclupan.cluster.cluster_io import load_clusters_yaml
 
 cwd = Path(__file__).parent
@@ -21,7 +21,7 @@ def _calc_num_ele_combs(clusters: dict):
 
 def test_wurtzite():
     """Test cluster search in 2x2 wurtzite."""
-    clupan = Pyclupan(verbose=False)
+    clupan = PyclupanCluster(verbose=False)
     clupan.load_poscar(str(cwd) + "/../files/poscar-wurtzite-primitive")
     elements = [[0, 1], [2, 3]]
 
@@ -43,7 +43,7 @@ def test_wurtzite():
 
 def test_perovskite():
     """Test cluster search in perovskite."""
-    clupan = Pyclupan(verbose=False)
+    clupan = PyclupanCluster(verbose=False)
     clupan.load_poscar(str(cwd) + "/../files/poscar-perovskite-unitcell")
     elements = [[0, 1], [0, 1], [2]]
 
@@ -81,7 +81,7 @@ def test_perovskite():
 
 def test_fcc():
     """Test cluster search in fcc."""
-    clupan = Pyclupan(verbose=False)
+    clupan = PyclupanCluster(verbose=False)
     clupan.load_poscar(str(cwd) + "/../files/poscar-fcc-primitive")
     elements = [[0, 1, 2]]
 

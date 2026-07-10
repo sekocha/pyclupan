@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pyclupan.api.pyclupan import Pyclupan
+from pyclupan.api.pyclupan_derivatives import PyclupanDerivatives
 
 cwd = Path(__file__).parent
 path_file = str(cwd) + "/../files/"
@@ -10,7 +10,7 @@ path_file = str(cwd) + "/../files/"
 
 def test_deriv_perovskite_single_sublattice():
     """Test enumerating derivative structures for perovskite."""
-    clupan = Pyclupan(verbose=False)
+    clupan = PyclupanDerivatives(verbose=False)
     clupan.load_poscar(path_file + "/poscar-perovskite-unitcell")
     elements = [[0], [1], [2, 3]]
 
@@ -44,7 +44,7 @@ def test_deriv_perovskite_single_sublattice():
 
 def test_deriv_perovskite_multiple_sublattices1():
     """Test enumerating derivative structures for perovskite."""
-    clupan = Pyclupan(verbose=False)
+    clupan = PyclupanDerivatives(verbose=False)
     clupan.load_poscar(path_file + "/poscar-perovskite-unitcell")
     elements = [[0, 1], [0, 1, 2], [3, 4]]
 
@@ -56,7 +56,7 @@ def test_deriv_perovskite_multiple_sublattices1():
 
 def test_deriv_perovskite_multiple_sublattices2():
     """Test enumerating derivative structures for perovskite."""
-    clupan = Pyclupan(verbose=False)
+    clupan = PyclupanDerivatives(verbose=False)
     clupan.load_poscar(path_file + "/poscar-perovskite-unitcell")
     elements = [[0, 1], [2, 3], [4]]
 

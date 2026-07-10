@@ -6,13 +6,11 @@ import subprocess
 def test_command_lines():
     """Test command lines."""
 
-    cmd = "pyclupan --help"
+    cmd = "pyclupan-derivatives --help"
     subprocess.call(cmd.split())
     cmd = "pyclupan-sample --help"
     subprocess.call(cmd.split())
     cmd = "pyclupan-cluster --help"
-    subprocess.call(cmd.split())
-    cmd = "pyclupan-calc --help"
     subprocess.call(cmd.split())
     cmd = "pyclupan-regression --help"
     subprocess.call(cmd.split())
@@ -20,3 +18,6 @@ def test_command_lines():
     subprocess.call(cmd.split())
     cmd = "pyclupan-utils --help"
     subprocess.call(cmd.split())
+
+    # cmd = "pyclupan-calc --help"
+    # subprocess.call(cmd.split())

@@ -6,7 +6,7 @@ import signal
 import numpy as np
 
 from pyclupan.api.api_utils import print_credit
-from pyclupan.api.pyclupan import Pyclupan
+from pyclupan.api.pyclupan_derivatives import PyclupanDerivatives
 
 
 def run():
@@ -45,7 +45,7 @@ def run():
 
     print_credit()
     np.set_printoptions(legacy="1.21")
-    clupan = Pyclupan(verbose=True)
+    clupan = PyclupanDerivatives(verbose=True)
 
     clupan.load_derivatives(args.yaml)
     clupan.sample_derivatives(

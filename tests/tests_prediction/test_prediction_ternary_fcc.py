@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pyclupan.api.pyclupan_calc import PyclupanCalc
+from pyclupan.api.pyclupan_calc_model import PyclupanCalcModel
 
 cwd = Path(__file__).parent
 path_file = str(cwd) + "/../files/ternary_fcc/"
@@ -12,7 +12,7 @@ path_file = str(cwd) + "/../files/ternary_fcc/"
 
 def test_prediction_from_poscars():
     """Test energy prediction using poscars."""
-    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan = PyclupanCalcModel(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
 
     poscars = [path_file + "/derivative-1"]
@@ -37,7 +37,7 @@ def test_prediction_from_poscars():
 
 def test_prediction_from_labelings(fcc_primitive_cell):
     """Test energy prediction using structures."""
-    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan = PyclupanCalcModel(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
 
     hnf = np.array([[1, 0, 0], [0, 1, 0], [1, 0, 4]])
@@ -84,11 +84,11 @@ def test_prediction_from_labelings(fcc_primitive_cell):
 
 def test_prediction_from_derivatives():
     """Test energy prediction using derivatives."""
-    pyclupan = PyclupanCalc(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
+    pyclupan = PyclupanCalcModel(clusters_yaml=path_file + "/pyclupan_clusters.yaml")
     pyclupan.load_ecis(path_file + "/pyclupan_ecis.yaml")
-    pyclupan.load_derivatives_yaml(path_file + "/pyclupan_derivatives_1.yaml")
-    pyclupan.load_derivatives_yaml(path_file + "/pyclupan_derivatives_2.yaml")
-    pyclupan.load_derivatives_yaml(path_file + "/pyclupan_derivatives_3.yaml")
+    pyclupan.append_derivatives_yaml(path_file + "/pyclupan_derivatives_1.yaml")
+    pyclupan.append_derivatives_yaml(path_file + "/pyclupan_derivatives_2.yaml")
+    pyclupan.append_derivatives_yaml(path_file + "/pyclupan_derivatives_3.yaml")
 
     pyclupan.eval_energies()
     labelings_end = np.array([[0], [1], [2]])
