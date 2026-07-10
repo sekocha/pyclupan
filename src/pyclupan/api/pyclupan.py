@@ -208,6 +208,10 @@ class Pyclupan:
             save_poscars=save_poscars,
         )
 
+    def sample_derivatives_from_keys(self):
+        """Sample derivative structures from keys."""
+        # TODO: Sample Derivatives from Keys.
+
     @property
     def derivative_structures(self):
         """Return derivative structures.

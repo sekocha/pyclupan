@@ -98,14 +98,12 @@ class PyclupanCalcFeatures:
         """Setter of derivative structures."""
         self._derivatives = derivatives
         self._cf.derivatives = self._derivatives
-
         self._set_structure_ids()
 
     def append_derivatives(self, derivatives: DerivativesSet):
         """Append derivative structures."""
         self._derivatives.append(derivatives)
         self._cf.derivatives = self._derivatives
-
         self._set_structure_ids()
 
     def append_sample_attrs_yaml(self, filename: str = "pyclupan_samples_attrs.yaml"):

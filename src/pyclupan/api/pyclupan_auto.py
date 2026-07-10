@@ -7,6 +7,7 @@ import numpy as np
 from pyclupan.api.pyclupan import Pyclupan
 from pyclupan.api.pyclupan_calc_cf import PyclupanCalcFeatures
 from pyclupan.api.pyclupan_calc_model import PyclupanCalcModel
+from pyclupan.api.pyclupan_cluster import PyclupanCluster
 
 # from pyclupan.api.pyclupan_calc import PyclupanCalc
 from pyclupan.api.pyclupan_regression import PyclupanRegression
@@ -22,6 +23,7 @@ class PyclupanCE:
         self._verbose = verbose
 
         self._pyclupan = Pyclupan(verbose=verbose)
+        self._pyclupan_cluster = PyclupanCluster(verbose=verbose)
         self._pyclupan_features = None
         self._pyclupan_model = None
         self._pyclupan_reg = None
@@ -66,6 +68,7 @@ class PyclupanCE:
         self._elements = elements
         self._element_strings = element_strings
         self._unitcell = self._pyclupan.load_poscar(poscar)
+        self._pyclupan_cluster.unitcell = self._unitcell
         return self
 
     def enum_derivatives(
@@ -163,13 +166,12 @@ class PyclupanCE:
         if self._elements is None:
             raise RuntimeError("Elements not given.")
 
-        self._pyclupan.run_cluster(
+        self._pyclupan_cluster.run_cluster(
             elements=self._elements,
             max_order=max_order,
             cutoffs=cutoffs,
             filename=filename,
         )
-
         self._pyclupan_features = PyclupanCalcFeatures(
             clusters_yaml=filename,
             verbose=False,
@@ -240,9 +242,9 @@ class PyclupanCE:
             raise RuntimeError("CE calculation model class not provided.")
         if self._model is None:
             raise RuntimeError("CE calculation model not provided.")
+        if self._energies is None:
+            raise RuntimeError("CE energy not calculated.")
 
-        self._pyclupan_model.derivatives = self._ds_set
-        self._pyclupan_model.eval_cluster_functions()
         res = self._pyclupan_model.eval_formation_energies()
         (self._formation_energies, self._compositions, self._convex) = res
         self._structure_ids = self._pyclupan_model.structure_indices
