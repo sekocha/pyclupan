@@ -350,8 +350,6 @@ class DerivativesSet:
                 structures.extend(sampled_structures)
         return structures
 
-    # TODO: ID -> structure, poscar
-
 
 def _write_list_no_space(a: list, file):
     """Write list without spaces.."""

@@ -118,11 +118,9 @@ class Pyclupan:
                 n_samples=n_samples,
                 save_poscars=False,
             )
-            ds_set = self._pyclupan_deriv.derivative_structures
-            structures = ds_set.get_sampled_structures(
-                element_strings=self._element_strings
+            structures = self._pyclupan_deriv.get_sampled_structures(
+                self._element_strings
             )
-            # self._ds_set_sample.append(ds_set)
             self._sampled_structures.extend(structures)
         return self
 

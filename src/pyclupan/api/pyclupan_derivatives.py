@@ -154,7 +154,7 @@ class PyclupanDerivatives:
         method: Literal["all", "uniform", "random"] = "uniform",
         n_samples: int = 100,
         path: str = "poscars",
-        elements: tuple = ("Al", "Cu"),
+        element_strings: tuple = ("Al", "Cu"),
         save_poscars: bool = True,
     ):
         """Parse derivatives.yaml.
@@ -164,8 +164,9 @@ class PyclupanDerivatives:
         method: Sampling method.
                 Methods of "all", "uniform", and "random" are available.
         n_samples: Number of sample structures.
-        path: Directory path for saving structure files.
-        elements: Element strings used to save structure files.
+        save_poscars: Save poscar files.
+        path: Directory path for saving structure files if save_poscars = True.
+        elements: Element strings used to save structure files if save_poscars = True.
         """
         if self._derivs_set is None:
             raise RuntimeError("Derivative structures not found.")
@@ -175,13 +176,45 @@ class PyclupanDerivatives:
             n_samples=n_samples,
             method=method,
             path_poscars=path,
-            element_strings=elements,
+            element_strings=element_strings,
             save_poscars=save_poscars,
         )
+        return self
 
-    def sample_derivatives_from_keys(self):
-        """Sample derivative structures from keys."""
-        # TODO: Sample Derivatives from Keys.
+    def sample_derivatives_from_keys(
+        self,
+        keys: list,
+        path: str = "poscars",
+        element_strings: tuple = ("Al", "Cu"),
+        save_poscars: bool = True,
+    ):
+        """Sample derivative structures from keys.
+
+        Parameters
+        ----------
+        keys: List of keys for derivative structures,
+              [(supercell_size, supercell_id, structure_id), ...].
+        save_poscars: Save poscar files.
+        path: Directory path for saving structure files if save_poscars = True.
+        elements: Element strings used to save structure files if save_poscars = True.
+        """
+        if self._derivs_set is None:
+            raise RuntimeError("Derivative structures not found.")
+
+        run_sampling_derivatives(
+            ds_set=self._derivs_set,
+            keys=keys,
+            path_poscars=path,
+            element_strings=element_strings,
+            save_poscars=save_poscars,
+        )
+        return self
+
+    def get_sampled_structures(self, element_strings: tuple):
+        """Return sampled structures."""
+        if self._derivs_set is None:
+            raise RuntimeError("Derivative structures not found.")
+        return self._derivs_set.get_sampled_structures(element_strings)
 
     @property
     def derivative_structures(self):
