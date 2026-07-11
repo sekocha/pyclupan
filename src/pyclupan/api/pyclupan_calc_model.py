@@ -218,7 +218,7 @@ class PyclupanCalcModel(PyclupanCalcFeatures):
         save_convex_yaml(self._convex, filename=filename)
         return self
 
-    def save_convex_hull_poscars_from_derivatives(self, element_strings: tuple):
+    def save_convex_hull_poscars(self, element_strings: tuple):
         """Save derivative structures on convex hull.
 
         Parameter
@@ -236,10 +236,11 @@ class PyclupanCalcModel(PyclupanCalcFeatures):
         ids = [i for i in self._convex[:, -1] if "End" not in i]
         keys = [i.split("-") for i in ids]
         keys = [tuple([int(k2) for k2 in k]) for k in keys]
+
         run_sampling_derivatives(
             ds_set=self._derivatives,
-            element_strings=element_strings,
             keys=keys,
+            element_strings=element_strings,
             save_poscars=True,
         )
         return self

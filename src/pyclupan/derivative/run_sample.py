@@ -16,6 +16,7 @@ def run_sampling_derivatives(
     element_strings: Optional[tuple] = None,
     save_poscars: bool = True,
     path_poscars: str = "poscars",
+    clear_samples: bool = True,
 ):
     """Enumerate derivative structures.
 
@@ -31,6 +32,9 @@ def run_sampling_derivatives(
             for f in files:
                 ds = load_derivatives_yaml(f)
                 ds_set.append(ds)
+
+    if clear_samples:
+        ds_set.clear_samples()
 
     if keys is not None:
         for k in keys:

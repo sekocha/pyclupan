@@ -100,6 +100,4 @@ def run():
     clupan.save_formation_energies()
     clupan.save_convex_hull_yaml()
     clupan.load_formation_energies()
-    clupan.save_convex_hull_poscars_from_derivatives(
-        element_strings=args.element_strings
-    )
+    clupan.save_convex_hull_poscars(args.element_strings)

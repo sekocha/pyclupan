@@ -69,13 +69,13 @@ def test_sampling_derivatives_from_keys():
     ds_set = pyclupan.derivative_structures
 
     assert list(ds_set[0].sample) == [0]
-    assert ds_set[1].sample is None
-    assert ds_set[2].sample is None
-    assert ds_set[3].sample is None
+    assert len(ds_set[1].sample) == 0
+    assert len(ds_set[2].sample) == 0
+    assert len(ds_set[3].sample) == 0
     assert list(ds_set[4].sample) == [1]
     assert list(ds_set[5].sample) == [2]
-    assert ds_set[6].sample is None
-    assert ds_set[7].sample is None
+    assert len(ds_set[6].sample) == 0
+    assert len(ds_set[7].sample) == 0
 
     assert list(ds_set[0].sample_ids) == [(3, 0, 0)]
     assert list(ds_set[4].sample_ids) == [(4, 1, 1)]

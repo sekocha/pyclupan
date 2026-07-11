@@ -78,7 +78,7 @@ class Pyclupan:
         comp: Optional[list] = None,
         comp_lb: Optional[list] = None,
         comp_ub: Optional[list] = None,
-        end_members: bool = True,
+        end_members: bool = False,
         superperiodic: bool = False,
     ):
         """Enumerate derivative structures.
@@ -124,29 +124,6 @@ class Pyclupan:
             self._sampled_structures.extend(structures)
         return self
 
-    def eval_energies(self, pot: Optional[str] = "polymlp.yaml"):
-        """Evaluate energies using polymlp."""
-        if self._sampled_structures is None:
-            raise RuntimeError("Sampled structures not found.")
-
-        self._success_go = np.ones(len(self._sampled_structures), dtype=bool)
-        n_atom_unitcell = len(self._unitcell.elements)
-
-        polymlp = Polymlp(pot=pot)
-        energies = []
-        for i, st in enumerate(self._sampled_structures):
-            suc = polymlp.run_geometry_optimization(st, gtol=1e-4)
-            if not suc:
-                self._success_go[i] = False
-                continue
-
-            n_atom = len(polymlp.structure.elements)
-            n_unitcell = n_atom / n_atom_unitcell
-            energies.append(polymlp.energy / n_unitcell)
-
-        self._y = np.array(energies)
-        return self._y
-
     def enum_cluster(
         self,
         max_order: int = 4,
@@ -186,6 +163,8 @@ class Pyclupan:
         """Evaluate cluster functions for enumerated derivative structures."""
         if self._pyclupan_features is None:
             raise RuntimeError("Feature class not found.")
+        if len(self._ds_set) == 0:
+            raise RuntimeError("Derivative structures not found.")
 
         self._pyclupan_features.derivatives = self._ds_set
         cluster_functions = self._pyclupan_features.eval_cluster_functions()
@@ -253,4 +232,68 @@ class Pyclupan:
 
         self._pyclupan_model.save_formation_energies()
         self._pyclupan_model.save_convex_hull_yaml()
+        self._pyclupan_model.save_convex_hull_poscars(self._element_strings)
         return self
+
+    def eval_energies(self, pot: Optional[str] = "polymlp.yaml"):
+        """Evaluate energies using polymlp."""
+        if self._sampled_structures is None:
+            raise RuntimeError("Sampled structures not found.")
+
+        self._success_go = np.ones(len(self._sampled_structures), dtype=bool)
+        n_atom_unitcell = len(self._unitcell.elements)
+
+        polymlp = Polymlp(pot=pot)
+        energies = []
+        for i, st in enumerate(self._sampled_structures):
+            suc = polymlp.run_geometry_optimization(st, gtol=1e-4)
+            if not suc:
+                self._success_go[i] = False
+                continue
+
+            n_atom = len(polymlp.structure.elements)
+            n_unitcell = n_atom / n_atom_unitcell
+            energies.append(polymlp.energy / n_unitcell)
+
+        self._y = np.array(energies)
+        return self._y
+
+    @property
+    def unitcell(self):
+        """Return unit cell."""
+        return self._unitcell
+
+    @property
+    def best_model(self):
+        """Return CE best model."""
+        return self._model
+
+    @property
+    def models(self):
+        """Return CE models."""
+        return self._models
+
+    @property
+    def energies(self):
+        """Return CE energies."""
+        return self._energies
+
+    @property
+    def formation_energies(self):
+        """Return CE formation energies."""
+        return self._formation_energies
+
+    @property
+    def compositions(self):
+        """Return compositions of structures."""
+        return self._compositions
+
+    @property
+    def convex(self):
+        """Return convex hull of CE formation energies."""
+        return self._convex
+
+    @property
+    def structure_indices(self):
+        """Return structure indices."""
+        return self._ds_set.all_structure_indices

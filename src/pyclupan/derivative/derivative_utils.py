@@ -95,7 +95,9 @@ class Derivatives:
         """Sample single labeling."""
         if self._sample is None:
             self._sample = []
+        self._sample = list(self._sample)
         self._sample.append(key)
+        self._sample = np.array(self._sample)
         return self
 
     @property
@@ -349,6 +351,16 @@ class DerivativesSet:
             if sampled_structures is not None:
                 structures.extend(sampled_structures)
         return structures
+
+    def clear_samples(self):
+        """Clear samples."""
+        for d in self:
+            d.sample = []
+
+    @property
+    def all_structure_indices(self):
+        """Return structure indices."""
+        return [i for d in self for i in d.structure_ids]
 
 
 def _write_list_no_space(a: list, file):
