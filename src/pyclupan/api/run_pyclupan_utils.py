@@ -5,8 +5,7 @@ import signal
 
 import numpy as np
 
-from pyclupan.api.api_utils import print_credit
-from pyclupan.api.pyclupan_utils import save_energy_dat
+from pyclupan.api.api_utils import print_credit, save_energy_dat
 from pyclupan.core.pypolymlp_utils import Poscar
 
 

@@ -441,7 +441,7 @@ def load_sample_attrs_yaml(filename: str = "pyclupan_sample_attrs.yaml"):
 
     derivs_all = []
     for d in data["sampled_labelings"]:
-        id1 = tuple([int(i) for i in d["id"].split("-")])
+        id1 = [tuple([int(i) for i in id1.split("-")]) for id1 in d["id"]]
         derivs = Derivatives(
             lattice_unitcell=lattice,
             supercell_matrix=np.array(d["supercell_matrix"]),
