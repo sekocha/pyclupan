@@ -9,14 +9,14 @@ The code also enables the enumeration of nonequivalent substitutional derivative
 
 ## Required Libraries and Python Modules
 
-- python >= 3.9
+- python >= 3.10
 - numpy != 2.0.*
 - scipy
 - pyyaml
 - setuptools
 
 - scikit-learn
-- pypolymlp >= 0.16.0
+- pypolymlp >= 0.20.3
 - spglib
 - phonopy
 - graphillion < 2.0
