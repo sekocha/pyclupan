@@ -11,14 +11,14 @@ Starting from the FCC lattice specified by `fcc-primitive`, derivative structure
 When the maximum number of atoms is given as six, derivative structure enumeration is performed for each number of atoms up to six as follows.
 ```shell
 > for i in {1..6};do
->   pyclupan -p fcc-primitive --supercell_size $i;
+>   pyclupan-derivatives -p fcc-primitive --supercell_size $i;
 >   mv pyclupan_derivatives.yaml pyclupan_derivatives_$i.yaml;
 > done
 ```
 
 For the ternary system, `-e` option can be used to specify ternary elements as follows:
 ```shell
-> pyclupan -p fcc-primitive --supercell_size $i -e 0 1 2;
+> pyclupan-derivatives -p fcc-primitive --supercell_size $i -e 0 1 2;
 ```
 
 ### 2. Derivative Structure Sampling
@@ -63,7 +63,7 @@ File `pyclupan_energy.dat` will be generated.
 #### 5-2. Cluster Function Calculations for Sampled Derivative Structures
 Cluster functions of the sampled derivative structures are calculated.
 ```shell
-> pyclupan-calc --clusters pyclupan_clusters.yaml --derivatives pyclupan_derivatives_*.yaml
+> pyclupan-features --clusters pyclupan_clusters.yaml --derivatives pyclupan_derivatives_*.yaml
 ```
 An HDF5 File `pyclupan_features.hdf5` will be generated.
 

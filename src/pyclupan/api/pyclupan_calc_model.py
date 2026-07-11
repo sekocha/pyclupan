@@ -7,6 +7,7 @@ import numpy as np
 from pyclupan.api.pyclupan_features import PyclupanCalcFeatures
 from pyclupan.core.model import CEmodel
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
+from pyclupan.derivative.run_sample import run_sampling_derivatives
 from pyclupan.prediction.formation_energy_utils import (
     append_formation_energies_endmembers,
     find_convex_hull,
@@ -217,33 +218,31 @@ class PyclupanCalcModel(PyclupanCalcFeatures):
         save_convex_yaml(self._convex, filename=filename)
         return self
 
-    # TODO
-    #     def save_convex_hull_poscars_from_derivatives(self, element_strings: tuple):
-    #         """Save derivative structures on convex hull.
-    #
-    #         Parameter
-    #         ---------
-    #         element_strings: Element strings.
-    #             The location index corresponds to label integer.
-    #             For example, element_strings are ("Ag", "Au"),
-    #             labels 0 and 1 indicate elements Ag and Au, respectively.
-    #         """
-    #         if self._convex is None:
-    #             raise RuntimeError("Convex hull not found.")
-    #         if self._derivatives is None:
-    #             raise RuntimeError("Derivative structures not found.")
-    #
-    #         ids = [i for i in self._convex[:, -1] if "End" not in i]
-    #         keys = [i.split("-") for i in ids]
-    #         keys = [tuple([int(k2) for k2 in k]) for k in keys]
-    #         run_sampling_derivatives(
-    #             ds_set=self._derivatives,
-    #             element_strings=element_strings,
-    #             keys=keys,
-    #             save_poscars=True,
-    #         )
-    #         return self
-    #
+    def save_convex_hull_poscars_from_derivatives(self, element_strings: tuple):
+        """Save derivative structures on convex hull.
+
+        Parameter
+        ---------
+        element_strings: Element strings.
+            The location index corresponds to label integer.
+            For example, element_strings are ("Ag", "Au"),
+            labels 0 and 1 indicate elements Ag and Au, respectively.
+        """
+        if self._convex is None:
+            raise RuntimeError("Convex hull not found.")
+        if self._derivatives is None:
+            raise RuntimeError("Derivative structures not found.")
+
+        ids = [i for i in self._convex[:, -1] if "End" not in i]
+        keys = [i.split("-") for i in ids]
+        keys = [tuple([int(k2) for k2 in k]) for k in keys]
+        run_sampling_derivatives(
+            ds_set=self._derivatives,
+            element_strings=element_strings,
+            keys=keys,
+            save_poscars=True,
+        )
+        return self
 
     @property
     def energies(self):

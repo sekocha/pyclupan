@@ -420,10 +420,7 @@ def load_derivatives_yaml(filename: str = "pyclupan_derivatives.yaml"):
 
     derivs_all = []
     for d in data["derivative_structures"]:
-        ids = [
-            get_structure_id(data["zdd"]["n_cells"], d["id"], i)
-            for i in range(d["n_labelings"])
-        ]
+        ids = [(data["zdd"]["n_cells"], d["id"], i) for i in range(d["n_labelings"])]
         derivs = Derivatives(
             lattice_unitcell=lattice,
             supercell_matrix=np.array(d["HNF"]),
@@ -446,12 +443,13 @@ def load_sample_attrs_yaml(filename: str = "pyclupan_sample_attrs.yaml"):
 
     derivs_all = []
     for d in data["sampled_labelings"]:
+        id1 = tuple([int(i) for i in d["id"].split("-")])
         derivs = Derivatives(
             lattice_unitcell=lattice,
             supercell_matrix=np.array(d["supercell_matrix"]),
             active_labelings=np.array(d["active_labelings"]),
             inactive_labeling=np.array(d["inactive_labeling"]),
-            structure_ids=d["id"],
+            structure_ids=id1,
         )
         derivs_all.append(derivs)
 

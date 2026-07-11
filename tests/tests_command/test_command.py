@@ -19,5 +19,7 @@ def test_command_lines():
     cmd = "pyclupan-utils --help"
     subprocess.call(cmd.split())
 
-    # cmd = "pyclupan-calc --help"
-    # subprocess.call(cmd.split())
+    cmd = "pyclupan-features --help"
+    subprocess.call(cmd.split())
+    cmd = "pyclupan-calc --help"
+    subprocess.call(cmd.split())

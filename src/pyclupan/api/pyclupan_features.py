@@ -82,6 +82,9 @@ class PyclupanCalcFeatures:
 
     def _set_structure_ids(self):
         """Set structure IDs for derivative structures."""
+        if isinstance(self._derivatives[0].structure_ids[0], str):
+            raise RuntimeError("Structure IDs in derivative structures must be tuple.")
+
         self._structure_ids = [
             "-".join([str(i) for i in ids])
             for ds in self._derivatives

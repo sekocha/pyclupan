@@ -9,7 +9,7 @@ When the maximum supercell size is set to four, derivative structure enumeration
 
 ```shell
 > for i in {1..4};do
->   pyclupan -p wurtzite-primitive --supercell_size $i -e 0 1 -e 2 3 --charge 0 4.0 --charge 1 3.0 --charge 2 -4.0 --charge 3 -3.0
+>   pyclupan-derivatives -p wurtzite-primitive --supercell_size $i -e 0 1 -e 2 3 --charge 0 4.0 --charge 1 3.0 --charge 2 -4.0 --charge 3 -3.0
 >   mv pyclupan_derivatives.yaml pyclupan_derivatives_$i.yaml;
 > done
 ```
@@ -47,7 +47,7 @@ File `pyclupan_energy.dat` will be generated.
 #### 5-2. Cluster Function Calculations for Sampled Derivative Structures
 Cluster functions of the sampled derivative structures are calculated.
 ```shell
-> pyclupan-calc --clusters pyclupan_clusters.yaml --derivatives pyclupan_derivatives_*.yaml
+> pyclupan-features --clusters pyclupan_clusters.yaml --derivatives pyclupan_derivatives_*.yaml
 ```
 An HDF5 File `pyclupan_features.hdf5` will be generated.
 

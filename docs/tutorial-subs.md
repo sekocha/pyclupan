@@ -9,7 +9,7 @@ In addition, the lower bound for the composition is specified corresponding to S
 
 ```shell
 > for i in {1..4};do
->   pyclupan -p perovskite-unitcell --supercell_size $i -e 0 -e 1 -e 2 3 --comp_lb 2 0.665
+>   pyclupan-derivatives -p perovskite-unitcell --supercell_size $i -e 0 -e 1 -e 2 3 --comp_lb 2 0.665
 >   mv pyclupan_derivatives.yaml pyclupan_derivatives_$i.yaml;
 > done
 ```
@@ -47,7 +47,7 @@ File `pyclupan_energy.dat` will be generated.
 #### 5-2. Cluster Function Calculations for Sampled Derivative Structures
 Cluster functions of the sampled derivative structures are calculated.
 ```shell
-> pyclupan-calc --clusters pyclupan_clusters.yaml --derivatives pyclupan_derivatives_*.yaml
+> pyclupan-features --clusters pyclupan_clusters.yaml --derivatives pyclupan_derivatives_*.yaml
 ```
 An HDF5 File `pyclupan_features.hdf5` will be generated.
 
