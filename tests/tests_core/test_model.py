@@ -53,3 +53,7 @@ def test_CEmodel_nonzero():
     )
     energies = model.eval(cfs)
     np.testing.assert_allclose(energies, [-0.077121, 1.092333, 0.111778], atol=1e-6)
+
+    spin_basis = [None, None, None, None]
+    spin_basis = model.nonzero_spin_basis(spin_basis)
+    assert len(spin_basis) == 3
