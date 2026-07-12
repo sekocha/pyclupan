@@ -18,6 +18,8 @@ By collecting the DFT data, a `pyclupan_energy.dat` file is generated.
 The unit cell structure is used to evaluate the energy per unit cell.
 The generated `pyclupan_energy.dat` file contains the energy values in eV per unit cell.
 
+When preparing an energy file manually, the first column must contain the structure IDs, and the second column must contain the energy values in **eV per unit cell**.
+
 
 ## Model Estimation from Training Dataset
 
@@ -27,4 +29,4 @@ Effective cluster interactions can then be estimated from the training dataset a
 > pyclupan-regression -e pyclupan_energy.dat -f pyclupan_features.hdf5
 ```
 The Lasso technique is used to estimate the interactions.
-Once the regression is completed, a file named `pyclupan_ecis.yaml` containing the effective cluster interactions will be generated.
+Once the regression is completed, a file named `pyclupan_ecis.yaml` containing the effective cluster interactions in **eV per unit cell** will be generated.
