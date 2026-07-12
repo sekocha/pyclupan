@@ -49,6 +49,12 @@ class Derivatives:
         self.lattice_supercell = self.lattice_unitcell.lattice_supercell(sup_red)
         self._sample = None
 
+    def __len__(self):
+        """Len method."""
+        if self.active_labelings is None:
+            return 0
+        return self.active_labelings.shape[0]
+
     @property
     def active_sites(self):
         """Return active sites."""

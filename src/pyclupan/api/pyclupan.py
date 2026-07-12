@@ -13,7 +13,6 @@ from pyclupan.core.pypolymlp_utils import Polymlp
 from pyclupan.derivative.derivative_utils import DerivativesSet
 
 
-# TODO: Derivative structure enumeration using uniform and random.
 class Pyclupan:
     """API Class for generating CE model using polymlp."""
 
@@ -34,18 +33,20 @@ class Pyclupan:
         self._sampled_structures = []
         self._ds_set = DerivativesSet([])
 
-        self._X = None
-        self._y = None
+        self._cluster_functions = None
         self._structure_ids = None
-        self._success_go = None
-
-        self._model = None
-        self._models = None
-
         self._energies = None
         self._formation_energies = None
         self._compositions = None
         self._convex = None
+
+        self._is_sampled = None
+        self._success_go = None
+
+        self._X = None
+        self._y = None
+        self._model = None
+        self._models = None
 
         np.set_printoptions(legacy="1.21")
 
@@ -167,31 +168,33 @@ class Pyclupan:
             raise RuntimeError("Derivative structures not found.")
 
         self._pyclupan_features.derivatives = self._ds_set
-        cluster_functions = self._pyclupan_features.eval_cluster_functions()
+        self._cluster_functions = self._pyclupan_features.eval_cluster_functions()
         self._structure_ids = self._pyclupan_features.structure_indices
-        return cluster_functions
 
-    def eval_predictor_matrix(self):
-        """Evaluate predictor matrix for enumerated derivative structures."""
-        if self._success_go is None:
-            raise RuntimeError("Results from geometry optimization not found.")
-
-        cluster_functions = self.eval_cluster_functions()
-        self._X = cluster_functions[self._success_go]
-        self._structure_ids = np.array(self._structure_ids)[self._success_go]
-        return self
+        self._is_sampled = []
+        begin = 0
+        for ds in self._ds_set:
+            self._is_sampled.extend(ds.sample + begin)
+            begin += len(ds)
+        return self._cluster_functions
 
     def eval_ecis(self):
         """Evaluate effective cluster interactions."""
-        if self._X is None:
-            raise RuntimeError("Matrix X not calculated.")
+        if self._cluster_functions is None:
+            raise RuntimeError("Cluster functions not calculated.")
+        if self._success_go is None:
+            raise RuntimeError("Results from geometry optimization not found.")
         if self._y is None:
             raise RuntimeError("Vector y not calculated.")
+
+        self._X = self._cluster_functions[self._is_sampled]
+        self._X = self._X[self._success_go]
+        ids = np.array(self._structure_ids)[self._is_sampled][self._success_go]
 
         self._pyclupan_reg = PyclupanRegression(verbose=self._verbose)
         self._pyclupan_reg.x = self._X
         self._pyclupan_reg.y = self._y
-        self._pyclupan_reg.structure_ids = self._structure_ids
+        self._pyclupan_reg.structure_ids = ids
 
         self._pyclupan_reg.run_lasso()
         self._pyclupan_reg.save_predictions()
@@ -292,6 +295,11 @@ class Pyclupan:
     def convex(self):
         """Return convex hull of CE formation energies."""
         return self._convex
+
+    @property
+    def cluster_functions(self):
+        """Return cluster functions."""
+        return self._cluster_functions
 
     @property
     def structure_indices(self):
