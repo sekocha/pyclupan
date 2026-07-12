@@ -30,3 +30,26 @@ def test_CEmodel():
     model.supercell(3)
     energies = model.eval(cfs)
     np.testing.assert_allclose(energies, [-0.231362, 3.277, 0.335334], atol=1e-6)
+
+
+def test_CEmodel_nonzero():
+    """Test CEmodel."""
+    coeffs = [0.5, 1 / 3, 0.0, 2.1]
+    intercept = 0.234
+    rmse = 0.001
+
+    model = CEmodel(coeffs, intercept, rmse=rmse)
+    spin_basis = [None, None, None, None]
+    spin_basis = model.eliminate_zeros(spin_basis)
+    assert tuple(model.cluster_ids) == (0, 1, 3)
+    assert len(spin_basis) == 3
+
+    cfs = np.array(
+        [
+            [0.3333, 0.666667, -0.33333],
+            [0.5, 0.25, 0.25],
+            [-0.5, -0.666666, 0.16666666],
+        ]
+    )
+    energies = model.eval(cfs)
+    np.testing.assert_allclose(energies, [-0.077121, 1.092333, 0.111778], atol=1e-6)
