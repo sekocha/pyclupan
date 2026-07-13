@@ -45,6 +45,10 @@ class Polymlp:
         self._energy = None
         self._structure = None
 
+    def eval(self, st: PolymlpStructure | list):
+        """Evaluate properties."""
+        return self._polymlp.eval(st)
+
     def run_geometry_optimization(
         self,
         st: PolymlpStructure,

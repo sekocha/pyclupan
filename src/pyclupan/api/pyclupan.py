@@ -238,7 +238,12 @@ class Pyclupan:
         self._pyclupan_model.save_convex_hull_poscars(self._element_strings)
         return self
 
-    def eval_energies(self, pot: Optional[str] = "polymlp.yaml", gtol: float = 1e-4):
+    def eval_energies(
+        self,
+        pot: Optional[str] = "polymlp.yaml",
+        geometry_optimization: bool = True,
+        gtol: float = 1e-4,
+    ):
         """Evaluate energies using polymlp."""
         if self._sampled_structures is None:
             raise RuntimeError("Sampled structures not found.")
@@ -247,16 +252,21 @@ class Pyclupan:
         n_atom_unitcell = len(self._unitcell.elements)
 
         polymlp = Polymlp(pot=pot)
-        energies = []
-        for i, st in enumerate(self._sampled_structures):
-            suc = polymlp.run_geometry_optimization(st, gtol=gtol)
-            if not suc:
-                self._success_go[i] = False
-                continue
+        if geometry_optimization:
+            energies = []
+            for i, st in enumerate(self._sampled_structures):
+                suc = polymlp.run_geometry_optimization(st, gtol=gtol)
+                if not suc:
+                    self._success_go[i] = False
+                    continue
 
-            n_atom = len(polymlp.structure.elements)
-            n_unitcell = n_atom / n_atom_unitcell
-            energies.append(polymlp.energy / n_unitcell)
+                n_atom = len(polymlp.structure.elements)
+                n_unitcell = n_atom / n_atom_unitcell
+                energies.append(polymlp.energy / n_unitcell)
+        else:
+            energies, _, _ = polymlp.eval(self._sampled_structures)
+            n_atoms = np.array([len(st.elements) for st in self._sampled_structures])
+            energies *= n_atom_unitcell * np.reciprocal(n_atoms.astype(float))
 
         self._y = np.array(energies)
         return self._y

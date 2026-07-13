@@ -38,7 +38,6 @@ class CEmodel:
         """Eliminate zero coefficients."""
         if self.cluster_ids is not None:
             raise RuntimeError("Cluster indices are already assigned.")
-
         self.cluster_ids = np.where(np.abs(self.coeffs) > tol)[0]
         self.coeffs = self.coeffs[self.cluster_ids]
         return self.nonzero_spin_basis(spin_basis)
