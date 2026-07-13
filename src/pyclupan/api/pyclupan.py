@@ -238,7 +238,7 @@ class Pyclupan:
         self._pyclupan_model.save_convex_hull_poscars(self._element_strings)
         return self
 
-    def eval_energies(self, pot: Optional[str] = "polymlp.yaml"):
+    def eval_energies(self, pot: Optional[str] = "polymlp.yaml", gtol: float = 1e-4):
         """Evaluate energies using polymlp."""
         if self._sampled_structures is None:
             raise RuntimeError("Sampled structures not found.")
@@ -249,7 +249,7 @@ class Pyclupan:
         polymlp = Polymlp(pot=pot)
         energies = []
         for i, st in enumerate(self._sampled_structures):
-            suc = polymlp.run_geometry_optimization(st, gtol=1e-4)
+            suc = polymlp.run_geometry_optimization(st, gtol=gtol)
             if not suc:
                 self._success_go[i] = False
                 continue
@@ -265,6 +265,16 @@ class Pyclupan:
     def unitcell(self):
         """Return unit cell."""
         return self._unitcell
+
+    @property
+    def derivative_structures(self):
+        """Return derivative_structures."""
+        return self._ds_set
+
+    @property
+    def cluster_functions(self):
+        """Return cluster functions."""
+        return self._cluster_functions
 
     @property
     def best_model(self):
@@ -295,11 +305,6 @@ class Pyclupan:
     def convex(self):
         """Return convex hull of CE formation energies."""
         return self._convex
-
-    @property
-    def cluster_functions(self):
-        """Return cluster functions."""
-        return self._cluster_functions
 
     @property
     def structure_indices(self):
