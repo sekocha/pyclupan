@@ -365,8 +365,13 @@ class DerivativesSet:
 
     @property
     def all_structure_indices(self):
-        """Return structure indices."""
+        """Return all structure indices."""
         return [i for d in self for i in d.structure_ids]
+
+    @property
+    def sampled_structure_indices(self):
+        """Return sampled structure indices."""
+        return [d.structure_ids[i] for d in self for i in d.sample]
 
 
 def _write_list_no_space(a: list, file):

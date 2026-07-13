@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from pyclupan.derivative.derivative_utils import (
+    DerivativesSet,
     load_derivatives_yaml,
     load_sample_attrs_yaml,
 )
@@ -17,3 +18,13 @@ def test_derivatives_files():
     assert len(ds_set) == 3
     ds_set = load_sample_attrs_yaml(path_file + "/pyclupan_sample_attrs.yaml")
     assert len(ds_set) == 2
+
+    files = [
+        path_file + "/pyclupan_derivatives_3.yaml",
+        path_file + "/pyclupan_derivatives_4.yaml",
+    ]
+    ds_set = DerivativesSet([])
+    for f in files:
+        ds = load_derivatives_yaml(f)
+        ds_set.append(ds)
+    assert len(ds_set) == 10
