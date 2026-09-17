@@ -134,5 +134,5 @@ def run():
         clupan.sample_derivatives(
             method="uniform",
             n_samples=20,
-            elements=args.element_strings,
+            element_strings=args.element_strings,
         )

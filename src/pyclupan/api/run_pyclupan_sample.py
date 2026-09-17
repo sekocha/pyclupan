@@ -51,6 +51,6 @@ def run():
     clupan.sample_derivatives(
         method=args.method,
         n_samples=args.n_samples,
-        elements=args.element_strings,
+        element_strings=args.element_strings,
         path="poscars",
     )

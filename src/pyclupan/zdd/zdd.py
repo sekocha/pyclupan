@@ -1,6 +1,5 @@
 """Class for constructing ZDD satisfying various constraints."""
 
-# import collections
 from typing import Optional
 
 import numpy as np
@@ -16,7 +15,6 @@ class ZddCore:
 
     def __init__(self, zdd_lattice: ZddLattice, verbose: bool = False):
         """Init method."""
-
         self._zdd_lattice = zdd_lattice
         self._verbose = verbose
 
