@@ -240,6 +240,8 @@ class PyclupanDerivatives:
         self,
         n_samples: int = 10,
         max_distance: float = 1.0,
+        min_natom: int = 48,
+        max_natom: int = 150,
         path: str = "poscars_disps",
         element_strings: tuple = ("Al", "Cu"),
         refine: bool = True,
@@ -255,13 +257,22 @@ class PyclupanDerivatives:
         """
         if self._derivs_set is None:
             raise RuntimeError("Derivative structures not found.")
+
         base_structures = self.get_sampled_structures(element_strings)
+        if len(base_structures) == 0:
+            raise RuntimeError("Sample structures not found.")
+
         if refine:
             base_structures = [
                 SpglibCell(st=st).refine_cell() for st in base_structures
             ]
 
         strgen = PolymlpStructureGenerator(base_structures)
-        strgen.run_standard_algorithm(n_samples=n_samples, max_distance=max_distance)
+        strgen.run_standard_algorithm(
+            n_samples=n_samples,
+            max_distance=max_distance,
+            min_natom=min_natom,
+            max_natom=max_natom,
+        )
         strgen.save_structures(path=path)
         return self

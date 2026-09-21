@@ -1,5 +1,6 @@
 """Tests of API for sampling derivatives"""
 
+import shutil
 from pathlib import Path
 
 from pyclupan.api.pyclupan_derivatives import PyclupanDerivatives
@@ -86,3 +87,20 @@ def test_sampling_derivatives_from_keys():
 
     strs = pyclupan.get_sampled_structures(element_strings)
     assert len(strs) == 3
+
+
+def test_sampling_displacements():
+    """Test sample_displacements."""
+    pyclupan = PyclupanDerivatives()
+    pyclupan.load_derivatives(files)
+    pyclupan.sample_derivatives(
+        method="random",
+        n_samples=2,
+        element_strings=element_strings,
+        path="tmp1",
+    )
+    pyclupan.sample_displacements(
+        n_samples=2, max_distance=1.0, element_strings=element_strings, path="tmp2"
+    )
+    shutil.rmtree("tmp1")
+    shutil.rmtree("tmp2")

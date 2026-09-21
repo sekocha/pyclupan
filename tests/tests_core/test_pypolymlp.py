@@ -1,5 +1,6 @@
 """Tests of pypolymlp_utils."""
 
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -9,8 +10,10 @@ from pyclupan.core.pypolymlp_utils import (
     KbEV,
     Polymlp,
     PolymlpStructure,
+    PolymlpStructureGenerator,
     Poscar,
     ReducedCell,
+    SpglibCell,
     Vasprun,
     load_cell,
     load_cells,
@@ -41,6 +44,14 @@ def test_pypolymlp_reduced_cell(fcc_primitive_cell):
     np.testing.assert_allclose(reduced.transformation_matrix, tmat_true, atol=1e-8)
 
 
+def test_spglib_cell():
+    """Test SpglibCell."""
+    path = str(cwd) + "/../files/Ag-Au/"
+    st = Poscar(path + "POSCAR.L12.Ag3Au").structure
+    st1 = SpglibCell(st=st).refine_cell()
+    assert np.sum(st1.axis) == pytest.approx(12.736294595319645)
+
+
 def test_pypolymlp_functions():
     """Test pypolymlp functions."""
     _ = save_cell
@@ -62,3 +73,22 @@ def test_pypolymlp_calculations():
     assert polymlp.energy == pytest.approx(-10.806689752751552)
     assert polymlp.structure.axis[0, 0] == pytest.approx(4.146121177258233)
     assert isinstance(polymlp.structure, PolymlpStructure)
+
+
+def test_pypolymlp_strgen():
+    """Test PolymlpStructureGenerator."""
+    path = str(cwd) + "/../files/Ag-Au/"
+    st = Poscar(path + "POSCAR.L12.Ag3Au").structure
+    polymlp = PolymlpStructureGenerator(st)
+    polymlp.run_standard_algorithm(
+        n_samples=2, min_natom=30, max_natom=60, max_distance=1.0
+    )
+    assert len(polymlp.sample_structures) == 2
+    polymlp.save_structures(path="tmp")
+    shutil.rmtree("tmp")
+
+    polymlp = PolymlpStructureGenerator([st, st, st])
+    polymlp.run_standard_algorithm(
+        n_samples=2, min_natom=30, max_natom=60, max_distance=1.0
+    )
+    assert len(polymlp.sample_structures) == 6

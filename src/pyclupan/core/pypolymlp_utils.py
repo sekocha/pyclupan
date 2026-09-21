@@ -110,7 +110,13 @@ class PolymlpStructureGenerator:
             n_samples=n_samples, distance=distance
         )
 
-    def run_standard_algorithm(self, n_samples: int = 100, max_distance: float = 1.5):
+    def run_standard_algorithm(
+        self,
+        n_samples: int = 100,
+        min_natom: int = 48,
+        max_natom: int = 150,
+        max_distance: float = 1.5,
+    ):
         """Generate random structures from base structures using a standard algorithm.
 
         In the standard algorithm, displacements in i-th structure are given by
@@ -120,9 +126,11 @@ class PolymlpStructureGenerator:
         ----------
         n_samples: Number of structures generated from a single POSCAR file
                    using a standard algorithm.
+        max_natom: Maximum number of atoms in supercells.
+                   Supercell sizes are automatically determined.
         max_distance: Maximum distance of displacement distributions.
         """
-        self._polymlp.build_supercells_auto(max_natom=1)
+        self._polymlp.build_supercells_auto(min_natom=min_natom, max_natom=max_natom)
         return self._polymlp.run_standard_algorithm(
             n_samples=n_samples, max_distance=max_distance
         )

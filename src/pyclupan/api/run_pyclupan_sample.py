@@ -52,7 +52,6 @@ def run():
         default=10,
         help="Number of atomic displacements for each substitutional structure.",
     )
-
     args = parser.parse_args()
 
     print_credit()
@@ -70,5 +69,8 @@ def run():
         clupan.sample_displacements(
             n_samples=args.n_disps,
             max_distance=args.displacements,
+            min_natom=48,
+            max_natom=150,
+            element_strings=args.element_strings,
             path="poscars_disps",
         )
