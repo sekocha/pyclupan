@@ -238,6 +238,10 @@ class Pyclupan:
         self._pyclupan_model.save_convex_hull_poscars(self._element_strings)
         return self
 
+    # TODO:
+    # def set_energies(self, energies: np.ndarray):
+    #     """Set energies."""
+
     def eval_energies(
         self,
         pot: Optional[str] = "polymlp.yaml",
