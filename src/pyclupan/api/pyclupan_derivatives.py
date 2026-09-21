@@ -4,7 +4,12 @@ from typing import Literal, Optional
 
 import numpy as np
 
-from pyclupan.core.pypolymlp_utils import PolymlpStructure, Poscar
+from pyclupan.core.pypolymlp_utils import (
+    PolymlpStructure,
+    PolymlpStructureGenerator,
+    Poscar,
+    SpglibCell,
+)
 from pyclupan.derivative.derivative_utils import DerivativesSet
 from pyclupan.derivative.run_sample import run_sampling_derivatives
 
@@ -157,7 +162,7 @@ class PyclupanDerivatives:
         element_strings: tuple = ("Al", "Cu"),
         save_poscars: bool = True,
     ):
-        """Parse derivatives.yaml.
+        """Sample derivative structures from derivatives.yaml.
 
         Parameters
         ----------
@@ -230,3 +235,33 @@ class PyclupanDerivatives:
     def derivative_structures(self, derivs: DerivativesSet):
         """Setter of derivative structures."""
         self._derivs_set = derivs
+
+    def sample_displacements(
+        self,
+        n_samples: int = 10,
+        max_distance: float = 1.0,
+        path: str = "poscars_disps",
+        element_strings: tuple = ("Al", "Cu"),
+        refine: bool = True,
+    ):
+        """Parse derivatives.yaml.
+
+        Parameters
+        ----------
+        n_samples: Number of sample structures with displacements.
+        max_distance: Magnitude of atomic displacements and cell changes.
+        path: Directory path for saving structure files.
+        elements: Element strings used to save structure files.
+        """
+        if self._derivs_set is None:
+            raise RuntimeError("Derivative structures not found.")
+        base_structures = self.get_sampled_structures(element_strings)
+        if refine:
+            base_structures = [
+                SpglibCell(st=st).refine_cell() for st in base_structures
+            ]
+
+        strgen = PolymlpStructureGenerator(base_structures)
+        strgen.run_standard_algorithm(n_samples=n_samples, max_distance=max_distance)
+        strgen.save_structures(path=path)
+        return self

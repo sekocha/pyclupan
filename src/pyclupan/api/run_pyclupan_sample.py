@@ -40,6 +40,18 @@ def run():
         required=True,
         help="Element strings for structure files.",
     )
+    parser.add_argument(
+        "--displacements",
+        type=float,
+        default=None,
+        help="Magnitude of atomic displacements and cell changes.",
+    )
+    parser.add_argument(
+        "--n_disps",
+        type=int,
+        default=10,
+        help="Number of atomic displacements for each substitutional structure.",
+    )
 
     args = parser.parse_args()
 
@@ -54,3 +66,9 @@ def run():
         element_strings=args.element_strings,
         path="poscars",
     )
+    if args.displacements is not None:
+        clupan.sample_displacements(
+            n_samples=args.n_disps,
+            max_distance=args.displacements,
+            path="poscars_disps",
+        )
