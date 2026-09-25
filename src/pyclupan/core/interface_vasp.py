@@ -63,4 +63,4 @@ def compute_formation_energies(
     comp.energies_end_members = energies_end_members
     n_atoms_array = [st.n_atoms for st in structures]
     formation_energies = comp.compute_formation_energies(energies, n_atoms_array)
-    return (ids, formation_energies)
+    return (ids, comp.compositions, formation_energies)
