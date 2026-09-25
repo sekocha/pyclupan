@@ -2,6 +2,7 @@
 
 import numpy as np
 
+from pyclupan.core.composition import Composition
 from pyclupan.core.pypolymlp_utils import PolymlpStructure, Vasprun
 
 
@@ -47,3 +48,19 @@ def save_energy_dat(
     with open(filename, "w") as f:
         for i, e in zip(ids, energies):
             print(i, e, file=f)
+
+
+def compute_formation_energies(
+    vaspruns: list,
+    vaspruns_end_members: list,
+    chemical_comps_end_members: np.ndarray,
+    energies_end_members: list | np.ndarray,
+):
+    """Compute formation energies using vasprun.xml files."""
+    ids, energies, structures = load_vasp_results(vaspruns)
+    # ids_end, energies_end, structures_end = load_vasp_results(vaspruns_end_members)
+    comp = Composition(chemical_comps_end_members)
+    comp.energies_end_members = energies_end_members
+    n_atoms_array = [st.n_atoms for st in structures]
+    formation_energies = comp.compute_formation_energies(energies, n_atoms_array)
+    return (ids, formation_energies)
